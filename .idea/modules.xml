@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/I4LCommon/I4LCommon.iml" filepath="$PROJECT_DIR$/I4LCommon/I4LCommon.iml" />
+      <module fileurl="file://$PROJECT_DIR$/I4LParser/I4LParser.iml" filepath="$PROJECT_DIR$/I4LParser/I4LParser.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Test/Test.iml" filepath="$PROJECT_DIR$/Test/Test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/i4Language.iml" filepath="$PROJECT_DIR$/i4Language.iml" />
+    </modules>
+  </component>
+</project>
