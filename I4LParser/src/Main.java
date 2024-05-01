@@ -1,6 +1,7 @@
 import i4l.I4LJavaExport;
 import i4l.I4LParser;
 import i4l.I4LParserConfig;
+import i4l.I4LResolver;
 import i4l.common.I4LPkg;
 
 import java.io.BufferedReader;
@@ -15,6 +16,8 @@ public class Main {
         final ArrayList<Object> code = new ArrayList<>();
         scan(new File("I4LCommon/src"), code);
         scan(new File("I4LParser/src"), code);
+        final I4LResolver r = new I4LResolver();
+
         I4LJavaExport.export(code, new File("Test/src"));
     }
 
