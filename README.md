@@ -29,7 +29,7 @@ final Button btn = new Button();
 btn.setText("Click me!");
 btn.setX(8);
 btn.setY(8);
-btn.setEndX(new PointAttach(-16, window.width));
+btn.setEndX(new PointAttach(-8, window.width));
 btn.setHeight(32);
 btn.addEventListener(ActionEvent.class, e -> System.out.println("Hello, world!"));
 window.add(btn);
