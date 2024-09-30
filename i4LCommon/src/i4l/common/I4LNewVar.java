@@ -9,8 +9,8 @@ public class I4LNewVar extends I4LOperation {
     public List<Var> vars = new ArrayList<>();
 
     public static class Var {
-        public String name = null;
-        public Object value = null;
+        public String name;
+        public Object value;
         public Var(final String n, final Object v) {
             name = n;
             value = v;

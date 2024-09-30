@@ -10,13 +10,22 @@ import java.io.FileReader;
 import java.util.ArrayList;
 
 public class Main {
-    public static char r() { return 't'; }
-
     public static void main(String[] args) throws Exception {
         final ArrayList<Object> code = new ArrayList<>();
-        scan(new File("I4LCommon/src"), code);
-        scan(new File("I4LParser/src"), code);
+        //scan(new File("I4LCommon/src"), code);
+        //scan(new File("I4LParser/src"), code);
+        scan(new File("GLTest/src/GLFW.i4s"), code);
+
         final I4LResolver r = new I4LResolver();
+        r.resolve(code);
+
+        if (!r.errors.isEmpty()) {
+            for (final String e : r.errors)
+                System.err.println("[ERR] " + e);
+            return;
+        }
+
+        r.unlink(code);
 
         I4LJavaExport.export(code, new File("Test/src"));
     }

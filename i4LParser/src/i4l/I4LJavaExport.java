@@ -5,6 +5,7 @@ import i4l.common.*;
 import java.io.File;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class I4LJavaExport {
@@ -26,18 +27,17 @@ public class I4LJavaExport {
         this.dir = dir;
         this.s = stream;
 
+        final I4LClass cls = new I4LClass();
+        cls.tags = Arrays.asList("public", "class", "Global");
+
         f("Global");
         for (final Object o : code) {
             if (o instanceof I4LPkg) {
                 pkg = ((I4LPkg) o).path;
-
-                //s = f(((I4LPkg) o).path);
-                //s.println("package " + ((I4LPkg) o).path + ";");
                 continue;
             }
             if (o instanceof I4LImport) {
                 imports.add(((I4LImport) o).path);
-                //s.println("import " + ((I4LImport) o).path + ";");
                 continue;
             }
             if (o instanceof I4LClass) {
@@ -45,8 +45,21 @@ public class I4LJavaExport {
                 continue;
             }
 
+            if (o instanceof I4LMethod) {
+                final I4LMethod m = (I4LMethod) o;
+                if (!m.tags.contains("static"))
+                    m.tags.add(0, "static");
+                if (!m.tags.contains("public") && !m.tags.contains("private"))
+                    m.tags.add(0, "public");
+                cls.code.add(m);
+                continue;
+            }
+
             throw new Exception("Unknown class " + o.getClass().getName());
         }
+
+        f("Global");
+        exportClass(cls, 0, true);
     }
 
     public void exportClass(final I4LClass cls, int t, final boolean file) throws Exception {
@@ -98,21 +111,7 @@ public class I4LJavaExport {
 
             if (o instanceof I4LMethod) {
                 final I4LMethod m = (I4LMethod) o;
-                s.print(repeat("\t", t) + join(m.tags, " ") + " " + m.name + '(');
-                final int l = m.args.size();
-                for (int i = 0; i < l; i++) {
-                    if (i > 0)
-                        s.print(", ");
-                    s.print(join(m.args.get(i).params, " "));
-                }
-                s.print(") ");
-                if (!m.exceptions.isEmpty())
-                    s.print("throws " + join(m.exceptions, ", ") + ' ');
-                s.println("{");
-                t++;
-                exportCode(m.code, t);
-                t--;
-                s.println(repeat("\t", t) + '}');
+                exportMethod(m, t);
                 continue;
             }
 
@@ -150,6 +149,24 @@ public class I4LJavaExport {
             else
                 s.println();
         }
+    }
+
+    public void exportMethod(final I4LMethod m, int t) throws Exception {
+        s.print(repeat("\t", t) + join(m.tags, " ") + " " + m.name + '(');
+        final int l = m.args.size();
+        for (int i = 0; i < l; i++) {
+            if (i > 0)
+                s.print(", ");
+            s.print(join(m.args.get(i).params, " "));
+        }
+        s.print(") ");
+        if (!m.exceptions.isEmpty())
+            s.print("throws " + join(m.exceptions, ", ") + ' ');
+        s.println("{");
+        t++;
+        exportCode(m.code, t);
+        t--;
+        s.println(repeat("\t", t) + '}');
     }
 
     public void exportData(final Object o, int t) throws Exception {
@@ -195,6 +212,12 @@ public class I4LJavaExport {
                         break;
                     case '\\':
                         s.print("\\\\");
+                        break;
+                    case '\r':
+                        s.print("\\r");
+                        break;
+                    case '\n':
+                        s.print("\\n");
                         break;
                     default:
                         s.print(ch);
@@ -344,6 +367,13 @@ public class I4LJavaExport {
         if (o instanceof I4LSetAfter) {
             exportData(((I4LSetAfter) o).path, t);
             s.print("" + ((I4LSetAfter) o).operation + ((I4LSetAfter) o).operation);
+            return;
+        }
+
+        if (o instanceof I4LMove) {
+            exportData(((I4LMove) o).target, t);
+            s.print(' ' + ((I4LMove) o).action + ' ');
+            exportData(((I4LMove) o).steps, t);
             return;
         }
 

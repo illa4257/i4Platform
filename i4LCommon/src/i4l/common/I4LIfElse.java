@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class I4LIfElse extends I4LOperation {
-    public boolean sub = true;
-    public List<Object> begin = null, code = null;
+    public boolean sub;
+    public List<Object> begin, code;
 
     public I4LIfElse(final I4LStatement s) {
         this.begin = s.begin;
