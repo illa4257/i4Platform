@@ -11,6 +11,11 @@ public class OS {
     private static boolean isStarted = false;
     private static IThemeDetector themeDetector = null;
 
+    /**
+     * I'll move {@link i4Utils.themeDetectors} to {@link i4Framework}.
+     *
+     * @deprecated
+     */
     public enum Theme {
         DEFAULT,
         LIGHT,
@@ -18,6 +23,11 @@ public class OS {
         UNKNOWN
     }
 
+    /**
+     * I'll move {@link i4Utils.themeDetectors} to {@link i4Framework}.
+     *
+     * @deprecated
+     */
     @SuppressWarnings("unchecked")
     public static void fireThemeChanged(final Theme theme) {
         final Runnable1a<Theme>[] ll;
@@ -28,6 +38,11 @@ public class OS {
             l.run(theme);
     }
 
+    /**
+     * I'll move {@link i4Utils.themeDetectors} to {@link i4Framework}.
+     *
+     * @deprecated
+     */
     public static Theme getCurrentTheme() {
         synchronized (themeList) {
             if (themeDetector == null)
@@ -36,6 +51,11 @@ public class OS {
         }
     }
 
+    /**
+     * I'll move {@link i4Utils.themeDetectors} to {@link i4Framework}.
+     *
+     * @deprecated
+     */
     public static void addThemeListener(final Runnable1a<Theme> listener) {
         if (listener == null)
             return;
@@ -52,6 +72,11 @@ public class OS {
         }
     }
 
+    /**
+     * I'll move {@link i4Utils.themeDetectors} to {@link i4Framework}.
+     *
+     * @deprecated
+     */
     public static void removeAllThemeListeners() {
         synchronized (themeList) {
             if (themeList.isEmpty())

@@ -4,6 +4,11 @@ import i4Utils.OS;
 
 import java.util.Scanner;
 
+/**
+ * I'll move {@link i4Utils.themeDetectors} to {@link i4Framework}.
+ *
+ * @deprecated
+ */
 public class DBusThemeDetector implements IThemeDetector {
     private final Process p;
 
