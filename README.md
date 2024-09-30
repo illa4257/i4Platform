@@ -1,14 +1,15 @@
 # i4Platform
 
-## Overview
+**i4Platform** is a development platform that includes a variety of utilities, the UI framework, 
+and the programming language.
 
-`i4Platform` is a development platform that includes a variety of utilities, a UI framework, and a programming language.
+## Overview
 
 - **i4Utils**: Universal classes like SyncVar, MutableCharArray and etc.
 - **i4Framework**: UI Framework (requires `i4Utils`).
 - **i4Framework.swing**: Swing support for `i4Framework`.
-- **i4LCommon**: Classes for my programming language. (WIP)
-- **i4LParser**: Parser for my programming language (It requires `i4LParser`).
+- **i4LCommon**: Classes for the programming language. (WIP)
+- **i4LParser**: Parser for the programming language (It requires `i4LParser`).
 
 ## Usage
 ### i4Utils
