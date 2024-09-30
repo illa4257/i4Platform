@@ -28,6 +28,17 @@ bin/
 ### Mac OS ###
 .DS_Store
 
+
+### Trash ###
+hs_err_pid*.log
+
 ### Test ###
-/Test/src/i4l/
-/Test/src/Main.java
+/Test
+/customHeaders
+/GLTest
+/GenGLFW
+/cpp
+/lwjgl
+/run.sh
+/runGLFW.sh
+/a.out
