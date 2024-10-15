@@ -1,5 +1,8 @@
 package i4Utils;
 
+import i4Utils.logger.Level;
+import i4Utils.logger.i4Logger;
+
 public interface IDestructor {
     int getLinkNumber();
     int addLinkNumber();
@@ -19,8 +22,7 @@ public interface IDestructor {
             onDestruct();
         else if (n < 0) {
             addLinkNumber();
-            System.err.println("[Point] Negative number of links.");
-            Log.printStacktrace(Thread.currentThread().getStackTrace());
+            i4Logger.INSTANCE.log(Level.ERROR, "Negative number of links.", Thread.currentThread().getStackTrace());
         }
     }
 }
