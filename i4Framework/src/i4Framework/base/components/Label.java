@@ -37,7 +37,9 @@ public class Label extends Component {
             h += v2d[i].y;
         }
         //final Vector2D s = ctx.bounds(t);
-        ctx.setColor(foreground);
+        synchronized (locker) {
+            ctx.setColor(foreground);
+        }
         y = (height.calcFloat() - h) / 2;
         m:
         for (int i = 0; i < ll.length; i++) {

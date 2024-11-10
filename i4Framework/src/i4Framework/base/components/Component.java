@@ -8,6 +8,7 @@ import i4Framework.base.events.Event;
 import i4Framework.base.events.SingleEvent;
 import i4Framework.base.events.VisibleEvent;
 import i4Framework.base.events.components.RecalculateEvent;
+import i4Framework.base.events.components.RepaintEvent;
 import i4Framework.base.points.Point;
 import i4Framework.base.points.PointAttach;
 import i4Framework.base.points.PointSet;
@@ -183,6 +184,8 @@ public class Component implements IDestructor {
 
     public void fireLater(final Event event) { invokeLater(() -> fire(event)); }
 
+    public void repaint() { fire(new RepaintEvent()); }
+
     public void setVisible(final boolean visible) {
         synchronized (locker) {
             if (this.visible == visible)
@@ -237,6 +240,12 @@ public class Component implements IDestructor {
         fire(new ChangePointEvent(this));
     }
 
+    public void setLocation(final float x, final float y) {
+        startX.set(new PointAttach(x, null));
+        startY.set(new PointAttach(y, null));
+        fire(new ChangePointEvent(this));
+    }
+
     public void setWidth(final float width) {
         endX.set(new PointAttach(width, startX));
         fire(new ChangePointEvent(this));
@@ -256,7 +265,6 @@ public class Component implements IDestructor {
         if (x || y)
             fire(new ChangePointEvent(this));
     }
-
 
     public void paint(final Context context) {}
 }

@@ -1,6 +1,7 @@
 package i4Framework.base.components;
 
 import i4Framework.base.Color;
+import i4Framework.base.Context;
 import i4Framework.base.events.components.ChangeTextEvent;
 import i4Framework.base.events.window.CenterWindowEvent;
 import i4Framework.base.events.window.ChangeBackgroundEvent;
@@ -33,5 +34,15 @@ public class Window extends Container {
 
     public String getTitle() {
         return title.get();
+    }
+
+    @Override
+    public void paint(Context context) {
+        synchronized (locker) {
+            if (background == null)
+                return;
+            context.setColor(background);
+        }
+        context.drawRect(0, 0, width.calcFloat(), height.calcFloat());
     }
 }
