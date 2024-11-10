@@ -120,6 +120,21 @@ public class i4Logger implements LogHandler {
         this.name = name;
     }
 
+    public OutputStream newOutputStream(final Level level) {
+        return new OutputStream() {
+            private final StringBuilder buffer = new StringBuilder();
+
+            @Override
+            public void write(final int ch) {
+                if (ch == '\n') {
+                    log(level, buffer.toString());
+                    buffer.setLength(0);
+                } else
+                    buffer.append((char) ch);
+            }
+        };
+    }
+
     public boolean registerHandler(final LogHandler handler) {
         if (handler == null)
             return false;
@@ -192,20 +207,5 @@ public class i4Logger implements LogHandler {
             return;
         log(level, prefix(level), object instanceof Object[] ?
                 Arrays.hashCode((Object[]) object) + Arrays.toString((Object[]) object) : Objects.toString(object));
-    }
-
-    public OutputStream newOutputStream(final Level level) {
-        return new OutputStream() {
-            private final StringBuilder buffer = new StringBuilder();
-
-            @Override
-            public void write(final int ch) {
-                if (ch == '\n') {
-                    log(level, buffer.toString());
-                    buffer.setLength(0);
-                } else
-                    buffer.append((char) ch);
-            }
-        };
     }
 }
