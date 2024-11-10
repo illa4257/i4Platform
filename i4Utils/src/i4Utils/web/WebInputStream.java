@@ -12,8 +12,8 @@ public abstract class WebInputStream extends InputStream {
         this.inputStream = inputStream;
     }
 
-    /*@Override
-    public int read() throws IOException { // Method based on Mode
+    @Override
+    public int read() throws IOException {
         return inputStream.read();
     }
 
@@ -21,11 +21,6 @@ public abstract class WebInputStream extends InputStream {
     public int read(final byte[] bytes, final int i, final int i1) throws IOException {
         return inputStream.read(bytes, i, i1);
     }
-
-    @Override
-    public int read(final byte[] bytes) throws IOException {
-        return inputStream.read(bytes);
-    }*/
 
     @Override
     public void close() throws IOException {
@@ -118,6 +113,20 @@ public abstract class WebInputStream extends InputStream {
             chunkSize--;
             return inputStream.read();
         }
+
+        @Override
+        public int read(final byte[] bytes, final int i, final int i1) throws IOException {
+            if (finished)
+                return -1;
+            while (chunkSize <= 0) {
+                readChunkSize();
+                if (finished)
+                    return -1;
+            }
+            final int r = inputStream.read(bytes, i, Math.min(i1, chunkSize));
+            chunkSize -= r;
+            return r;
+        }
     }
 
     public static class LongPolling extends WebInputStream {
@@ -137,19 +146,10 @@ public abstract class WebInputStream extends InputStream {
         }
 
         @Override
-        public int read(byte[] bytes, int i, int i1) throws IOException {
+        public int read(byte[] bytes, final int i, final int i1) throws IOException {
             if (remaining <= 0)
                 return -1;
             final int r = inputStream.read(bytes, i, Math.min(remaining, i1));
-            remaining -= r;
-            return r;
-        }
-
-        @Override
-        public int read(byte[] bytes) throws IOException {
-            if (remaining <= 0)
-                return -1;
-            final int r = inputStream.read(bytes);
             remaining -= r;
             return r;
         }
