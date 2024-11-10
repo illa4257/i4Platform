@@ -10,6 +10,15 @@ public class SyncVar<T> {
 
     public void set(final T value) { synchronized (locker) { v = value; } }
 
+    public void setIfNull(final T newValue) {
+        if (newValue == null)
+            return;
+        synchronized (locker) {
+            if (v == null)
+                v = newValue;
+        }
+    }
+
     public T getAndSet(final T value) {
         synchronized (locker) {
             final T old = v;
@@ -19,6 +28,16 @@ public class SyncVar<T> {
     }
 
     public T get() { synchronized (locker) { return v; } }
+
+    /**
+     * @param alt Alternative object
+     * @return Returns value. If the value is null, it will return alt
+     */
+    public T get(final T alt) {
+        synchronized (locker) {
+            return v == null ? alt : v;
+        }
+    }
 
     @Override public String toString() { synchronized (locker) { return v == null ? null : v.toString(); } }
 }
