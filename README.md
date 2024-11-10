@@ -9,7 +9,7 @@ and the programming language.
 - **i4Framework**: UI Framework (requires `i4Utils`).
 - **i4Framework.swing**: Swing support for `i4Framework`.
 - **i4LCommon**: Classes for the programming language. (WIP)
-- **i4LParser**: Parser for the programming language (It requires `i4LParser`).
+- **i4LParser**: Parser for the programming language (requires `i4LCommon`).
 
 ## Usage
 ### i4Utils
