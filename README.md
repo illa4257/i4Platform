@@ -3,6 +3,8 @@
 **i4Platform** is a development platform that includes a variety of utilities, the UI framework, 
 and the programming language.
 
+[Wiki](https://github.com/illa4257/i4Platform/wiki)
+
 ## Overview
 
 - **i4Utils**: Universal classes like SyncVar, MutableCharArray and etc.
