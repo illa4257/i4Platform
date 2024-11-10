@@ -46,8 +46,6 @@ public class WebSocket extends WebStream {
             headers.put(k.toLowerCase(), readStrLn(4096));
         }
 
-        System.out.println(headers);
-
         if (headers.containsKey("content-length")) {
             is = new WebInputStream.LongPolling(inputStream, Integer.parseInt(headers.get("content-length")));
             return;

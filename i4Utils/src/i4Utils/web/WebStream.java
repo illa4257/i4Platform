@@ -59,12 +59,10 @@ public class WebStream implements AutoCloseable {
         for (; max > 0; max--) {
             final char n = readChar();
             if (n == ch)
-                break;
+                return b.toString();
             b.append(n);
         }
-        if (max == 0)
-            throw new IOException("Reached the maximum number of characters.");
-        return b.toString();
+        throw new IOException("Reached the maximum number of characters.");
     }
 
     protected String readStrLn(int max) throws IOException {
@@ -76,21 +74,17 @@ public class WebStream implements AutoCloseable {
                 r = true;
                 continue;
             }
-            if (n == '\n' && r) {
-                r = false;
-                break;
-            }
+            if (n == '\n')
+                return b.toString();
             if (r) {
-                b.append('\r');
-                r = false;
+                prev = n;
+                return b.toString();
             }
             b.append(n);
         }
         if (r)
             prev = '\r';
-        if (max == 0)
-            throw new IOException("Reached the maximum number of characters.");
-        return b.toString();
+        throw new IOException("Reached the maximum number of characters.");
     }
 
     protected String readStrLn(final char ch, int max) throws IOException {
@@ -102,23 +96,19 @@ public class WebStream implements AutoCloseable {
                 r = true;
                 continue;
             }
-            if (n == '\n' && r) {
-                r = false;
-                break;
-            }
+            if (n == '\n')
+                return b.toString();
             if (r) {
-                b.append('\r');
-                r = false;
+                prev = n;
+                return b.toString();
             }
             if (n == ch)
-                break;
+                return b.toString();
             b.append(n);
         }
         if (r)
             prev = '\r';
-        if (max == 0)
-            throw new IOException("Reached the maximum number of characters.");
-        return b.toString();
+        throw new IOException("Reached the maximum number of characters.");
     }
 
     protected void skipSpaces(int max) throws IOException {
