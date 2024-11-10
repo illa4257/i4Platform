@@ -10,6 +10,7 @@ import i4Framework.base.events.VisibleEvent;
 import i4Framework.base.events.components.ChangeTextEvent;
 import i4Framework.base.events.components.RepaintEvent;
 import i4Framework.base.events.window.CenterWindowEvent;
+import i4Framework.swing.SwingContext;
 import i4Framework.swing.SwingFramework;
 
 import javax.swing.*;
@@ -27,14 +28,18 @@ public class SwingFrame extends JFrame implements ISwingComponent, FrameworkWind
     public SwingFrame() { this(null); }
     public SwingFrame(final Window window) {
         this.window = window == null ? new Window() : window;
-        (root = this.getContentPane()).setLayout(null);
+        setContentPane(root = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics graphics) {
+                super.paintComponent(graphics);
+                SwingFrame.this.window.paint(new SwingContext((Graphics2D) graphics));
+            }
+        });
+        this.window.addEventListener(RepaintEvent.class, e -> root.repaint());
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent windowEvent) {
-                //SwingFramework.remove(SwingWindow.this);
-                //if (SwingFrame.this.window.isVisible())
-                //    SwingFrame.this.window.setVisible(false);
                 setVisible(false);
             }
         });
