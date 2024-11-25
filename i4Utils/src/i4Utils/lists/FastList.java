@@ -1,4 +1,6 @@
-package i4Utils;
+package i4Utils.lists;
+
+import i4Utils.SyncVar;
 
 import java.lang.reflect.Array;
 import java.util.AbstractList;

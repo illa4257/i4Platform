@@ -1,6 +1,6 @@
 package i4Utils.web;
 
-import i4Utils.MutableCharArray;
+import i4Utils.lists.MutableCharArray;
 import i4Utils.Str;
 import i4Utils.SyncVar;
 
