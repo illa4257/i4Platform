@@ -103,7 +103,10 @@ public class i4URI {
         if (isEmpty(scheme))
             throw new IllegalArgumentException("Scheme cannot be null or empty");
 
-        for (i = 0; uri.startsWith("/", i); i++);
+        final int ul = uri.length();
+        for (i = 0; i < ul; i++)
+            if (uri.charAt(i) != '/')
+                break;
         if (i > 0)
             uri = uri.substring(i);
 

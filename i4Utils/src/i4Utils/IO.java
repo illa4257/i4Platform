@@ -17,6 +17,7 @@ public class IO {
         byte[] run(final InputStream inputStream) throws IOException;
     }
 
+    @SuppressWarnings("JavaReflectionMemberAccess")
     private static IReader detectReader() {
         try {
             final Method m = InputStream.class.getMethod("readAllBytes");

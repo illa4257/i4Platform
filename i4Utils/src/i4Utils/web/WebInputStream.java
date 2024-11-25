@@ -53,19 +53,12 @@ public abstract class WebInputStream extends InputStream {
             return (char) r;
         }
 
-        private char getChar(final char ch) {
-            return ch == '\n' ? 'n' : ch == '\r' ? 'r' : ch;
-        }
-
         private void readChunkSize() throws IOException {
             if (first) {
                 char n = readChar();
-                if (n == '\n') {}
-                else if (n == '\r') {
+                if (n == '\r')
                     n = readChar();
-                    if (n != '\n')
-                        prev = n;
-                } else
+                if (n != '\n')
                     prev = n;
             }
             final StringBuilder b = new StringBuilder();

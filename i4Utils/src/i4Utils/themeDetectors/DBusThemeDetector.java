@@ -1,6 +1,7 @@
 package i4Utils.themeDetectors;
 
 import i4Utils.OS;
+import i4Utils.logger.i4Logger;
 
 import java.util.Scanner;
 
@@ -42,15 +43,12 @@ public class DBusThemeDetector implements IThemeDetector {
                                 theme.equals("'default'") ? OS.Theme.DEFAULT : OS.Theme.UNKNOWN;
             }
         } catch (final Exception ex) {
-            ex.printStackTrace();
+            i4Logger.INSTANCE.log(ex);
             return OS.Theme.UNKNOWN;
         }
     }
 
-    @Override
-    public boolean canListen() {
-        return p != null;
-    }
+    @Override public boolean canListen() { return p != null; }
 
     @Override
     public void stop() {

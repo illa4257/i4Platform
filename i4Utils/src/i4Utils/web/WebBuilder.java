@@ -4,6 +4,7 @@ import i4Utils.lists.MutableCharArray;
 import i4Utils.Str;
 import i4Utils.SyncVar;
 
+import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -20,16 +21,15 @@ public class WebBuilder {
     public static final List<String> PROTOCOLS = Arrays.asList("http", "https");
     private static boolean isEmpty(final String str) { return str == null || str.isEmpty(); }
 
-    public final SyncVar<SSLSocketFactory> sslSocketFactory = new SyncVar<>();
+    public final SyncVar<SocketFactory> sslSocketFactory = new SyncVar<>();
     public final AtomicInteger connectionTimeout = new AtomicInteger(5000), timeout = new AtomicInteger(5000), maxRedirects = new AtomicInteger(5);
     public final AtomicBoolean sendBaseHeaders = new AtomicBoolean(true), followRedirects = new AtomicBoolean(true);
 
     public final ConcurrentHashMap<String, Object> headers = new ConcurrentHashMap<>();
 
-    public WebBuilder() {
-        headers.put("User-Agent", "i4Web/1.0");
-    }
+    public WebBuilder() { headers.put("User-Agent", "i4Web/1.0"); }
 
+    public WebSocket open(final String method, final String uri) throws IOException { return open(method, new i4URI(uri), maxRedirects.get()); }
     public WebSocket open(final String method, final i4URI uri) throws IOException { return open(method, uri, maxRedirects.get()); }
 
     public WebSocket open(String method, final i4URI uri, final int maxRedirects) throws IOException {
@@ -48,7 +48,7 @@ public class WebBuilder {
 
         final Socket socket =
                 isSecure ?
-                        SSLSocketFactory.getDefault().createSocket() :
+                        sslSocketFactory.get(SSLSocketFactory.getDefault()).createSocket() :
                         new Socket();
 
         final int p = uri.port < 0 ? isSecure ? 443 : 80 : uri.port;
