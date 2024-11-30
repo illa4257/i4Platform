@@ -100,7 +100,7 @@ public class WebBuilder {
         s.flush();
 
         if (followRedirects.get()) {
-            final WebSocket sock = new WebSocket(s);
+            final WebSocket sock = new WebSocket(s, false);
             final String loc = sock.headers.get("location");
             if (sock.responseCode >= 300 && sock.responseCode < 400 && loc != null && !loc.isEmpty()) {
                 sock.close();
@@ -108,6 +108,6 @@ public class WebBuilder {
             }
             return sock;
         }
-        return new WebSocket(s);
+        return new WebSocket(s, false);
     }
 }
