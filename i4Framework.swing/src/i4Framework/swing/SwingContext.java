@@ -2,6 +2,7 @@ package i4Framework.swing;
 
 import i4Framework.base.Color;
 import i4Framework.base.Context;
+import i4Framework.base.Image;
 import i4Framework.base.Vector2D;
 
 import java.awt.*;
@@ -43,5 +44,10 @@ public class SwingContext implements Context {
     @Override
     public void drawString(final char[] str, final float x, final float y) {
         graphics.drawChars(str, 0, str.length, (int) x, (int) y);
+    }
+
+    @Override
+    public void drawImage(Image image, float x, float y, float width, float height) {
+        graphics.drawImage(image.asBufferedImage(), Math.round(x), Math.round(y), Math.round(width), Math.round(height), null);
     }
 }
