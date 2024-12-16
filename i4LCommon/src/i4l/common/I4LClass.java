@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class I4LClass extends I4LCode {
-    public List<String> tags = new ArrayList<>();
+    public List<Object> tags = new ArrayList<>();
 
     @Override
     public String toString() {

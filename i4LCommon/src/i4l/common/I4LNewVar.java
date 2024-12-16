@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class I4LNewVar extends I4LOperation {
-    public List<String> params = null;
+    public List<Object> params = null;
 
     public List<Var> vars = new ArrayList<>();
 
