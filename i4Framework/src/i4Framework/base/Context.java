@@ -8,4 +8,6 @@ public interface Context {
     void drawRect(final float x, final float y, final float w, final float h);
     void drawString(final String str, final float x, final float y);
     void drawString(final char[] str, final float x, final float y);
+
+    void drawImage(final Image image, final float x, final float y, final float width, final float height);
 }
