@@ -13,26 +13,28 @@ import i4Framework.base.points.Point;
 import i4Framework.base.points.PointAttach;
 import i4Framework.base.points.PointSet;
 import i4Framework.base.points.PointSubtract;
-import i4Utils.FastList;
 import i4Utils.IDestructor;
+import i4Utils.lists.DynList;
+import i4Utils.lists.PagedTmpList;
+import i4Utils.logger.i4Logger;
 
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Component implements IDestructor {
     final Object locker = new Object();
     private final AtomicInteger linkNumber = new AtomicInteger(0);
-    private final Runnable[] runnables;
+    private final Runnable[] listeners;
 
     boolean visible = true;
 
     public final PointSet startX = new PointSet(), startY = new PointSet(), endX = new PointSet(), endY = new PointSet();
     public final Point width = new PointSubtract(endX, startX), height = new PointSubtract(endY, startY);
 
-    private final FastList<Runnable> invoke = new FastList<>(new Runnable[0]);
+    private final DynList<Runnable> repeatedInvoke = new DynList<>(Runnable.class);
+    private final PagedTmpList<Runnable> invoke = new PagedTmpList<>(Runnable.class);
 
     private final ConcurrentLinkedQueue<AbstractMap.Entry<
             Class<? extends Event>,
@@ -45,7 +47,7 @@ public class Component implements IDestructor {
     private final ConcurrentLinkedQueue<Event> events = new ConcurrentLinkedQueue<>();
 
     public Component() {
-        runnables = new Runnable[] {
+        listeners = new Runnable[] {
                 () -> fire(new RecalculateEvent())
         };
     }
@@ -56,18 +58,19 @@ public class Component implements IDestructor {
 
     @Override
     public void onConstruct() {
-        width.subscribe(runnables[0]);
-        height.subscribe(runnables[0]);
+        width.subscribe(listeners[0]);
+        height.subscribe(listeners[0]);
     }
 
     @Override
     public void onDestruct() {
-        width.unsubscribe(runnables[0]);
-        height.unsubscribe(runnables[0]);
+        width.unsubscribe(listeners[0]);
+        height.unsubscribe(listeners[0]);
     }
 
     public Object getLocker() { return locker; }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     protected void invokeAll() {
         Event event;
         while ((event = events.poll()) != null) {
@@ -77,17 +80,13 @@ public class Component implements IDestructor {
                     for (final EventListener l : e.getValue())
                         l.run(event);
         }
-        for (final Runnable r : invoke.getStateAndClear())
+        invoke.nextPage();
+        for (final Runnable r : invoke)
             r.run();
-        //Runnable r;
-        //while ((r = invoke.poll()) != null)
-        //    r.run();
-        /*invokeState.set(false);
-        while ((r = invoke1.poll()) != null)
+        repeatedInvoke.reset();
+        Runnable r;
+        while ((r = repeatedInvoke.next()) != null)
             r.run();
-        invokeState.set(true);
-        while ((r = invoke2.poll()) != null)
-            r.run();*/
     }
 
     //public void invokeLater(final Runnable runnable) { (invokeState.get() ? invoke1 : invoke2).add(runnable); }
@@ -105,7 +104,7 @@ public class Component implements IDestructor {
                 try {
                     runnable.run();
                 } catch (final Throwable throwable) {
-                    throwable.printStackTrace();
+                    i4Logger.INSTANCE.log(throwable);
                 }
                 synchronized (l) {
                     l.notifyAll();
@@ -115,7 +114,10 @@ public class Component implements IDestructor {
         }
     }
 
-    private <T extends Event> EventListener<T> addEventListenerInternal(final Class<T> eventType, final EventListener<T> listener, final  ConcurrentLinkedQueue<Map.Entry<Class<? extends Event>,ConcurrentLinkedQueue<EventListener<?>>>> listeners) {
+    public void onTick(final Runnable runnable) { repeatedInvoke.add(runnable); }
+    public void offTick(final Runnable runnable) { repeatedInvoke.remove(runnable); }
+
+    private <T extends Event> EventListener<T> addEventListenerInternal(final Class<T> eventType, final EventListener<T> listener, final ConcurrentLinkedQueue<Map.Entry<Class<? extends Event>, ConcurrentLinkedQueue<EventListener<?>>>> listeners) {
         ConcurrentLinkedQueue<EventListener<?>> l = null;
         synchronized (locker) {
             for (final Map.Entry<Class<? extends Event>, ConcurrentLinkedQueue<EventListener<?>>> e : listeners)
