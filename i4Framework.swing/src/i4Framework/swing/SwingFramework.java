@@ -21,7 +21,8 @@ public class SwingFramework extends Framework {
     public static final SwingFramework INSTANCE = new SwingFramework();
 
     private static final Object locker = new Object();
-    private static Timer timer = null;
+    //private static Timer timer = null;
+    private static SwingWorker<Object, Object> sw = null;
 
     static {
         Framework.registerFramework(INSTANCE);
@@ -40,17 +41,41 @@ public class SwingFramework extends Framework {
         font = new Font(Font.DIALOG, Font.PLAIN, 16);
     }
 
+    private static long last = System.currentTimeMillis();
+
     private static final ConcurrentLinkedQueue<SwingFrame> frames = new ConcurrentLinkedQueue<>();
     public static void add(final SwingFrame frame) {
         if (frame == null)
             return;
         synchronized (frames) {
             if (frames.add(frame) && frames.size() == 1) {
-                timer = new Timer(16, actionEvent -> {
+                /*timer = new Timer(16, actionEvent -> {
                     for (final SwingFrame w : frames)
                         w.window.invokeAll();
+                    final long nt = System.currentTimeMillis();
+                    final int d = Math.max((int) (nt - last), 1);
+                    timer.setInitialDelay(d);
+                    timer.restart();
                 });
-                timer.start();
+                timer.setRepeats(false);
+                timer.start();*/
+                sw = new SwingWorker<Object, Object>() {
+                    @Override
+                    protected Object doInBackground() throws Exception {
+                        while (!isCancelled()) {
+                            for (final SwingFrame w : frames)
+                                w.window.invokeAll();
+                            final long nt = System.currentTimeMillis();
+                            final int d = (int) ((nt - last));
+                            System.out.println("Sleep " + (16 - d));
+                            last = nt;
+                            Thread.sleep(d >= 16 ? 1 : 16 - d);
+                        }
+                        return null;
+                    }
+                };
+
+                sw.execute();
             }
         }
     }
@@ -60,8 +85,10 @@ public class SwingFramework extends Framework {
             return;
         synchronized (frames) {
             if (frames.remove(frame) && frames.isEmpty()) {
-                timer.stop();
-                timer = null;
+                sw.cancel(true);
+                sw = null;
+                //timer.stop();
+                //timer = null;
             }
         }
     }
