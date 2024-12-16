@@ -17,7 +17,7 @@ public class IO {
         byte[] run(final InputStream inputStream) throws IOException;
     }
 
-    @SuppressWarnings("JavaReflectionMemberAccess")
+    @SuppressWarnings({"JavaReflectionMemberAccess", "rawtypes", "unchecked"})
     private static IReader detectReader() {
         try {
             final Method m = InputStream.class.getMethod("readAllBytes");
@@ -36,7 +36,7 @@ public class IO {
             };
         } catch (final NoSuchMethodException ignored) {}
         try {
-            final Class<?> c = Class.forName("sun.misc.IOUtils");
+            final Class c = Class.forName("sun.misc.IOUtils");
             try {
                 final Method m = c.getDeclaredMethod("readFully", InputStream.class);
                 return is -> {
