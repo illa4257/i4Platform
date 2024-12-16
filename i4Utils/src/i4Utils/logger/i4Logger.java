@@ -23,7 +23,7 @@ public class i4Logger implements LogHandler {
         }
     }
 
-    public static final i4Logger INSTANCE = new i4Logger() {
+    private static class i4LoggerP extends i4Logger {
         @Override
         public boolean registerHandler(final LogHandler handler) {
             return super.registerHandler(handler);
@@ -107,7 +107,9 @@ public class i4Logger implements LogHandler {
         public OutputStream newOutputStream(final Level level) {
             return super.newOutputStream(level);
         }
-    };
+    }
+
+    public static final i4Logger INSTANCE = new i4LoggerP();
 
     public final String name;
     private final ConcurrentLinkedQueue<LogHandler> handlers = new ConcurrentLinkedQueue<>();
