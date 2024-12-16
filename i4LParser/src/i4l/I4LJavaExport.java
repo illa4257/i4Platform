@@ -69,8 +69,11 @@ public class I4LJavaExport {
             for (int i = 0; i < max; i++)
                 if (cls.tags.get(i).equals("class")) {
                     i++;
-                    if (i < max)
-                        cn = cls.tags.get(i);
+                    if (i < max) {
+                        if (!(cls.tags.get(i) instanceof String))
+                            throw new Exception("The name of class isn't name");
+                        cn = (String) cls.tags.get(i);
+                    }
                     break;
                 }
             if (cn == null)

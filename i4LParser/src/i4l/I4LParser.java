@@ -6,6 +6,7 @@ import i4l.common.preprocessors.*;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class I4LParser {
@@ -133,6 +134,18 @@ public class I4LParser {
                         ',', ';', '#'
                 ),
 
+                E1NoClass = Arrays.asList(
+                        ' ', '\t', '\r', '\n',
+
+                        '(', ')', '{', '}', '[', ']', '<', '>',
+
+                        '\'', '"',
+
+                        '+', '-', '/', '*', '=', '?', ':', '&', '|',
+
+                        ',', ';', '#'
+                ),
+
                 E2 = Arrays.asList(
                         ' ', '\t', '\r', '\n',
 
@@ -213,8 +226,46 @@ public class I4LParser {
                     continue;
                 } else
                     back(1);
-                if (s.isEmpty())
-                    throw new Exception("Empty, next char = " + r());
+                if (s.isEmpty()) {
+                    if (r() == '/') {
+                        final I4LComment c = new I4LComment();
+                        char ch = r();
+
+                        if (ch == '/') {
+                            c.comment = readTo(Arrays.asList('\r', '\n'));
+                            code.add(c);
+                            skip(S1);
+                            continue;
+                        } else if (ch == '*') {
+                            c.single = false;
+                            final StringBuilder b = new StringBuilder();
+                            boolean star = false;
+                            while (true) {
+                                ch = r();
+                                if (star)
+                                    if (ch == '/')
+                                        break;
+                                    else {
+                                        b.append('*');
+                                        star = false;
+                                    }
+                                if (ch == '*') {
+                                    star = true;
+                                    continue;
+                                }
+                                b.append(ch);
+                            }
+                            c.comment = b.toString();
+                            code.add(c);
+                            skip(S1);
+                            continue;
+                        } else
+                            throw new Exception("Unknown combination: /" + ch);
+                    } else {
+                        back(1);
+                        throw new Exception("Empty, next char = " + r());
+                    }
+                }
 
                 skip(S1);
 
@@ -242,7 +293,7 @@ public class I4LParser {
                     throw new Exception("Unexpected in import " + s + " character: " + r());
                 }
 
-                final ArrayList<String> l = new ArrayList<>();
+                final ArrayList<Object> l = new ArrayList<>();
                 l.add(s);
                 while (true) {
                     s = readTo(E1);
@@ -250,7 +301,10 @@ public class I4LParser {
                         char ch = r();
                         if (ch == '(') {
                             final I4LMethod m = new I4LMethod();
-                            m.name = l.remove(l.size() - 1);
+                            Object o = l.get(l.size() - 1);
+                            if (!(o instanceof String))
+                                throw new Exception("Parameter isn't parameter");
+                            m.name = (String) o;
                             m.tags = l;
 
                             parseMethod(m);
@@ -259,18 +313,28 @@ public class I4LParser {
                             break;
                         }
 
+                        if (ch == '<') {
+                            if (!(l.get(l.size() - 1) instanceof String))
+                                throw new Exception("The tag isn't String.");
+                            ArrayList<Object> generics = new ArrayList<>();
+                            parseGenerics(generics);
+                            l.add(new I4LType((String) l.remove(l.size() - 1), generics));
+                            skip(S1);
+                            ch = r();
+                        }
+
                         if (ch == '{') {
                             System.err.println(l);
                             System.err.println(l.isEmpty());
                             System.err.println(l.size());
                             final I4LClass cls = new I4LClass();
                             cls.tags = l;
-                            parseClass(cls.code);
+                            parseClass(cls);
                             code.add(cls);
                             break;
                         }
                         System.err.println(code);
-                        throw new Exception("End " + r() + r() + r() + " - " + l);
+                        throw new Exception("End " + ch + r() + r() + r() + " - " + l);
                     }
                     l.add(s);
                     skip(S1);
@@ -334,7 +398,29 @@ public class I4LParser {
         }
     }
 
-    private void parseClass(final List<Object> code) throws Exception {
+    private int parseArrayLevels() throws Exception {
+        int r = 0;
+        char ch;
+        while (true) {
+            r++;
+            skip(S1);
+            ch = r();
+            if (ch == ']') {
+                skip(S1);
+                ch = r();
+                if (ch == '[')
+                    continue;
+                back(1);
+                return r;
+            }
+            if (ch == ',')
+                continue;
+            throw new Exception("Unknown char: " + ch);
+        }
+    }
+
+    private void parseClass(final I4LClass curCls) throws Exception {
+        final ArrayList<Object> code = curCls.code;
         char ch;
         String s;
         while (true) {
@@ -343,13 +429,17 @@ public class I4LParser {
             if (ch == '}')
                 return;
             back(1);
-            final ArrayList<String> l = new ArrayList<>();
+            final ArrayList<Object> l = new ArrayList<>();
             while (true) {
-                s = readTo(E3);
+                s = readTo(E2);
+                Object o = s;
                 if (s.isEmpty()) {
                     switch (r()) {
                         case ';': {
-                            s = l.get(l.size() - 1);
+                            o = l.get(l.size() - 1);
+                            if (!(o instanceof String))
+                                throw new Exception("Parameter isn't parameter");
+                            s = (String) o;
                             l.remove(l.size() - 1);
                             final I4LNewVar nv = new I4LNewVar();
                             nv.params = l;
@@ -359,7 +449,10 @@ public class I4LParser {
                             break;
                         }
                         case '=': {
-                            s = l.get(l.size() - 1);
+                            o = l.get(l.size() - 1);
+                            if (!(o instanceof String))
+                                throw new Exception("Parameter isn't parameter");
+                            s = (String) o;
                             l.remove(l.size() - 1);
                             skip(S1);
                             //System.out.println("NAME: " + s);
@@ -400,8 +493,11 @@ public class I4LParser {
                             }
                             throw new Exception("Unexpected " + ch);
                         }
-                        case ',':
-                            s = l.get(l.size() - 1);
+                        case ',': {
+                            o = l.get(l.size() - 1);
+                            if (!(o instanceof String))
+                                throw new Exception("Parameter isn't parameter");
+                            s = (String) o;
                             l.remove(l.size() - 1);
                             skip(S1);
                             //System.out.println("NAME: " + s);
@@ -429,13 +525,30 @@ public class I4LParser {
                                     skip(S1);
                                     continue;
                                 }
+                                if (ch == '}')
+                                    if (curCls.tags.contains("enum") && nv.params.isEmpty())
+                                        return;
+                                System.out.println(curCls.tags);
+                                System.out.println(nv.params);
+                                System.out.println(nv.vars);
                                 throw new Exception("Unexpected " + ch);
                             }
                             break;
-
-                        case '(':
-                            s = l.get(l.size() - 1);
+                        }
+                        case '(': {
+                            o = l.get(l.size() - 1);
+                            if (!(o instanceof String))
+                                throw new Exception("Expected parameter name as a String, but found: " + o.getClass().getSimpleName());
+                            s = (String) o; // Take the name
                             l.remove(l.size() - 1);
+
+                            if (s.startsWith("@")) { // Annotation
+                                final I4LCallAnnotation annotation = new I4LCallAnnotation(s);
+                                parseCallAnnotation(annotation);
+                                code.add(annotation);
+                                skip(S1);
+                                continue;
+                            }
 
                             final I4LMethod method = new I4LMethod();
                             method.name = s;
@@ -445,23 +558,127 @@ public class I4LParser {
 
                             code.add(method);
                             break;
-
+                        }
                         case '{':
                             final I4LClass cls = new I4LClass();
                             cls.tags = l;
-                            parseClass(cls.code);
+                            parseClass(cls);
                             code.add(cls);
                             break;
+                        case '/':
+                            final I4LComment c = new I4LComment();
+                            ch = r();
+
+                            if (ch == '/') {
+                                c.comment = readTo(Arrays.asList('\r', '\n'));
+                                code.add(c);
+                                break;
+                            } else if (ch == '*') {
+                                c.single = false;
+                                final StringBuilder b = new StringBuilder();
+                                boolean star = false;
+                                while (true) {
+                                    ch = r();
+                                    if (star)
+                                        if (ch == '/')
+                                            break;
+                                        else {
+                                            b.append('*');
+                                            star = false;
+                                        }
+                                    if (ch == '*') {
+                                        star = true;
+                                        continue;
+                                    }
+                                    b.append(ch);
+                                }
+                                c.comment = b.toString();
+                                code.add(c);
+                                break;
+                            } else
+                                back(1);
+                        case '[':
+                            int lvl = 1;
+                            skip(S1);
+                            ch = r();
+                            while (true) {
+                                if (ch == ']') {
+                                    skip(S1);
+                                    ch = r();
+                                    if (ch == '[') {
+                                        lvl++;
+                                        skip(S1);
+                                        ch = r();
+                                        continue;
+                                    }
+                                    back(1);
+                                    break;
+                                }
+                                if (ch == ',') {
+                                    lvl++;
+                                    skip(S1);
+                                    ch = r();
+                                    continue;
+                                }
+                                throw new Exception("Unknown char: " + ch);
+                            }
+                            o = l.get(l.size() - 1);
+                            if (!(o instanceof String))
+                                throw new Exception("Expected parameter name as a String, but found: " + o.getClass().getSimpleName());
+                            s = (String) o;
+                            l.remove(l.size() - 1);
+                            code.add(new I4LArr(s, lvl));
+                            skip(S1);
+                            continue;
+                        case '<':
+                            o = l.get(l.size() - 1);
+                            if (!(o instanceof String))
+                                throw new Exception("Expected parameter name as a String, but found: " + o.getClass().getSimpleName());
+                            ArrayList<Object> generics = new ArrayList<>();
+                            parseGenerics(generics);
+                            l.add(new I4LType((String) l.remove(l.size() - 1), generics));
+                            skip(S1);
+                            continue;
                         default:
                             back(1);
                             throw new Exception("Unexpected " + r() + ", " + l);
                     }
                     break;
                 }
-                l.add(s);
+                l.add(o);
                 skip(S1);
             }
             //throw new Exception("Unexpected " + ch);
+        }
+    }
+
+    private int parseGenerics(final List<Object> generics) throws Exception {
+        int c = skip(S1);
+        char ch = r();
+        if (ch == '>')
+            return ++c;
+        back(1);
+        while (true) {
+            final String generic = readTo(E1);
+            if (generic.isEmpty())
+                throw new Exception("Generic name can't be empty");
+            c += skip(S1) + 1 + generic.length();
+            ch = r();
+            if (ch == '<') {
+                final ArrayList<Object> subGenerics = new ArrayList<>();
+                parseGenerics(subGenerics);
+                generics.add(new I4LType(generic, subGenerics));
+                c += skip(S1) + 1;
+                ch = r();
+            } else
+                generics.add(generic);
+            if (ch == '>')
+                return c;
+            if (ch == ',') {
+                c += skip(S1);
+                continue;
+            }
+            throw new Exception("Unknown char: " + ch);
         }
     }
 
@@ -537,6 +754,56 @@ public class I4LParser {
         parseCode(method.code);
     }
 
+    private void parseCallAnnotation(final I4LCallAnnotation annotation) throws Exception {
+        char ch;
+        final ArrayList<Object> parameters = new ArrayList<>();
+        annotation.args = parameters;
+        skip(S1);
+        ch = r();
+        if (ch == ')')
+            return;
+        back(1);
+        while (true) {
+            parseAnnotationArgument(parameters);
+            skip(S1);
+            ch = r();
+            if (ch == ')')
+                return;
+            if (ch == ',')
+                continue;
+            throw new Exception("Unknown char: " + ch);
+        }
+    }
+
+    private void parseAnnotationArgument(final ArrayList<Object> parameters) throws Exception {
+        skip(S1);
+        char ch = r();
+        if (ch == '{') {
+            final ArrayList<Object> arr = new ArrayList<>();
+            parameters.add(arr);
+            skip(S1);
+            ch = r();
+            if (ch == '}')
+                return;
+            back(1);
+            while (true) {
+                parseAnnotationArgument(arr);
+                skip(S1);
+                ch = r();
+                if (ch == '}')
+                    return;
+                if (ch == ',')
+                    continue;
+                throw new Exception("Unknown char: " + ch);
+            }
+        }
+        if (ch == '"') {
+            parameters.add(parseString());
+            return;
+        }
+        throw new Exception("Unknown char: " + ch);
+    }
+
     public char backslashChar(final char ch) throws Exception {
         switch (ch) {
             case 'n': return '\n';
@@ -567,7 +834,20 @@ public class I4LParser {
         while (true) {
             ch = r();
             if (ch == '\\') {
-                b.append(backslashChar(r()));
+                ch = r();
+                if (ch == 'u') {
+                    final StringBuilder hex = new StringBuilder();
+                    for (int i = 0; i < 4; i++) {
+                        ch = r();
+                        if (Character.digit(ch, 16) == -1)
+                            throw new Exception("Invalid Unicode escape sequence: \\u" + hex + ch);
+                        hex.append(ch);
+                    }
+                    int codePoint = Integer.parseInt(hex.toString(), 16);
+                    b.append((char) codePoint);
+                    continue;
+                }
+                b.append(backslashChar(ch));
                 continue;
             }
             if (ch == '"')
@@ -612,7 +892,8 @@ public class I4LParser {
         return Integer.parseInt(b.toString());
     }
 
-    public I4LOperation parseOperation() throws Exception {
+    public I4LOperation parseOperation() throws Exception { return parseOperation(true); }
+    public I4LOperation parseOperation(final boolean multiLined) throws Exception {
         skip(S1);
         char ch = r();
         if (ch == '}' || ch == ')' || ch == ';' || ch == ',' || ch == ':' || ch == '|' || ch == '&') {
@@ -667,7 +948,7 @@ public class I4LParser {
         if (E1.contains(ch))
             throw new Exception("Unexpected " + ch);
         back(1);
-        String t = readTo(E4);
+        String t = readTo(E3);
         if (t.equals("case")) {
             final I4LCase c = new I4LCase();
             c.value = parseAdvanced();
@@ -684,11 +965,15 @@ public class I4LParser {
             return k;
         }
 
-        skip(S1);
+        int skipped = skip(S1) + 1;
         ch = r();
         if (!t.isEmpty())
             switch (ch) {
                 case ':':
+                    if (!multiLined) {
+                        back(1);
+                        return new I4LGet(t);
+                    }
                     final I4LMark m = new I4LMark();
                     m.name = t;
                     return m;
@@ -707,12 +992,41 @@ public class I4LParser {
                                 continue;
                             if (ch == ')')
                                 break;
-                            throw new Exception("Unexpected " + ch);
+                            if (ch == ':' && l.size() == 1) {
+                                final I4LForEach fe = new I4LForEach();
+                                fe.params = new ArrayList<>();
+                                Object target = l.get(0);
+                                while (true) {
+                                    if (target instanceof I4LKeyword) {
+                                        fe.params.add(((I4LKeyword) target).name);
+                                        target = ((I4LKeyword) target).operation;
+                                        continue;
+                                    }
+                                    if (target instanceof I4LNewVar) {
+                                        if (((I4LNewVar) target).vars.size() != 1)
+                                            throw new Exception("Can't be used for forEach: " + target);
+                                        fe.params.addAll(((I4LNewVar) target).params);
+                                        final I4LNewVar.Var v = ((I4LNewVar) target).vars.get(0);
+                                        if (v.value != null)
+                                            throw new Exception("It can't have any values! " + v);
+                                        fe.params.add(v.name);
+                                        break;
+                                    }
+                                    throw new Exception("Unknown class " + target.getClass() + " for forEach!");
+                                }
+                                fe.of = parseAdvanced();
+                                skip(S1);
+                                ch = r();
+                                if (ch != ')')
+                                    throw new Exception("Unknown char: " + ch);
+                                return fe;
+                            }
+                            throw new Exception("Unexpected " + t + " / " + l + " / " + ch);
                         }
                     }
                     skip(S1);
                     ch = r();
-                    if (MATH.contains(ch) || COMPARE.contains(ch) || ch == ';' || ch == '=' || ch == ')' || ch == ',' || ch == '|' || ch == '&') {
+                    if (MATH.contains(ch) || COMPARE.contains(ch) || ch == ';' || ch == '=' || ch == ')' || ch == ',' || ch == '|' || ch == '&' || ch == '?' || ch == ':') {
                         back(1);
                         final I4LCall c = new I4LCall();
                         c.target = t;
@@ -855,7 +1169,7 @@ public class I4LParser {
             return k;
         }
         back(1);
-        String t2 = readTo(E4);
+        String t2 = readTo(E1);
         int s = skip(S1);
         if (t2.equals("instanceof")) {
             final I4LInstanceOf iof = new I4LInstanceOf();
@@ -865,6 +1179,13 @@ public class I4LParser {
         }
         ch = r();
         if (ch == ';' || ch == '(' || MATH.contains(ch) || !E1.contains(ch)) {
+            final I4LKeyword k = new I4LKeyword();
+            k.name = t;
+            back(1 + s + t2.length());
+            k.operation = parseAdvanced();
+            return k;
+        }
+        if (ch == '<' || ch == '[') {
             final I4LKeyword k = new I4LKeyword();
             k.name = t;
             back(1 + s + t2.length());
@@ -932,7 +1253,8 @@ public class I4LParser {
     public void parseCode(final List<Object> code) throws Exception {
         while (true) {
             final int bl = line;
-            final I4LOperation o = parseOperation();
+            final I4LOperation o = parseOperation(true);
+            System.out.println(o);
             if (o == null) {
                 final char ch = r();
                 if (ch == '}')
@@ -959,8 +1281,15 @@ public class I4LParser {
                 if (
                         (!(r instanceof I4LSet) || ((I4LSet) r).value == null) &&
                                 (!(r instanceof I4LSetAfter))
-                )
-                    throw new Exception("Mixing with empty! " + r);
+                ) {
+                    if (r instanceof I4LCompare && ((I4LCompare) r).v1 instanceof I4LGet) {
+                        if (r() == '>') {
+                            r = new I4LType(((I4LGet) ((I4LCompare) r).v1).path);
+                        } else
+                            throw new Exception("Mixing with empty! " + r + r());
+                    } else
+                        throw new Exception("Mixing with empty! " + r);
+                }
             } else if (r instanceof I4LCombine) {
                 if (o instanceof I4LGet)
                     if (((I4LGet) o).path.isEmpty())
@@ -978,14 +1307,27 @@ public class I4LParser {
                 s.operation = ((I4LSetAfter) r).operation;
                 s.value = 1;
                 r = s;
-            } else {
+            } else if (r instanceof I4LLambda && (o instanceof I4LOperation))
+                ((I4LLambda) r).operation = o;
+            else if (r instanceof I4LType && o instanceof I4LArrType)
+                ((I4LType) r).arrayLevels = ((I4LArrType) o).arrayLevels;
+            else if (r instanceof I4LType && o instanceof I4LGet) {
+                final I4LNewVar nv = new I4LNewVar();
+                nv.params = new ArrayList<>();
+                nv.params.add(r);
+                nv.vars.add(new I4LNewVar.Var(((I4LGet) o).path, null));
+                r = nv;
+            } else
                 throw new Exception("Unimplemented mixing of the " + r.getClass() + " and " + o.getClass() + " / " + r + " : " + o);
-            }
             if (o instanceof I4LStatement && ((I4LStatement) o).sub)
                 return r;
             skip(S1);
             ch = r();
             if (ch == ';' || ch == ':' || ch == ',' || ch == ')') {
+                if (ch == ',' && r instanceof I4LCompare && ((I4LCompare) r).check.equals("<")) {
+
+                    throw new Exception("est " + r);
+                }
                 back(1);
                 return r;
             }
@@ -1001,6 +1343,18 @@ public class I4LParser {
                 return c;
             }
             if (MATH.contains(ch)) {
+                if (ch == '-') {
+                    if (r() == '>') {
+                        if (r instanceof I4LGet) {
+                            final I4LLambda lambda = new I4LLambda(new ArrayList<>(Collections.singleton(new I4LLambda.Argument(((I4LGet) r).path))));
+                            //lambda.operation = parseAdvanced();
+                            r = lambda;
+                            continue;
+                        }
+                        throw new Exception("Lambda with the start isn't supported: " + r);
+                    }
+                    back(1);
+                }
                 final I4LCombine c = new I4LCombine(ch);
                 ch = r();
                 if (ch == c.operation) {
@@ -1039,7 +1393,14 @@ public class I4LParser {
                     b.append('=');
                 else
                     back(1);
+                if (r instanceof I4LCompare && ((I4LCompare) r).check.equals("<") && ((I4LCompare) r).v1 instanceof I4LGet && ((I4LCompare) r).v2 instanceof I4LGet && b.toString().equals(">")) {
+                    final ArrayList<Object> generics = new ArrayList<>();
+                    generics.add(((I4LGet) ((I4LCompare) r).v2).path);
+                    r = new I4LType(((I4LGet) ((I4LCompare) r).v1).path, generics);
+                    continue;
+                }
                 final I4LCompare c = new I4LCompare();
+                System.out.println(r + " + " + b);
                 c.check = b.toString();
                 c.v1 = r;
                 r = c;
@@ -1062,12 +1423,70 @@ public class I4LParser {
                 c.value = parseAdvanced();
                 return c;
             }
+            if (o instanceof I4LSubArg && ((I4LSubArg) o).value instanceof I4LType) {
+                back(1);
+                final I4LConvert c = new I4LConvert();
+                c.to = ((I4LSubArg) o).value;
+                c.value = parseAdvanced();
+                return c;
+            }
             if (ch == '.') {
                 final I4LSub s = new I4LSub();
                 s.object = r;
                 r = s;
                 continue;
             }
+            if (r instanceof I4LType && o instanceof I4LEmpty && ch == '(') {
+                final List<Object> l = new ArrayList<>();
+                skip(S1);
+                ch = r();
+                if (ch != ')') {
+                    back(1);
+                    while (true) {
+                        l.add(parseAdvanced());
+                        skip(S1);
+                        ch = r();
+                        if (ch == ',')
+                            continue;
+                        if (ch == ')')
+                            return new I4LCall(r, l);
+                        throw new Exception("Unexpected " + ch);
+                    }
+                }
+                return new I4LCall(r, l);
+            }
+            if (r instanceof I4LType && ((I4LType) r).arrayLevels > 0) {
+                back(1);
+                final I4LNewVar nv = new I4LNewVar();
+                nv.params = new ArrayList<>();
+                nv.params.add(r);
+                System.out.println(ch + " / " + nv);
+                while (true) {
+                    final String varName = readTo(E1);
+                    if (varName.isEmpty())
+                        throw new Exception("Var name can't be empty!");
+                    skip(S1);
+                    ch = r();
+                    if (ch == '=') {
+                        nv.vars.add(new I4LNewVar.Var(varName, parseAdvanced()));
+                        skip(S1);
+                        ch = r();
+                        if (ch == ',')
+                            continue;
+                        else if (ch == ';')
+                            return nv;
+                        throw new Exception("Unknown char: " + ch);
+                    } else if (ch == ',') {
+                        nv.vars.add(new I4LNewVar.Var(varName, null));
+                        continue;
+                    } else if (ch == ';') {
+                        nv.vars.add(new I4LNewVar.Var(varName, null));
+                        return nv;
+                    }
+                    throw new Exception("Unknown char: " + ch);
+                }
+            }
+            //throw new Exception("Unknown char: " + ch + " / " + r + " / " + o);
             back(1);
             return o;
         }
@@ -1098,6 +1517,19 @@ public class I4LParser {
                 final char ch2 = r();
                 if (ch2 != ')')
                     throw new Exception("Unexpected " + ch2);
+                if (sub.value instanceof I4LEmpty) {
+                    skip(S1);
+                    if (r() == '-')
+                        if (r() == '>') {
+                            final I4LLambda l = new I4LLambda(new ArrayList<>());
+                            l.operation = parseAdvanced();
+                            return l;
+                        } else
+                            back(2);
+                    else
+                        back(1);
+                    throw new Exception("Unknown char: " + r());
+                }
                 return sub;
             }
             case '-': {
@@ -1123,19 +1555,65 @@ public class I4LParser {
                 else
                     back(1);
                 break;
+            case 'n':
+                if (r() == 'u')
+                    if (r() == 'l')
+                        if (r() == 'l')
+                            if (orContains(r(), S1, MATH)) {
+                                back(1);
+                                return new I4LNull();
+                            } else
+                                back(4);
+                        else
+                            back(3);
+                    else
+                        back(2);
+                else
+                    back(1);
+                break;
         }
         back(1);
-        final String n = readTo(E4);
+        final String n = readTo(E1NoClass);
         final int s = skip(S1);
-        final char ch = r();
-        if (ch == ';' || ch == ')' || ch == ',' || MATH.contains(ch) || COMPARE.contains(ch) || ch == '=') {
+        char ch = r();
+        if (ch == ';' || ch == ')' || ch == ',' || MATH.contains(ch) || COMPARE.contains(ch) || ch == '=' || ch == '?' || ch == ']') {
             back(1);
             if (n.isEmpty())
                 return new I4LEmpty();
             return new I4LGet(n);
         }
+        if (n.isEmpty() && ch == '[')
+            return new I4LArrType(parseArrayLevels());
+        if (!n.isEmpty() && ch == '[') {
+            skip(S1);
+            ch = r();
+            if (ch == ']') {
+                back(1);
+                return new I4LType(n, null, parseArrayLevels());
+            }
+            back(1);
+            I4LSubArr r = new I4LSubArr(new I4LGet(n), parseValue());
+            while (true) {
+                skip(S1);
+                ch = r();
+                if (ch == ',') {
+                    r = new I4LSubArr(r, parseValue());
+                    continue;
+                } else if (ch == ']') {
+                    skip(S1);
+                    if (r() == '[') {
+                        r = new I4LSubArr(r, parseValue());
+                        continue;
+                    }
+                    back(1);
+                    return r;
+                }
+                throw new Exception("Unknown character: " + ch);
+            }
+        }
+        System.out.println("Parse: " + n + ch);
         back(n.length() + s + 1);
-        final I4LOperation o = parseOperation();
+        final I4LOperation o = parseOperation(false);
         if (o == null)
             throw new Exception("NULL");
         return o;
