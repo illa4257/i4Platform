@@ -14,9 +14,7 @@ public abstract class Point implements IDestructor {
 
     private final ConcurrentLinkedQueue<Runnable> subscribed = new ConcurrentLinkedQueue<>();
 
-    public void silentReset() {
-        ci = cf = false;
-    }
+    public void silentReset() { ci = cf = false; }
 
     public void reset() {
         ci = cf = false;

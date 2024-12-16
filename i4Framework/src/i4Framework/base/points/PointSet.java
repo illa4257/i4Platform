@@ -1,15 +1,11 @@
 package i4Framework.base.points;
 
 public class PointSet extends Point {
+    final Object locker = new Object();
     Point point = null;
 
-    public PointSet() { this(PointAttach.ZERO); }
-
-    public PointSet(final Point point) {
-        //this.point = point;
-        //point.subscribe(this::fireAll);
-        set(point);
-    }
+    public PointSet() { set(PointAttach.ZERO); }
+    public PointSet(final Point point) { set(point); }
 
     @Override
     protected float calc() {
@@ -19,26 +15,19 @@ public class PointSet extends Point {
         return p.calc();
     }
 
-    /*@Override
-    public void reset() {
-        final Point p = point;
-        if (p != null)
-            p.reset();
-        else
-            super.reset();
-    }*/
-
-    public Point get() { return point; }
+    public Point get() { synchronized(locker) { return point; } }
 
     public void set(Point newPoint) {
-        final Point o = point;
-        if (o != null)
-            o.unsubscribe(this::reset);
-        if (newPoint == null)
-            newPoint = PointAttach.ZERO;
-        point = newPoint;
-        if (getLinkNumber() > 0)
-            newPoint.subscribe(this::reset);
+        synchronized (locker) {
+            final Point o = point;
+            if (o != null)
+                o.unsubscribe(this::reset);
+            if (newPoint == null)
+                newPoint = PointAttach.ZERO;
+            point = newPoint;
+            if (getLinkNumber() > 0)
+                newPoint.subscribe(this::reset);
+        }
         reset();
     }
 
