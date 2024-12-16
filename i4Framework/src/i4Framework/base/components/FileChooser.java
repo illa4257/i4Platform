@@ -6,8 +6,6 @@ import i4Framework.base.HorizontalAlign;
 import i4Framework.base.events.input.ActionEvent;
 import i4Framework.base.points.PointAttach;
 
-import i4Framework.base.events.components.RepaintEvent;
-
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 
@@ -26,6 +24,8 @@ public class FileChooser extends Window {
     public final ScrollPane pane = new ScrollPane();
     public final Container container = new Panel();
 
+    private final Button back = new Button();
+
     public FileChooser(final Framework framework) {
         this.framework = framework;
         frameworkWindow = framework.newWindow(this);
@@ -33,7 +33,6 @@ public class FileChooser extends Window {
         //setSize(600, 640);
         center();
 
-        final Button back = new Button();
         back.setText("^");
         back.setX(8);
         back.setY(8);
@@ -124,11 +123,16 @@ public class FileChooser extends Window {
     }
 
     private void resize() {
-        //int y = container.components.size() * ITEM_HEIGHT;
         int y = container.components.isEmpty() ? 0 : container.components.size() * container.components.peek().height.calcInt();
-        container.setEndX(y > pane.height.calcInt() ? new PointAttach(-pane.vBar.width.calcFloat(), pane.width) : pane.width);
+        container.setEndX(new PointAttach(-pane.vBar.width.calcFloat(), pane.width));
         container.setHeight(y);
         pane.setScroll(0, 0);
+
+        invokeLater(() -> {
+            //repaint();
+            pane.repaint();
+            back.repaint();
+        });
     }
 
     public void start() {
