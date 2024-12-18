@@ -49,6 +49,10 @@ public class Color {
 
     //public void bind() { glColor4f(red, green, blue, alpha); }
 
+    public int toARGB() {
+        return Math.round(alpha * 255) << 24 | Math.round(red * 255) << 16 | Math.round(green * 255) << 8 | Math.round(blue * 255);
+    }
+
     public java.awt.Color toAwtColor() {
         return new java.awt.Color(
                 Math.round(red * 255),
