@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.view.ViewTreeObserver;
 import i4Framework.base.Framework;
 import i4Framework.base.FrameworkWindow;
+import i4Framework.base.components.Component;
+import i4Framework.base.components.Container;
 import i4Framework.base.components.Window;
 import i4Framework.base.events.VisibleEvent;
 import i4Framework.base.events.components.AddComponentEvent;
@@ -62,6 +64,10 @@ public class AndroidWindow implements FrameworkWindow {
                                             w.setSize(a.root.getWidth(), a.root.getHeight());
                                         }
                                     });
+                                    framework.uiHandler.post(() -> {
+                                        for (final Component c : w)
+                                            a.root.addView(new AndroidView(c, framework.context));
+                                    });
                                 }
                             }
                             framework.result = null;
@@ -76,7 +82,7 @@ public class AndroidWindow implements FrameworkWindow {
                 }).start();
             }
         });
-        w.addEventListener(AddComponentEvent.class, e -> {
+        w.addDirectEventListener(AddComponentEvent.class, e -> {
             synchronized (w.getLocker()) {
                 if (activity == null)
                     return;

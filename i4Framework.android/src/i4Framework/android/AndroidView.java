@@ -2,46 +2,47 @@ package i4Framework.android;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import i4Framework.base.components.Component;
+import i4Framework.base.components.Container;
+import i4Framework.base.events.components.AddComponentEvent;
+import i4Framework.base.events.components.RecalculateEvent;
 
-public class AndroidView extends View {
+public class AndroidView extends ViewGroup {
     public final Component component;
+
+    @Override protected void onLayout(boolean changed, int l, int t, int r, int b) {}
 
     public AndroidView(final Component component, Context context) {
         super(context);
+        setWillNotDraw(false);
         this.component = component;
-        final ViewGroup.MarginLayoutParams l = new ViewGroup.MarginLayoutParams(component.width.calcInt(), component.height.calcInt());
-        l.leftMargin = component.startX.calcInt();
-        l.topMargin = component.startY.calcInt();
-        setLayoutParams(l);
-        component.startX.subscribe(() -> {
-            l.leftMargin = component.startX.calcInt();
-            setLayoutParams(l);
+        {
+            final LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(component.width.calcInt(), component.height.calcInt());
+            lp.leftMargin = component.startX.calcInt();
+            lp.topMargin = component.startY.calcInt();
+            setLayoutParams(lp);
+        }
+        layout(component.startX.calcInt(), component.startY.calcInt(), component.endX.calcInt(), component.endY.calcInt());
+        component.addEventListener(RecalculateEvent.class, e -> {
+            layout(component.startX.calcInt(), component.startY.calcInt(), component.endX.calcInt(), component.endY.calcInt());
         });
-        component.startY.subscribe(() -> {
-            l.topMargin = component.startY.calcInt();
-            setLayoutParams(l);
-        });
-        component.width.subscribe(() -> {
-            l.width = component.width.calcInt();
-            setLayoutParams(l);
-        });
-        component.height.subscribe(() -> {
-            l.height = component.height.calcInt();
-            setLayoutParams(l);
-        });
+        if (component instanceof Container) {
+            component.addDirectEventListener(AddComponentEvent.class, e -> {
+                addView(new AndroidView(e.child, context));
+            });
+            for (final Component c : (Container) component)
+                addView(new AndroidView(c, context));
+        }
     }
+
+    protected final AndroidGContext context = new AndroidGContext();
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        final Paint p = new Paint();
-        p.setColor(Color.BLUE);
-        p.setStyle(Paint.Style.FILL);
-        canvas.drawRect(0, 0, component.width.calcFloat(), component.height.calcFloat(), p);
+        context.canvas = canvas;
+        component.paint(context);
     }
 }
