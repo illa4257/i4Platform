@@ -58,12 +58,16 @@ public class Component implements IDestructor {
 
     @Override
     public void onConstruct() {
+        startX.subscribe(listeners[0]);
+        startY.subscribe(listeners[0]);
         width.subscribe(listeners[0]);
         height.subscribe(listeners[0]);
     }
 
     @Override
     public void onDestruct() {
+        startX.unsubscribe(listeners[0]);
+        startY.unsubscribe(listeners[0]);
         width.unsubscribe(listeners[0]);
         height.unsubscribe(listeners[0]);
     }
