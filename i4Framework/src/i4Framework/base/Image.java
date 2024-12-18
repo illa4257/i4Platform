@@ -1,6 +1,7 @@
 package i4Framework.base;
 
 import java.awt.image.BufferedImage;
+import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
@@ -63,7 +64,7 @@ public class Image implements AutoCloseable {
         return bufferedImage;
     }
 
-    public final ConcurrentHashMap<Object, AutoCloseable> imageMap = new ConcurrentHashMap<>();
+    public final ConcurrentHashMap<Object, Object> imageMap = new ConcurrentHashMap<>();
 
     @Override
     public void close() throws Exception {
@@ -73,9 +74,13 @@ public class Image implements AutoCloseable {
                 byteBuffer = null;
             }
         }
-        final Iterator<Map.Entry<Object, AutoCloseable>> cache = imageMap.entrySet().iterator();
+        final Iterator<Map.Entry<Object, Object>> cache = imageMap.entrySet().iterator();
         while (cache.hasNext()) {
-            cache.next().getValue().close();
+            final Object v = cache.next().getValue();
+            if (v instanceof Closeable)
+                ((Closeable) v).close();
+            else if (v instanceof AutoCloseable)
+                ((AutoCloseable) v).close();
             cache.remove();
         }
     }
