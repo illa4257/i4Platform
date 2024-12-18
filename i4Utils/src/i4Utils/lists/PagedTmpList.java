@@ -50,7 +50,7 @@ public class PagedTmpList<T> implements Iterable<T> {
 
     public void nextPage() {
         synchronized (locker) {
-            if (iter != null)
+            if ((iter != null && iter.array[iter.i] != null) || page.i == 0)
                 return;
             iter = page;
             iter.reset();
@@ -94,5 +94,26 @@ public class PagedTmpList<T> implements Iterable<T> {
                 return PagedTmpList.this.next();
             }
         };
+    }
+
+    @Override
+    public String toString() {
+        Iterator<T> iter = iterator();
+        if (!iter.hasNext()) {
+            return "[]";
+        } else {
+            final StringBuilder b = new StringBuilder();
+            b.append('[');
+
+            while(true) {
+                final T value = iter.next();
+                b.append(value == this ? "(this Collection)" : value);
+
+                if (!iter.hasNext())
+                    return b.append(']').toString();
+
+                b.append(',').append(' ');
+            }
+        }
     }
 }
