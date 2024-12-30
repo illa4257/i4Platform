@@ -1,10 +1,10 @@
-package i4Framework.swing;
+package illa4257.i4Framework.swing;
 
-import i4Framework.base.Framework;
-import i4Framework.base.FrameworkWindow;
-import i4Framework.base.components.Component;
-import i4Framework.base.components.Window;
-import i4Framework.swing.components.SwingFrame;
+import illa4257.i4Framework.base.Framework;
+import illa4257.i4Framework.base.FrameworkWindow;
+import illa4257.i4Framework.base.components.Component;
+import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.swing.components.SwingWindow;
 
 import javax.swing.*;
 import java.awt.*;
@@ -43,31 +43,20 @@ public class SwingFramework extends Framework {
 
     private static long last = System.currentTimeMillis();
 
-    private static final ConcurrentLinkedQueue<SwingFrame> frames = new ConcurrentLinkedQueue<>();
-    public static void add(final SwingFrame frame) {
+    private static final ConcurrentLinkedQueue<SwingWindow> frames = new ConcurrentLinkedQueue<>();
+    public static void add(final SwingWindow frame) {
         if (frame == null)
             return;
         synchronized (frames) {
             if (frames.add(frame) && frames.size() == 1) {
-                /*timer = new Timer(16, actionEvent -> {
-                    for (final SwingFrame w : frames)
-                        w.window.invokeAll();
-                    final long nt = System.currentTimeMillis();
-                    final int d = Math.max((int) (nt - last), 1);
-                    timer.setInitialDelay(d);
-                    timer.restart();
-                });
-                timer.setRepeats(false);
-                timer.start();*/
                 sw = new SwingWorker<Object, Object>() {
                     @Override
                     protected Object doInBackground() throws Exception {
                         while (!isCancelled()) {
-                            for (final SwingFrame w : frames)
+                            for (final SwingWindow w : frames)
                                 w.window.invokeAll();
                             final long nt = System.currentTimeMillis();
                             final int d = (int) ((nt - last));
-                            System.out.println("Sleep " + (16 - d));
                             last = nt;
                             Thread.sleep(d >= 16 ? 1 : 16 - d);
                         }
@@ -80,7 +69,7 @@ public class SwingFramework extends Framework {
         }
     }
 
-    public static void remove(final SwingFrame frame) {
+    public static void remove(final SwingWindow frame) {
         if (frame == null)
             return;
         synchronized (frames) {
@@ -94,5 +83,5 @@ public class SwingFramework extends Framework {
     }
 
     @Override public boolean isUIThread(final Component component) { return SwingUtilities.isEventDispatchThread(); }
-    @Override public FrameworkWindow newWindow(final Window window) { return new SwingFrame(window); }
+    @Override public FrameworkWindow newWindow(final Window window) { return new SwingWindow(window); }
 }

@@ -1,11 +1,10 @@
-package i4Framework.swing.components;
+package illa4257.i4Framework.swing.components;
 
-import i4Framework.base.EventListener;
-import i4Framework.base.components.Component;
-import i4Framework.base.components.Container;
-import i4Framework.base.events.components.AddComponentEvent;
-import i4Framework.base.events.components.RemoveComponentEvent;
-import i4Framework.base.events.components.RepaintEvent;
+import illa4257.i4Framework.base.EventListener;
+import illa4257.i4Framework.base.components.Component;
+import illa4257.i4Framework.base.components.Container;
+import illa4257.i4Framework.base.events.components.AddComponentEvent;
+import illa4257.i4Framework.base.events.components.RemoveComponentEvent;
 
 public interface ISwingComponent {
     Component getComponent();
@@ -18,10 +17,15 @@ public interface ISwingComponent {
         return null;
     }
 
+    @SuppressWarnings("rawtypes")
     static EventListener[] registerContainer(final java.awt.Container t, Container c) {
         return new EventListener[] {
             c.addEventListener(AddComponentEvent.class, e -> {
-                t.add(new SwingComponent(e.child));
+                if (getComponent(t, e.child) != null)
+                    return;
+                final SwingComponent co = new SwingComponent(e.child);
+                t.add(co);
+                co.repaint();
             }),
             c.addEventListener(RemoveComponentEvent.class, e -> {
                 final SwingComponent co = getComponent(t, e.child);

@@ -1,9 +1,9 @@
-package i4Framework.swing;
+package illa4257.i4Framework.swing;
 
-import i4Framework.base.Color;
-import i4Framework.base.Context;
-import i4Framework.base.Image;
-import i4Framework.base.Vector2D;
+import illa4257.i4Framework.base.Color;
+import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.Image;
+import illa4257.i4Framework.base.Vector2D;
 
 import java.awt.*;
 
@@ -28,7 +28,11 @@ public class SwingContext implements Context {
     }
 
     @Override
-    public void setColor(final Color color) { graphics.setColor(color.toAwtColor()); }
+    public void setColor(final Color color) {
+        if (color == null)
+            return;
+        graphics.setColor(color.toAwtColor());
+    }
 
     @Override
     public void drawRect(final float x, final float y, final float w, final float h) {

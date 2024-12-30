@@ -1,40 +1,38 @@
-package i4Framework.swing.components;
+package illa4257.i4Framework.swing.components;
 
-import i4Framework.base.EventListener;
-import i4Framework.base.Framework;
-import i4Framework.base.FrameworkWindow;
-import i4Framework.base.components.Component;
-import i4Framework.base.components.Window;
-import i4Framework.base.events.components.ChangePointEvent;
-import i4Framework.base.events.VisibleEvent;
-import i4Framework.base.events.components.ChangeTextEvent;
-import i4Framework.base.events.components.RepaintEvent;
-import i4Framework.base.events.window.CenterWindowEvent;
-import i4Framework.swing.SwingContext;
-import i4Framework.swing.SwingFramework;
+import illa4257.i4Framework.base.EventListener;
+import illa4257.i4Framework.base.Framework;
+import illa4257.i4Framework.base.FrameworkWindow;
+import illa4257.i4Framework.base.components.Component;
+import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.base.events.components.*;
+import illa4257.i4Framework.base.events.input.MouseButton;
+import illa4257.i4Framework.base.events.input.MouseDownEvent;
+import illa4257.i4Framework.base.events.input.MouseUpEvent;
+import illa4257.i4Framework.base.events.window.CenterWindowEvent;
+import illa4257.i4Framework.swing.SwingContext;
+import illa4257.i4Framework.swing.SwingFramework;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 
-public class SwingFrame extends JFrame implements ISwingComponent, FrameworkWindow {
+public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWindow {
     public final Window window;
     public final Container root;
     public EventListener[] l;
 
-    public SwingFrame() { this(null); }
-    public SwingFrame(final Window window) {
+    public SwingWindow() { this(null); }
+    public SwingWindow(final Window window) {
         this.window = window == null ? new Window() : window;
         setContentPane(root = new JPanel() {
             @Override
             protected void paintComponent(Graphics graphics) {
                 super.paintComponent(graphics);
-                SwingFrame.this.window.paint(new SwingContext((Graphics2D) graphics));
+                SwingWindow.this.window.paint(new SwingContext((Graphics2D) graphics));
             }
         });
+        root.setLayout(null);
         this.window.addEventListener(RepaintEvent.class, e -> root.repaint());
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
@@ -47,14 +45,29 @@ public class SwingFrame extends JFrame implements ISwingComponent, FrameworkWind
             public void componentResized(ComponentEvent e) {
                 if (!isVisible())
                     return;
-                SwingFrame.this.window.setSize(root.getWidth(), root.getHeight());
+                SwingWindow.this.window.setSize(root.getWidth(), root.getHeight());
             }
         });
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent mouseEvent) {
+                SwingWindow.this.window.fire(new MouseDownEvent(mouseEvent.getX(), mouseEvent.getY(), MouseButton.fromCode(mouseEvent.getButton() - 1)));
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent mouseEvent) {
+                SwingWindow.this.window.fire(new MouseUpEvent(mouseEvent.getX(), mouseEvent.getY(), MouseButton.fromCode(mouseEvent.getButton() - 1)));
+            }
+        });
+        for (final Component co : this.window) {
+            final SwingComponent c = new SwingComponent(co);
+            add(c);
+            c.repaint();
+        }
         setVisible(this.window.isVisible());
         setTitle(this.window.getTitle());
         l = ISwingComponent.registerContainer(root, this.window);
         registerListeners();
-        SwingFramework.add(this);
     }
 
     @Override public Component getComponent() { return window; }
@@ -62,11 +75,22 @@ public class SwingFrame extends JFrame implements ISwingComponent, FrameworkWind
     @Override public Window getWindow() { return window; }
 
     @Override
-    public void setVisible(final boolean b) {
+    public void pack() {
         setSize(window.width.calcInt(), window.height.calcInt());
+        super.pack();
+    }
+
+    @Override
+    public void setVisible(final boolean b) {
         if (isVisible() != b) {
-            if (b)
+            if (b) {
+                window.link();
                 pack();
+                SwingFramework.add(this);
+            } else {
+                window.unlink();
+                SwingFramework.remove(this);
+            }
             super.setVisible(b);
         }
         if (window.isVisible() != b) {
@@ -90,12 +114,9 @@ public class SwingFrame extends JFrame implements ISwingComponent, FrameworkWind
 
     private void registerListeners() {
         window.addDirectEventListener(ChangeTextEvent.class, e -> setTitle(e.newValue));
-        window.addDirectEventListener(ChangePointEvent.class, e -> setSize(window.width.calcInt(), window.height.calcInt()));
+        window.addEventListener(RecalculateEvent.class, e -> setSize(window.width.calcInt(), window.height.calcInt()));
         window.addEventListener(RepaintEvent.class, e -> repaint());
-        window.addDirectEventListener(CenterWindowEvent.class, event -> {
-            pack();
-            setLocationRelativeTo(null);
-        });
+        window.addEventListener(CenterWindowEvent.class, event -> setLocationRelativeTo(null));
         window.addDirectEventListener(VisibleEvent.class, e -> {
             if (isVisible() != e.value)
                 setVisible(e.value);
@@ -105,7 +126,6 @@ public class SwingFrame extends JFrame implements ISwingComponent, FrameworkWind
     @Override
     public void dispose() {
         super.dispose();
-        SwingFramework.remove(this);
         for (final EventListener li : l)
             window.removeEventListener(li);
     }
