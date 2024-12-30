@@ -1,15 +1,13 @@
-package i4Framework.android;
+package illa4257.i4Framework.android;
 
 import android.content.Intent;
 import android.view.ViewTreeObserver;
-import i4Framework.base.Framework;
-import i4Framework.base.FrameworkWindow;
-import i4Framework.base.components.Component;
-import i4Framework.base.components.Container;
-import i4Framework.base.components.Window;
-import i4Framework.base.events.VisibleEvent;
-import i4Framework.base.events.components.AddComponentEvent;
-import i4Framework.base.points.PointAttach;
+import illa4257.i4Framework.base.Framework;
+import illa4257.i4Framework.base.FrameworkWindow;
+import illa4257.i4Framework.base.components.Component;
+import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.base.events.components.VisibleEvent;
+import illa4257.i4Framework.base.events.components.AddComponentEvent;
 
 import java.util.concurrent.ConcurrentHashMap;
 

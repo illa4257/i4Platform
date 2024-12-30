@@ -1,7 +1,7 @@
-package i4Framework.android;
+package illa4257.i4Framework.android;
 
 import android.graphics.Bitmap;
-import i4Framework.base.Image;
+import illa4257.i4Framework.base.Image;
 
 public class AndroidUtils {
     public static Bitmap toBitmap(final Image image) {

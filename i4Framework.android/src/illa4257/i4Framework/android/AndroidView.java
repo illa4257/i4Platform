@@ -1,13 +1,13 @@
-package i4Framework.android;
+package illa4257.i4Framework.android;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import i4Framework.base.components.Component;
-import i4Framework.base.components.Container;
-import i4Framework.base.events.components.AddComponentEvent;
-import i4Framework.base.events.components.RecalculateEvent;
+import illa4257.i4Framework.base.components.Component;
+import illa4257.i4Framework.base.components.Container;
+import illa4257.i4Framework.base.events.components.AddComponentEvent;
+import illa4257.i4Framework.base.events.components.RecalculateEvent;
 
 public class AndroidView extends ViewGroup {
     public final Component component;

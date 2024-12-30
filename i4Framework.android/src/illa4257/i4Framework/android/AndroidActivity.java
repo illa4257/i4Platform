@@ -1,4 +1,4 @@
-package i4Framework.android;
+package illa4257.i4Framework.android;
 
 import android.app.Activity;
 import android.content.Intent;

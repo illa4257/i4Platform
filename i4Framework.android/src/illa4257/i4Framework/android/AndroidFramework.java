@@ -1,16 +1,14 @@
-package i4Framework.android;
+package illa4257.i4Framework.android;
 
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
-import android.os.Looper;
 import android.view.Choreographer;
-import i4Framework.base.Framework;
-import i4Framework.base.FrameworkWindow;
-import i4Framework.base.components.Component;
-import i4Framework.base.components.Window;
+import illa4257.i4Framework.base.Framework;
+import illa4257.i4Framework.base.FrameworkWindow;
+import illa4257.i4Framework.base.components.Component;
+import illa4257.i4Framework.base.components.Window;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class AndroidFramework extends Framework {
