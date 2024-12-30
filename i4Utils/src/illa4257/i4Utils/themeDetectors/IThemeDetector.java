@@ -1,6 +1,6 @@
-package i4Utils.themeDetectors;
+package illa4257.i4Utils.themeDetectors;
 
-import i4Utils.OS;
+import illa4257.i4Utils.OS;
 
 /**
  * I'll move {@link i4Utils.themeDetectors} to {@link i4Framework}.

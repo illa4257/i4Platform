@@ -1,7 +1,7 @@
-package i4Utils.web;
+package illa4257.i4Utils.web;
 
-import i4Utils.IO;
-import i4Utils.SyncVar;
+import illa4257.i4Utils.IO;
+import illa4257.i4Utils.SyncVar;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class WebStream implements AutoCloseable {
     private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
@@ -35,6 +36,8 @@ public class WebStream implements AutoCloseable {
     }
 
     public void write(final byte[] bytes) throws IOException {
+        System.out.println(outputStream);
+        System.out.println(Arrays.toString(bytes));
         outputStream.write(bytes);
     }
 

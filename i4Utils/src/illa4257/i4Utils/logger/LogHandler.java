@@ -1,4 +1,4 @@
-package i4Utils.logger;
+package illa4257.i4Utils.logger;
 
 public interface LogHandler {
     void log(final Level level, final String prefix, final String message);

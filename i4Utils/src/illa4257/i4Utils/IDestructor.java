@@ -1,7 +1,7 @@
-package i4Utils;
+package illa4257.i4Utils;
 
-import i4Utils.logger.Level;
-import i4Utils.logger.i4Logger;
+import illa4257.i4Utils.logger.Level;
+import illa4257.i4Utils.logger.i4Logger;
 
 public interface IDestructor {
     int getLinkNumber();

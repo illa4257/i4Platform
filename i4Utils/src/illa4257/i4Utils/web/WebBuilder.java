@@ -1,8 +1,8 @@
-package i4Utils.web;
+package illa4257.i4Utils.web;
 
-import i4Utils.lists.MutableCharArray;
-import i4Utils.Str;
-import i4Utils.SyncVar;
+import illa4257.i4Utils.lists.MutableCharArray;
+import illa4257.i4Utils.Str;
+import illa4257.i4Utils.SyncVar;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
@@ -32,7 +32,15 @@ public class WebBuilder {
     public WebSocket open(final String method, final String uri) throws IOException { return open(method, new i4URI(uri), maxRedirects.get()); }
     public WebSocket open(final String method, final i4URI uri) throws IOException { return open(method, uri, maxRedirects.get()); }
 
-    public WebSocket open(String method, final i4URI uri, final int maxRedirects) throws IOException {
+    public WebSocket open(final String method, final i4URI uri, final int maxRedirects) throws IOException {
+        return send(method, uri, null, maxRedirects);
+    }
+
+    public WebSocket send(final String method, final i4URI uri, final byte[] data) throws IOException {
+        return send(method, uri, data, maxRedirects.get());
+    }
+
+    public WebSocket send(String method, final i4URI uri, final byte[] data, final int maxRedirects) throws IOException {
         if (isEmpty(method))
             throw new IllegalArgumentException("Method cannot be null or empty");
         method = method.toUpperCase();
@@ -91,13 +99,18 @@ public class WebBuilder {
             if (host)
                 s.write("Host: " + uri.domain + (uri.port < 0 || (isSecure && uri.port == 443) || (!isSecure && uri.port == 80) ? "" : ':' + uri.port) + "\r\n");
             if (contentLength)
-                s.write("Content-Length: 0\r\n");
+                s.write("Content-Length: " + (data != null ? data.length : 0) + "\r\n");
             if (connection)
                 s.write("Connection: closed\r\n");
         }
 
         s.write("\r\n");
         s.flush();
+
+        if (data != null) {
+            s.write(data);
+            s.flush();
+        }
 
         if (followRedirects.get()) {
             final WebSocket sock = new WebSocket(s, false);

@@ -1,4 +1,6 @@
-package i4Utils;
+package illa4257.i4Utils;
+
+import java.util.Objects;
 
 public class SyncVar<T> {
     public final Object locker = new Object();
@@ -16,6 +18,15 @@ public class SyncVar<T> {
         synchronized (locker) {
             if (v == null)
                 v = newValue;
+        }
+    }
+
+    public boolean setIfNotEquals(final T newValue) {
+        synchronized (locker) {
+            if (Objects.equals(v, newValue))
+                return false;
+            v = newValue;
+            return true;
         }
     }
 

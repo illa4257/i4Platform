@@ -1,7 +1,7 @@
-package i4Utils.themeDetectors;
+package illa4257.i4Utils.themeDetectors;
 
-import i4Utils.OS;
-import i4Utils.logger.i4Logger;
+import illa4257.i4Utils.OS;
+import illa4257.i4Utils.logger.i4Logger;
 
 import java.util.Scanner;
 

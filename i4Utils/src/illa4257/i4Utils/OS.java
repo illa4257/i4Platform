@@ -1,7 +1,7 @@
-package i4Utils;
+package illa4257.i4Utils;
 
-import i4Utils.themeDetectors.DBusThemeDetector;
-import i4Utils.themeDetectors.IThemeDetector;
+import illa4257.i4Utils.themeDetectors.DBusThemeDetector;
+import illa4257.i4Utils.themeDetectors.IThemeDetector;
 
 import java.util.ArrayList;
 

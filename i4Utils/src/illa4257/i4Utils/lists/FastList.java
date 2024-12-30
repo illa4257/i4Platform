@@ -1,6 +1,6 @@
-package i4Utils.lists;
+package illa4257.i4Utils.lists;
 
-import i4Utils.SyncVar;
+import illa4257.i4Utils.SyncVar;
 
 import java.lang.reflect.Array;
 import java.util.AbstractList;
