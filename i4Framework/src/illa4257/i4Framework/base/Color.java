@@ -1,8 +1,8 @@
 package illa4257.i4Framework.base;
 
 public class Color {
-    public static Color repeat3(final float value) { return new Color(value, value, value); }
     public static Color repeat3(final int value) { return new Color(value, value, value); }
+    public static Color repeat3(final float value) { return new Color(value, value, value); }
 
     public static final Color
                 WHITE = repeat3(1f),
@@ -47,7 +47,10 @@ public class Color {
 
     public Color withAlpha(final float newAlpha) { return new Color(red, green, blue, newAlpha); }
 
-    //public void bind() { glColor4f(red, green, blue, alpha); }
+    public int redInt() { return Math.round(red * 255); }
+    public int greenInt() { return Math.round(green * 255); }
+    public int blueInt() { return Math.round(blue * 255); }
+    public int alphaInt() { return Math.round(alpha * 255); }
 
     public int toARGB() {
         return Math.round(alpha * 255) << 24 | Math.round(red * 255) << 16 | Math.round(green * 255) << 8 | Math.round(blue * 255);
@@ -60,5 +63,19 @@ public class Color {
                 Math.round(blue * 255),
                 Math.round(alpha * 255)
         );
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (o instanceof Color) {
+            final Color c = (Color) o;
+            return red == c.red && green == c.green && blue == c.blue && alpha == c.alpha;
+        }
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return "Color{red=" + redInt() + ", green=" + greenInt() + ", blue=" + blueInt() + ", alpha=" + alphaInt() + "}";
     }
 }
