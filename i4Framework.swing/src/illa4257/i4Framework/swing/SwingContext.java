@@ -47,7 +47,8 @@ public class SwingContext implements Context {
 
     @Override
     public void drawString(final char[] str, final float x, final float y) {
-        graphics.drawChars(str, 0, str.length, (int) x, (int) y);
+        final FontMetrics metrics = graphics.getFontMetrics();
+        graphics.drawChars(str, 0, str.length, (int) x, (int) y + metrics.getLeading() + metrics.getAscent());
     }
 
     @Override
