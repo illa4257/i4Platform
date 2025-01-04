@@ -23,4 +23,6 @@ public abstract class Framework {
     public abstract boolean isUIThread(final Component component);
 
     public abstract FrameworkWindow newWindow(final Window window);
+
+    public void dispose() {}
 }
