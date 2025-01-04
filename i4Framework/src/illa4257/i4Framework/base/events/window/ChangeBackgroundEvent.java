@@ -4,7 +4,7 @@ import illa4257.i4Framework.base.Color;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.events.SingleEvent;
 
-public class ChangeBackgroundEvent extends SingleEvent {
+public class ChangeBackgroundEvent implements SingleEvent {
     public final Component component;
     public final Color newColor;
 

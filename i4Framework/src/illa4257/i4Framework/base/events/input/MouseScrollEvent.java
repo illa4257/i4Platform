@@ -2,7 +2,7 @@ package illa4257.i4Framework.base.events.input;
 
 import illa4257.i4Framework.base.events.Event;
 
-public class MouseScrollEvent extends Event {
+public class MouseScrollEvent implements Event {
     public final int x, y, localX, localY, scroll;
 
     public MouseScrollEvent(final int x, final int y, final int unitsToScroll) {

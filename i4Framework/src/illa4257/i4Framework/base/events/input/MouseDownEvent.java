@@ -2,7 +2,7 @@ package illa4257.i4Framework.base.events.input;
 
 import illa4257.i4Framework.base.events.Event;
 
-public class MouseDownEvent extends Event {
+public class MouseDownEvent implements Event {
     public final int x, y, localX, localY;
     public final MouseButton button;
 
