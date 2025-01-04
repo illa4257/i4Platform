@@ -8,7 +8,7 @@ import illa4257.i4Framework.base.events.window.ChangeBackgroundEvent;
 import illa4257.i4Utils.SyncVar;
 
 public class Window extends Container {
-    private Color background = new Color(238, 238, 238);
+    private final SyncVar<Color> background = new SyncVar<>(Color.repeat3(238));
     private final SyncVar<String> title = new SyncVar<>();
 
     public Window() { super(); visible = false; }
@@ -16,16 +16,12 @@ public class Window extends Container {
     public void center() { fire(new CenterWindowEvent(this)); }
 
     public void setBackground(final Color newColor) {
-        synchronized (locker) {
-            background = newColor;
-        }
+        background.set(newColor);
         fire(new ChangeBackgroundEvent(this, newColor));
     }
 
     public Color getBackground() {
-        synchronized (locker) {
-            return background;
-        }
+        return background.get();
     }
 
     public void setTitle(final String newTitle) {
@@ -38,11 +34,7 @@ public class Window extends Container {
 
     @Override
     public void paint(Context context) {
-        synchronized (locker) {
-            if (background == null)
-                return;
-            context.setColor(background);
-        }
+        context.setColor(background.get());
         context.drawRect(0, 0, width.calcFloat(), height.calcFloat());
     }
 }

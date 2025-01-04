@@ -54,8 +54,13 @@ public class Container extends Component implements Iterable<Component> {
     }
 
     public final void paintComponents(final Context ctx) {
-        for (final Component component : components)
-            component.paint(ctx);
+        for (final Component component : components) {
+            final Context c = ctx.sub(component.startX.calcFloat(), component.startY.calcFloat(), component.width.calcFloat(), component.height.calcFloat());
+            component.paint(c);
+            if (component instanceof Container)
+                ((Container) component).paintComponents(c);
+            c.dispose();
+        }
     }
 
     @Override public Iterator<Component> iterator() { return components.iterator(); }

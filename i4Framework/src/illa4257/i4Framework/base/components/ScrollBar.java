@@ -9,7 +9,7 @@ import illa4257.i4Framework.base.events.input.MouseScrollEvent;
 import illa4257.i4Framework.base.events.components.RepaintEvent;
 
 public class ScrollBar extends Component {
-    public static class ScrollEvent extends Event {
+    public static class ScrollEvent implements Event {
         public final int oldValue, newValue, delta;
 
         public ScrollEvent(final int oldValue, final int newValue) {
