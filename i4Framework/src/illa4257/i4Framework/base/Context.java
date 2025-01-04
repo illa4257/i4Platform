@@ -1,6 +1,9 @@
 package illa4257.i4Framework.base;
 
 public interface Context {
+    default Context sub(final float x, final float y, final float w, final float h) { return this; }
+    default void dispose() {}
+
     Vector2D bounds(final String string);
     Vector2D bounds(final char[] string);
 
