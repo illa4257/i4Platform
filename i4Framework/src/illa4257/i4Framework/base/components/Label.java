@@ -14,7 +14,6 @@ public class Label extends Component {
 
     private String text;
     private String[] lines;
-    private final SyncVar<Color> foreground = new SyncVar<>(Color.BLACK);
     private final SyncVar<HorizontalAlign> horizontalAlign = new SyncVar<>(HorizontalAlign.CENTER);
 
     public Label() { text = null; lines = null; }
@@ -22,9 +21,13 @@ public class Label extends Component {
 
     @Override
     public void paint(final Context ctx) {
-        super.paint(ctx);
         if (width.calcFloat() <= 0)
             return;
+        super.paint(ctx);
+        final Color tc = getColor("color");
+        if (tc.alpha <= 0)
+            return;
+        ctx.setColor(tc);
         final String[] ll;
         synchronized (locker) {
             ll = lines;
@@ -35,7 +38,6 @@ public class Label extends Component {
             v2d[i] = ctx.bounds(ll[i]);
             h += v2d[i].y;
         }
-        ctx.setColor(foreground.get());
         y = (height.calcFloat() - h) / 2;
         m:
         for (int i = 0; i < ll.length; i++) {
@@ -73,9 +75,5 @@ public class Label extends Component {
 
     public void setHorizontalAlign(final HorizontalAlign align) {
         horizontalAlign.set(align);
-    }
-
-    public void setForeground(final Color newColor) {
-        foreground.set(newColor);
     }
 }
