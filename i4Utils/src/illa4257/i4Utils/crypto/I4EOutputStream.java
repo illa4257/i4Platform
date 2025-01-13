@@ -76,15 +76,24 @@ public class I4EOutputStream extends OutputStream {
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
         status();
-        System.out.println(len + " / " + this.len);
         while (len > this.len) {
-            stream.write(b, off, this.len);
-            off += this.len;
+            for (int i2 = 0; i2 < this.len; off++, i2++) {
+                if (signIndex >= sign.length)
+                    signIndex = 0;
+                randomData[i2] = (byte) (b[off] + sign[signIndex++]);
+            }
+            stream.write(randomData, 0, this.len);
             len -= this.len;
             this.len = 0;
             status();
         }
-        stream.write(b, off, len);
+        final int l = off + len;
+        for (int i = off; i < l; i++) {
+            if (signIndex >= sign.length)
+                signIndex = 0;
+            randomData[i] = (byte) (b[i] + sign[signIndex++]);
+        }
+        stream.write(randomData, off, len);
         this.len -= len;
     }
 
