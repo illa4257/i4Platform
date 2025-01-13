@@ -3,7 +3,9 @@ package illa4257.i4Framework.base.components;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.events.components.AddComponentEvent;
 import illa4257.i4Framework.base.events.components.RemoveComponentEvent;
+import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -11,6 +13,13 @@ import java.util.function.Consumer;
 
 public class Container extends Component implements Iterable<Component> {
     final ConcurrentLinkedQueue<Component> components = new ConcurrentLinkedQueue<>();
+
+    public Container() {
+        addEventListener(StyleUpdateEvent.class, e -> {
+            for (final Component c : components)
+                c.fire(e);
+        });
+    }
 
     public boolean contains(final Component component) { return components.contains(component); }
 
@@ -31,6 +40,10 @@ public class Container extends Component implements Iterable<Component> {
         if (r) {
             if (getLinkNumber() > 0)
                 component.link();
+            final Container c = component.parent.getAndSet(this);
+            if (c != null && c != this)
+                c.remove(c);
+            component.fire(new StyleUpdateEvent());
             fire(new AddComponentEvent(component));
         }
         return r;
@@ -41,6 +54,7 @@ public class Container extends Component implements Iterable<Component> {
         if (r) {
             if (getLinkNumber() > 0)
                 component.unlink();
+            component.parent.setIfEquals(null, this);
             fire(new RemoveComponentEvent(component));
         }
         return r;

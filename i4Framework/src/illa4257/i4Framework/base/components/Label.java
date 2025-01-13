@@ -22,6 +22,7 @@ public class Label extends Component {
 
     @Override
     public void paint(final Context ctx) {
+        super.paint(ctx);
         if (width.calcFloat() <= 0)
             return;
         final String[] ll;

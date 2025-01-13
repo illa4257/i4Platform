@@ -13,7 +13,7 @@ import java.util.Objects;
 
 public class Button extends Component {
     private final SyncVar<String> text;
-    private final SyncVar<Color> background = new SyncVar<>(Color.repeat3(200)), foreground = new SyncVar<>(Color.BLACK);
+    private final SyncVar<Color> foreground = new SyncVar<>(Color.BLACK);
     private final SyncVar<HorizontalAlign> horizontalAlign = new SyncVar<>(HorizontalAlign.CENTER);
 
     public Button() { this(null); }
@@ -39,18 +39,13 @@ public class Button extends Component {
         this.horizontalAlign.set(align);
     }
 
-    public void setBackground(final Color newColor) {
-        background.set(newColor);
-    }
-
     public void setForeground(final Color newColor) {
         foreground.set(newColor);
     }
 
     @Override
     public void paint(final Context ctx) {
-        ctx.setColor(background.get());
-        ctx.drawRect(0, 0, width.calcFloat(), height.calcFloat());
+        super.paint(ctx);
         final String t = text.get();
         if (t == null)
             return;

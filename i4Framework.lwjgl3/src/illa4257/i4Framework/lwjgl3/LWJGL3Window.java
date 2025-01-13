@@ -5,16 +5,13 @@ import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.components.RecalculateEvent;
 import illa4257.i4Framework.base.events.components.VisibleEvent;
-import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GLCapabilities;
 
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL11C.glClearColor;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class LWJGL3Window implements FrameworkWindow {

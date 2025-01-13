@@ -21,6 +21,15 @@ public class SyncVar<T> {
         }
     }
 
+    public boolean setIfEquals(final T newValue, final T oldValue) {
+        synchronized (locker) {
+            if (!Objects.equals(v, oldValue))
+                return false;
+            v = newValue;
+            return true;
+        }
+    }
+
     public boolean setIfNotEquals(final T newValue) {
         synchronized (locker) {
             if (Objects.equals(v, newValue))

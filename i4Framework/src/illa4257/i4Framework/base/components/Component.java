@@ -1,20 +1,17 @@
 package illa4257.i4Framework.base.components;
 
-import illa4257.i4Framework.base.Context;
-import illa4257.i4Framework.base.EventListener;
-import illa4257.i4Framework.base.Framework;
-import illa4257.i4Framework.base.events.components.ChangePointEvent;
+import illa4257.i4Framework.base.*;
+import illa4257.i4Framework.base.events.components.*;
 import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.SingleEvent;
-import illa4257.i4Framework.base.events.components.VisibleEvent;
-import illa4257.i4Framework.base.events.components.RecalculateEvent;
-import illa4257.i4Framework.base.events.components.RepaintEvent;
 import illa4257.i4Framework.base.points.*;
 import illa4257.i4Utils.IDestructor;
+import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.lists.DynList;
 import illa4257.i4Utils.lists.PagedTmpList;
 import illa4257.i4Utils.logger.i4Logger;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -24,6 +21,8 @@ public class Component implements IDestructor {
     final Object locker = new Object();
     private final AtomicInteger linkNumber = new AtomicInteger(0);
     private final Runnable[] listeners;
+
+    protected final SyncVar<Container> parent = new SyncVar<>();
 
     boolean visible = true;
 
@@ -39,10 +38,79 @@ public class Component implements IDestructor {
 
     private final ConcurrentLinkedQueue<Event> events = new ConcurrentLinkedQueue<>();
 
+    public final SyncVar<String> id = new SyncVar<>(), tag = new SyncVar<>();
+    public final ConcurrentLinkedQueue<String> classes = new ConcurrentLinkedQueue<>();
+    public final ConcurrentHashMap<String, StyleSetting> styles = new ConcurrentHashMap<>();
+    public final ConcurrentHashMap<StyleSelector, ConcurrentHashMap<String, StyleSetting>> stylesheet = new ConcurrentHashMap<>();
+
+    private final ArrayList<ConcurrentHashMap<String, StyleSetting>> cache = new ArrayList<>();
+
     public Component() {
+        Class<?> c = getClass();
+        while ((c.isAnonymousClass() || c.isLocalClass()) && c.getSuperclass() != null)
+            c = c.getSuperclass();
+        tag.set(c.getSimpleName());
         listeners = new Runnable[] {
                 () -> fire(new RecalculateEvent())
         };
+        addEventListener(StyleUpdateEvent.class, e -> {
+            synchronized (cache) {
+                cache.clear();
+                cache.add(styles);
+                cacheStyles(this, new ArrayList<>());
+            }
+        });
+        fire(new StyleUpdateEvent());
+    }
+
+    private void cacheStyles(final Component c, final ArrayList<StyleSelector> selectors) {
+        int l = selectors.size();
+        for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> e : c.stylesheet.entrySet())
+            if (e.getKey().check(this)) {
+                int i = 0;
+                for (; i < l; i++) {
+                    final boolean co = compareSelectors(e.getKey(), selectors.get(i));
+                    if (co)
+                        continue;
+                    break;
+                }
+                cache.add(i + 1, e.getValue());
+                selectors.add(i, e.getKey());
+                l++;
+            }
+        final Container p = c.getParent();
+        if (p != null)
+            cacheStyles(p, selectors);
+    }
+
+    private boolean compareSelectors(final StyleSelector selector1, final StyleSelector selector2) {
+        if (!selector1.isIdEmpty()) {
+            if (selector2.isIdEmpty())
+                return false;
+        } else if (!selector2.isIdEmpty())
+            return true;
+        return selector2.classes.size() >= selector1.classes.size();
+    }
+
+    public StyleSetting getStyle(final String name) {
+        synchronized (cache) {
+            for (final ConcurrentHashMap<String, StyleSetting> e : cache) {
+                final StyleSetting s = e.get(name);
+                if (s != null)
+                    return s;
+            }
+            return null;
+        }
+    }
+
+    public Color getColor(final String name) {
+        final StyleSetting s = getStyle(name);
+        return s != null ? s.color(Color.TRANSPARENT) : Color.TRANSPARENT;
+    }
+
+    public Color getColor(final String name, final Color defaultColor) {
+        final StyleSetting s = getStyle(name);
+        return s != null ? s.color(defaultColor) : defaultColor;
     }
 
     @Override public int getLinkNumber() { return linkNumber.get(); }
@@ -62,6 +130,7 @@ public class Component implements IDestructor {
     }
 
     public Object getLocker() { return locker; }
+    public Container getParent() { return parent.get(); }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     protected void invokeAll() {
@@ -256,5 +325,11 @@ public class Component implements IDestructor {
             fire(new ChangePointEvent(this));
     }
 
-    public void paint(final Context context) {}
+    public void paint(final Context context) {
+        final Color bg = getColor("background");
+        if (bg.alpha > 0) {
+            context.setColor(bg);
+            context.drawRect(0, 0, width.calcFloat(), height.calcFloat());
+        }
+    }
 }
