@@ -6,7 +6,7 @@ import illa4257.i4Utils.logger.i4Logger;
 import java.util.Scanner;
 
 /**
- * I'll move {@link i4Utils.themeDetectors} to {@link i4Framework}.
+ * I'll move {@link illa4257.i4Utils.themeDetectors} to {@link illa4257.i4Framework}.
  *
  * @deprecated
  */

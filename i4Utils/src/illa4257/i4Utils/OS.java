@@ -1,14 +1,13 @@
 package illa4257.i4Utils;
 
-import illa4257.i4Utils.runnables.Runnable1a;
 import illa4257.i4Utils.themeDetectors.DBusThemeDetector;
 import illa4257.i4Utils.themeDetectors.IThemeDetector;
 
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 public class OS {
-    private static final Object themeLocker = new Object();
-    private static final ArrayList<Runnable1a<Theme>> themeList = new ArrayList<>();
+    private static final ArrayList<Consumer<Theme>> themeList = new ArrayList<>();
     private static boolean isStarted = false;
     private static IThemeDetector themeDetector = null;
 
@@ -70,7 +69,7 @@ public class OS {
     }
 
     /**
-     * I'll move {@link i4Utils.themeDetectors} to {@link i4Framework}.
+     * I'll move {@link illa4257.i4Utils.themeDetectors} to {@link illa4257.i4Framework}.
      *
      * @deprecated
      */
@@ -82,22 +81,22 @@ public class OS {
     }
 
     /**
-     * I'll move {@link i4Utils.themeDetectors} to {@link i4Framework}.
+     * I'll move {@link illa4257.i4Utils.themeDetectors} to {@link illa4257.i4Framework}.
      *
      * @deprecated
      */
     @SuppressWarnings("unchecked")
     public static void fireThemeChanged(final Theme theme) {
-        final Runnable1a<Theme>[] ll;
+        final Consumer<Theme>[] ll;
         synchronized (themeList) {
-            ll = themeList.toArray(new Runnable1a[0]);
+            ll = themeList.toArray(new Consumer[0]);
         }
-        for (final Runnable1a<Theme> l : ll)
-            l.run(theme);
+        for (final Consumer<Theme> l : ll)
+            l.accept(theme);
     }
 
     /**
-     * I'll move {@link i4Utils.themeDetectors} to {@link i4Framework}.
+     * I'll move {@link illa4257.i4Utils.themeDetectors} to {@link illa4257.i4Framework}.
      *
      * @deprecated
      */
@@ -110,11 +109,11 @@ public class OS {
     }
 
     /**
-     * I'll move {@link i4Utils.themeDetectors} to {@link i4Framework}.
+     * I'll move {@link illa4257.i4Utils.themeDetectors} to {@link illa4257.i4Framework}.
      *
      * @deprecated
      */
-    public static void addThemeListener(final Runnable1a<Theme> listener) {
+    public static void addThemeListener(final Consumer<Theme> listener) {
         if (listener == null)
             return;
         synchronized (themeList) {
@@ -131,7 +130,7 @@ public class OS {
     }
 
     /**
-     * I'll move {@link i4Utils.themeDetectors} to {@link i4Framework}.
+     * I'll move {@link illa4257.i4Utils.themeDetectors} to {@link illa4257.i4Framework}.
      *
      * @deprecated
      */
