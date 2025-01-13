@@ -5,7 +5,6 @@ import illa4257.i4Framework.base.events.components.AddComponentEvent;
 import illa4257.i4Framework.base.events.components.RemoveComponentEvent;
 import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
