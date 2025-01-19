@@ -103,14 +103,24 @@ public class Component implements IDestructor {
         }
     }
 
+    public Color getColor(final String name, final Color defaultColor) {
+        final StyleSetting s = getStyle(name);
+        return s != null ? s.color(defaultColor) : defaultColor;
+    }
+
     public Color getColor(final String name) {
         final StyleSetting s = getStyle(name);
         return s != null ? s.color(Color.TRANSPARENT) : Color.TRANSPARENT;
     }
 
-    public Color getColor(final String name, final Color defaultColor) {
+    public Image getImage(final String name, final Image defaultImage) {
         final StyleSetting s = getStyle(name);
-        return s != null ? s.color(defaultColor) : defaultColor;
+        return s != null ? s.image(defaultImage) : defaultImage;
+    }
+
+    public Image getImage(final String name) {
+        final StyleSetting s = getStyle(name);
+        return s != null ? s.image(null) : null;
     }
 
     @Override public int getLinkNumber() { return linkNumber.get(); }
@@ -270,49 +280,49 @@ public class Component implements IDestructor {
 
     public void setStartX(final Point point) {
         startX.set(point);
-        fire(new ChangePointEvent(this));
+        fire(new ChangePointEvent());
     }
 
     public void setStartY(final Point point) {
         startY.set(point);
-        fire(new ChangePointEvent(this));
+        fire(new ChangePointEvent());
     }
 
     public void setEndX(final Point point) {
         endX.set(point);
-        fire(new ChangePointEvent(this));
+        fire(new ChangePointEvent());
     }
 
     public void setEndY(final Point point) {
         endY.set(point);
-        fire(new ChangePointEvent(this));
+        fire(new ChangePointEvent());
     }
 
 
     public void setX(final float x) {
         startX.set(new PointAttach(x, null));
-        fire(new ChangePointEvent(this));
+        fire(new ChangePointEvent());
     }
 
     public void setY(final float y) {
         startY.set(new PointAttach(y, null));
-        fire(new ChangePointEvent(this));
+        fire(new ChangePointEvent());
     }
 
     public void setLocation(final float x, final float y) {
         startX.set(new PointAttach(x, null));
         startY.set(new PointAttach(y, null));
-        fire(new ChangePointEvent(this));
+        fire(new ChangePointEvent());
     }
 
     public void setWidth(final float width) {
         endX.set(new PointAttach(width, startX));
-        fire(new ChangePointEvent(this));
+        fire(new ChangePointEvent());
     }
 
     public void setHeight(final float height) {
         endY.set(new PointAttach(height, startY));
-        fire(new ChangePointEvent(this));
+        fire(new ChangePointEvent());
     }
 
     public void setSize(final float width, final float height) {
@@ -322,14 +332,17 @@ public class Component implements IDestructor {
         if (y = aSet(endY, height, startY))
             endY.set(new PointAttach(height, startY));
         if (x || y)
-            fire(new ChangePointEvent(this));
+            fire(new ChangePointEvent());
     }
 
     public void paint(final Context context) {
-        final Color bg = getColor("background");
+        final Color bg = getColor("background-color");
         if (bg.alpha > 0) {
             context.setColor(bg);
             context.drawRect(0, 0, width.calcFloat(), height.calcFloat());
         }
+        final Image img = getImage("background-image");
+        if (img != null)
+            context.drawImage(img, 0, 0, width.calcFloat(), height.calcFloat());
     }
 }

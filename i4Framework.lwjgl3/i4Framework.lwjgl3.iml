@@ -8,8 +8,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="PROVIDED" name="lwjgl" level="application" />
-    <orderEntry type="library" scope="PROVIDED" name="lwjgl.glfw" level="application" />
-    <orderEntry type="library" scope="PROVIDED" name="lwjgl.opengl" level="application" />
     <orderEntry type="module" module-name="i4Utils" scope="PROVIDED" />
     <orderEntry type="module" module-name="i4Framework" scope="PROVIDED" />
   </component>

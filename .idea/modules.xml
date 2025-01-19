@@ -2,10 +2,16 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/I4LCommon/I4LCommon.iml" filepath="$PROJECT_DIR$/I4LCommon/I4LCommon.iml" />
-      <module fileurl="file://$PROJECT_DIR$/I4LParser/I4LParser.iml" filepath="$PROJECT_DIR$/I4LParser/I4LParser.iml" />
+      <module fileurl="file://$PROJECT_DIR$/i4LCommon/I4LCommon.iml" filepath="$PROJECT_DIR$/i4LCommon/I4LCommon.iml" />
+      <module fileurl="file://$PROJECT_DIR$/i4LParser/I4LParser.iml" filepath="$PROJECT_DIR$/i4LParser/I4LParser.iml" />
       <module fileurl="file://$PROJECT_DIR$/Test/Test.iml" filepath="$PROJECT_DIR$/Test/Test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Testing/Testing.iml" filepath="$PROJECT_DIR$/Testing/Testing.iml" />
+      <module fileurl="file://$PROJECT_DIR$/i4Framework/i4Framework.iml" filepath="$PROJECT_DIR$/i4Framework/i4Framework.iml" />
+      <module fileurl="file://$PROJECT_DIR$/i4Framework.android/i4Framework.android.iml" filepath="$PROJECT_DIR$/i4Framework.android/i4Framework.android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/i4Framework.lwjgl3/i4Framework.lwjgl3.iml" filepath="$PROJECT_DIR$/i4Framework.lwjgl3/i4Framework.lwjgl3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/i4Framework.swing/i4Framework.swing.iml" filepath="$PROJECT_DIR$/i4Framework.swing/i4Framework.swing.iml" />
       <module fileurl="file://$PROJECT_DIR$/i4Language.iml" filepath="$PROJECT_DIR$/i4Language.iml" />
+      <module fileurl="file://$PROJECT_DIR$/i4Utils/i4Utils.iml" filepath="$PROJECT_DIR$/i4Utils/i4Utils.iml" />
     </modules>
   </component>
 </project>

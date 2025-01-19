@@ -1,6 +1,5 @@
 package illa4257.i4Framework.base;
 
-import illa4257.i4Utils.Str;
 import illa4257.i4Utils.runnables.Provider;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -60,6 +59,15 @@ public class StyleSetting {
 
     public Color color(final Color defaultColor) {
         return computeIfAbsentF(Color.class, k -> Color.styleSettingParser(k, defaultColor));
+    }
+
+    public Image image(final Image defaultImage) {
+        return computeIfAbsentF(Image.class, k -> {
+            final String value = k.get(String.class);
+            if (value == null)
+                return defaultImage;
+            return Cache.images.get(value);
+        });
     }
 
     @Override

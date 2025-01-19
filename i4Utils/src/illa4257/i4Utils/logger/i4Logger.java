@@ -114,13 +114,8 @@ public class i4Logger implements LogHandler {
     public final String name;
     private final ConcurrentLinkedQueue<LogHandler> handlers = new ConcurrentLinkedQueue<>();
 
-    public i4Logger() {
-        this.name = null;
-    }
-
-    public i4Logger(final String name) {
-        this.name = name;
-    }
+    public i4Logger() { this.name = null; }
+    public i4Logger(final String name) { this.name = name; }
 
     public OutputStream newOutputStream(final Level level) {
         return new OutputStream() {
@@ -157,8 +152,12 @@ public class i4Logger implements LogHandler {
         return r;
     }
 
-    private String prefix(final Level level) {
-        return "[" + LocalDateTime.now() + "][" + level + "]" + (name == null ? "" : "[" + name + "]");
+    public String prefix(final Level level, final String name) {
+        return "[" + LocalDateTime.now() + "][" + level + "]" + (name == null ? this.name == null ? "" : "[" + this.name + "]" : "[" + name + "]");
+    }
+
+    public String prefix(final Level level) {
+        return prefix(level, null);
     }
 
     @Override
@@ -186,6 +185,12 @@ public class i4Logger implements LogHandler {
         if (level == null)
             return;
         log(level, prefix(level), message, stackTraceElements);
+    }
+
+    public void log(final Level level, final String prefix, Throwable throwable) {
+        if (level == null)
+            return;
+        log(level, prefix, throwable.toString(), throwable.getStackTrace());
     }
 
     public void log(final Level level, Throwable throwable) {
