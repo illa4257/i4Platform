@@ -89,10 +89,13 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
     public void setVisible(final boolean b) {
         if (isVisible() != b) {
             if (b) {
+                if (!window.frameworkWindow.setIfNull(this))
+                    return;
                 window.link();
                 pack();
                 SwingFramework.add(this);
             } else {
+                window.frameworkWindow.setIfEquals(null, this);
                 window.unlink();
                 SwingFramework.remove(this);
             }

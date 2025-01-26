@@ -1,13 +1,32 @@
 package illa4257.i4Framework.base.components;
 
+import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.events.components.ChangeTextEvent;
+import illa4257.i4Framework.base.events.components.FocusEvent;
 import illa4257.i4Framework.base.events.window.CenterWindowEvent;
 import illa4257.i4Utils.SyncVar;
 
 public class Window extends Container {// 238
     private final SyncVar<String> title = new SyncVar<>();
+    public final SyncVar<FrameworkWindow> frameworkWindow = new SyncVar<>();
 
     public Window() { super(); visible = false; }
+
+    @Override
+    protected boolean childFocus(Component targetChild, Component target) {
+        synchronized (locker) {
+            final FrameworkWindow fw = frameworkWindow.get();
+            if (fw != null) {
+                if (focused != null)
+                    focused.fire(new FocusEvent(false));
+                focused = targetChild;
+                if (targetChild == target)
+                    focused.fire(new FocusEvent(true));
+                return true;
+            }
+            return super.childFocus(targetChild, target);
+        }
+    }
 
     public void center() { fire(new CenterWindowEvent(this)); }
 

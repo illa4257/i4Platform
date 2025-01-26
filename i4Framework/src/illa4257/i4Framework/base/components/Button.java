@@ -47,10 +47,11 @@ public class Button extends Component {
     public void paint(final Context ctx) {
         super.paint(ctx);
         final String t = text.get();
-        if (t == null)
+        final Color c = getColor("color");
+        if (t == null || c.alpha <= 0)
             return;
+        ctx.setColor(c);
         final Vector2D s = ctx.bounds(t);
-        ctx.setColor(foreground.get());
         ctx.drawString(t, horizontalAlign.get() == HorizontalAlign.LEFT ? 0 : (width.calcFloat() - s.x) / 2, (height.calcFloat() - s.y) / 2);
     }
 }

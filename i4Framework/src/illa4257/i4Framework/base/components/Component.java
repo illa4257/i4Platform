@@ -18,7 +18,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Component implements IDestructor {
-    final Object locker = new Object();
+    protected final Object locker = new Object();
+    boolean isFocused = false;
     private final AtomicInteger linkNumber = new AtomicInteger(0);
     private final Runnable[] listeners;
 
@@ -60,6 +61,7 @@ public class Component implements IDestructor {
                 cacheStyles(this, new ArrayList<>());
             }
         });
+        addEventListener(FocusEvent.class, e -> isFocused = e.value);
         fire(new StyleUpdateEvent());
     }
 
@@ -121,6 +123,24 @@ public class Component implements IDestructor {
     public Image getImage(final String name) {
         final StyleSetting s = getStyle(name);
         return s != null ? s.image(null) : null;
+    }
+
+    public boolean isFocusable() { return true; }
+    public boolean isFocused() {
+        synchronized (locker) {
+            return isFocused;
+        }
+    }
+
+    public boolean requestFocus() {
+        if (isFocused())
+            return true;
+        if (!isVisible())
+            return false;
+        final Container p = getParent();
+        if (p == null)
+            return false;
+        return p.childFocus(this, this);
     }
 
     @Override public int getLinkNumber() { return linkNumber.get(); }
