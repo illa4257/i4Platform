@@ -1,5 +1,8 @@
 package illa4257.i4Framework.base;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
 public class Color {
     public static Color repeat3(final int value) { return new Color(value, value, value); }
     public static Color repeat3(final float value) { return new Color(value, value, value); }
@@ -131,6 +134,11 @@ public class Color {
                     if (l == 10)
                         return new Color(Integer.parseInt(v.substring(2), 16));
                 }
+                try {
+                    final Field f = Color.class.getDeclaredField(v.toUpperCase());
+                    if (Modifier.isPublic(f.getModifiers()) && Modifier.isStatic(f.getModifiers()))
+                        return (Color) f.get(null);
+                } catch (final Exception ignored) {}
             }
         }
         {
