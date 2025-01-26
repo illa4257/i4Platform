@@ -12,12 +12,15 @@ public class SyncVar<T> {
 
     public void set(final T value) { synchronized (locker) { v = value; } }
 
-    public void setIfNull(final T newValue) {
+    public boolean setIfNull(final T newValue) {
         if (newValue == null)
-            return;
+            return false;
         synchronized (locker) {
-            if (v == null)
+            if (v == null) {
                 v = newValue;
+                return true;
+            }
+            return false;
         }
     }
 

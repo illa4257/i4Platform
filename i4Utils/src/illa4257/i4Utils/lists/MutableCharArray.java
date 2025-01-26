@@ -361,6 +361,24 @@ public class MutableCharArray {
         }
     }
 
+    public Character getChar(int i, final Character defaultValue) {
+        if (i < 0)
+            return defaultValue;
+        synchronized (locker) {
+            if (page == null)
+                return defaultValue;
+            if (i < page.length)
+                return page.charArray[page.offset + i];
+            CharArrayPage c = page;
+            while ((c = c.next) != null)
+                if (i < c.length)
+                    return c.charArray[c.offset + i];
+                else
+                    i -= c.length;
+            return defaultValue;
+        }
+    }
+
     /**
      * Retrieves a character at a specific index.
      * @param i index
