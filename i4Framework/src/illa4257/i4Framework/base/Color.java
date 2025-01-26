@@ -116,24 +116,26 @@ public class Color {
         {
             final String v = setting.get(String.class);
             if (v != null) {
-                final int l = v.length();
-                if (v.startsWith("#")) {
-                    if (l == 4) {
-                        final int r = Integer.parseInt(v.substring(1, 2), 16);
-                        final int g = Integer.parseInt(v.substring(2, 3), 16);
-                        final int b = Integer.parseInt(v.substring(3, 4), 16);
-                        return new Color(r * 16 + r, g * 16 + g, b * 16 + b);
+                try {
+                    final int l = v.length();
+                    if (v.startsWith("#")) {
+                        if (l == 4) {
+                            final int r = Integer.parseInt(v.substring(1, 2), 16);
+                            final int g = Integer.parseInt(v.substring(2, 3), 16);
+                            final int b = Integer.parseInt(v.substring(3, 4), 16);
+                            return new Color(r * 16 + r, g * 16 + g, b * 16 + b);
+                        }
+                        if (l == 7)
+                            return fromRGB(Integer.parseInt(v.substring(1), 16));
+                        if (l == 9)
+                            return new Color(Integer.parseInt(v.substring(1), 16));
+                    } else if (v.startsWith("0x")) {
+                        if (l == 8)
+                            return fromRGB(Integer.parseInt(v.substring(2), 16));
+                        if (l == 10)
+                            return new Color(Integer.parseInt(v.substring(2), 16));
                     }
-                    if (l == 7)
-                        return fromRGB(Integer.parseInt(v.substring(1), 16));
-                    if (l == 9)
-                        return new Color(Integer.parseInt(v.substring(1), 16));
-                } else if (v.startsWith("0x")) {
-                    if (l == 8)
-                        return fromRGB(Integer.parseInt(v.substring(2), 16));
-                    if (l == 10)
-                        return new Color(Integer.parseInt(v.substring(2), 16));
-                }
+                } catch (final Exception ignored) {}
                 try {
                     final Field f = Color.class.getDeclaredField(v.toUpperCase());
                     if (Modifier.isPublic(f.getModifiers()) && Modifier.isStatic(f.getModifiers()))
