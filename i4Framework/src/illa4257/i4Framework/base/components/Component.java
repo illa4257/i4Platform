@@ -84,9 +84,9 @@ public class Component implements IDestructor {
                 isFocused = e.value;
             }
             if (e.value)
-                pseudoClasses.add("focused");
+                pseudoClasses.add("focus");
             else
-                pseudoClasses.remove("focused");
+                pseudoClasses.remove("focus");
             repaint();
         });
         addEventListener(MouseEnterEvent.class, e -> fire(new HoverEvent(true)));
