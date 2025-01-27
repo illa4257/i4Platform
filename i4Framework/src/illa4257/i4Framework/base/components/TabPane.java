@@ -24,6 +24,7 @@ public class TabPane extends Container {
     }
 
     public TabPane() {
+        setFocusable(true);
         addEventListener(MouseUpEvent.class, e -> {
             if (e.localY > tabHeight.calcInt())
                 return;
