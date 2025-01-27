@@ -5,6 +5,8 @@ import illa4257.i4Framework.base.EventListener;
 import illa4257.i4Framework.base.events.components.*;
 import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.SingleEvent;
+import illa4257.i4Framework.base.events.input.MouseEnterEvent;
+import illa4257.i4Framework.base.events.input.MouseLeaveEvent;
 import illa4257.i4Framework.base.events.input.MouseUpEvent;
 import illa4257.i4Framework.base.points.*;
 import illa4257.i4Utils.IDestructor;
@@ -20,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Component implements IDestructor {
     protected final Object locker = new Object();
-    boolean isFocused = false, isFocusable = false;
+    boolean isFocused = false, isFocusable = false, isHovered = false;
     private final AtomicInteger linkNumber = new AtomicInteger(0);
     private final Runnable[] listeners;
 
@@ -63,6 +65,18 @@ public class Component implements IDestructor {
                 cacheStyles(this, new ArrayList<>());
             }
         });
+        addEventListener(HoverEvent.class, e -> {
+            synchronized (locker) {
+                if (isHovered == e.value)
+                    return;
+                isHovered = e.value;
+            }
+            if (e.value)
+                pseudoClasses.add("hover");
+            else
+                pseudoClasses.remove("hover");
+            repaint();
+        });
         addEventListener(FocusEvent.class, e -> {
             synchronized (locker) {
                 if (isFocused == e.value)
@@ -75,6 +89,8 @@ public class Component implements IDestructor {
                 pseudoClasses.remove("focused");
             repaint();
         });
+        addEventListener(MouseEnterEvent.class, e -> fire(new HoverEvent(true)));
+        addEventListener(MouseLeaveEvent.class, e -> fire(new HoverEvent(false)));
         fire(new StyleUpdateEvent());
     }
 
