@@ -6,10 +6,7 @@ import illa4257.i4Framework.base.components.Container;
 import illa4257.i4Framework.base.components.Panel;
 import illa4257.i4Framework.base.events.components.RecalculateEvent;
 import illa4257.i4Framework.base.events.components.RepaintEvent;
-import illa4257.i4Framework.base.events.input.MouseButton;
-import illa4257.i4Framework.base.events.input.MouseDownEvent;
-import illa4257.i4Framework.base.events.input.MouseScrollEvent;
-import illa4257.i4Framework.base.events.input.MouseUpEvent;
+import illa4257.i4Framework.base.events.input.*;
 import illa4257.i4Framework.swing.SwingContext;
 
 import javax.swing.*;
@@ -23,6 +20,14 @@ public class SwingComponent extends JComponent implements ISwingComponent {
     public final EventListener[] listeners;
     public EventListener[] directListeners = null;
 
+    private int getGlobalX(final MouseEvent event) {
+        return getX() + event.getX();
+    }
+
+    private int getGlobalY(final MouseEvent event) {
+        return getY() + event.getY();
+    }
+
     public SwingComponent(final Component component) {
         this.component = component;
         setFocusable(true);
@@ -31,16 +36,26 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(final MouseEvent event) {
-                component.fire(new MouseDownEvent(getX() + event.getX(), getY() + event.getY(), event.getX(), event.getY(), MouseButton.fromCode(event.getButton() - 1)));
+                component.fire(new MouseDownEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), MouseButton.fromCode(event.getButton() - 1)));
+            }
+
+            @Override
+            public void mouseEntered(final MouseEvent event) {
+                component.fire(new MouseEnterEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY()));
+            }
+
+            @Override
+            public void mouseExited(final MouseEvent event) {
+                component.fire(new MouseLeaveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY()));
             }
 
             @Override
             public void mouseReleased(final MouseEvent event) {
-                component.fire(new MouseUpEvent(getX() + event.getX(), getY() + event.getY(), event.getX(), event.getY(), MouseButton.fromCode(event.getButton() - 1)));
+                component.fire(new MouseUpEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), MouseButton.fromCode(event.getButton() - 1)));
             }
         });
 
-        addMouseWheelListener(event -> component.fire(new MouseScrollEvent(getX() + event.getX(), getY() + event.getY(), event.getX(), event.getY(), event.getUnitsToScroll())));
+        addMouseWheelListener(event -> component.fire(new MouseScrollEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), event.getUnitsToScroll())));
 
         listeners = new EventListener[] {
                 component.addEventListener(RecalculateEvent.class, e -> {
