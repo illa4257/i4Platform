@@ -1,9 +1,11 @@
 package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.*;
+import illa4257.i4Framework.base.EventListener;
 import illa4257.i4Framework.base.events.components.*;
 import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.SingleEvent;
+import illa4257.i4Framework.base.events.input.MouseUpEvent;
 import illa4257.i4Framework.base.points.*;
 import illa4257.i4Utils.IDestructor;
 import illa4257.i4Utils.SyncVar;
@@ -11,15 +13,14 @@ import illa4257.i4Utils.lists.DynList;
 import illa4257.i4Utils.lists.PagedTmpList;
 import illa4257.i4Utils.logger.i4Logger;
 
-import java.util.ArrayList;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Component implements IDestructor {
     protected final Object locker = new Object();
-    boolean isFocused = false;
+    boolean isFocused = false, isFocusable = false;
     private final AtomicInteger linkNumber = new AtomicInteger(0);
     private final Runnable[] listeners;
 
@@ -44,7 +45,8 @@ public class Component implements IDestructor {
     public final ConcurrentHashMap<String, StyleSetting> styles = new ConcurrentHashMap<>();
     public final ConcurrentHashMap<StyleSelector, ConcurrentHashMap<String, StyleSetting>> stylesheet = new ConcurrentHashMap<>();
 
-    private final ArrayList<ConcurrentHashMap<String, StyleSetting>> cache = new ArrayList<>();
+    public final ConcurrentLinkedQueue<String> pseudoClasses = new ConcurrentLinkedQueue<>();
+    private final ArrayList<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> cache = new ArrayList<>();
 
     public Component() {
         Class<?> c = getClass();
@@ -57,11 +59,22 @@ public class Component implements IDestructor {
         addEventListener(StyleUpdateEvent.class, e -> {
             synchronized (cache) {
                 cache.clear();
-                cache.add(styles);
+                cache.add(new AbstractMap.SimpleImmutableEntry<>(null, styles));
                 cacheStyles(this, new ArrayList<>());
             }
         });
-        addEventListener(FocusEvent.class, e -> isFocused = e.value);
+        addEventListener(FocusEvent.class, e -> {
+            synchronized (locker) {
+                if (isFocused == e.value)
+                    return;
+                isFocused = e.value;
+            }
+            if (e.value)
+                pseudoClasses.add("focused");
+            else
+                pseudoClasses.remove("focused");
+            repaint();
+        });
         fire(new StyleUpdateEvent());
     }
 
@@ -76,7 +89,7 @@ public class Component implements IDestructor {
                         continue;
                     break;
                 }
-                cache.add(i + 1, e.getValue());
+                cache.add(i + 1, e);
                 selectors.add(i, e.getKey());
                 l++;
             }
@@ -91,13 +104,26 @@ public class Component implements IDestructor {
                 return false;
         } else if (!selector2.isIdEmpty())
             return true;
-        return selector2.classes.size() >= selector1.classes.size();
+
+        final int c1 = selector1.classes.size(), c2 = selector2.classes.size();
+
+        if (c1 > c2 || c2 > c1)
+            return c2 > c1;
+
+        final int pc1 = selector1.pseudoClasses.size(), pc2 = selector2.pseudoClasses.size();
+        if (pc1 != 0 || pc2 != 0)
+            return pc2 >= pc1;
+
+        return true;
     }
 
     public StyleSetting getStyle(final String name) {
         synchronized (cache) {
-            for (final ConcurrentHashMap<String, StyleSetting> e : cache) {
-                final StyleSetting s = e.get(name);
+            for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> e : cache) {
+                if (e.getKey() != null && !e.getKey().pseudoClasses.stream().allMatch(s -> pseudoClasses.stream()
+                        .anyMatch(s::equalsIgnoreCase)))
+                    continue;
+                final StyleSetting s = e.getValue().get(name);
                 if (s != null)
                     return s;
             }
@@ -125,10 +151,30 @@ public class Component implements IDestructor {
         return s != null ? s.image(null) : null;
     }
 
-    public boolean isFocusable() { return true; }
+    public boolean isFocusable() {
+        synchronized (locker) {
+            return isFocusable;
+        }
+    }
+
     public boolean isFocused() {
         synchronized (locker) {
             return isFocused;
+        }
+    }
+
+    private final ArrayList<EventListener<? extends Event>> focusListeners = new ArrayList<>();
+
+    public void setFocusable(final boolean newValue) {
+        synchronized (locker) {
+            if (isFocusable == newValue)
+                return;
+            if (newValue) {
+                focusListeners.add(addEventListener(MouseUpEvent.class, e -> requestFocus()));
+            } else {
+                removeEventListeners(focusListeners);
+                focusListeners.clear();
+            }
         }
     }
 
@@ -236,6 +282,13 @@ public class Component implements IDestructor {
     public <T extends Event> boolean removeEventListener(final EventListener<T> listener) {
         for (final Map.Entry<Class<? extends Event>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
             if (e.getValue().remove(listener))
+                return true;
+        return false;
+    }
+
+    public boolean removeEventListeners(final Collection<EventListener<? extends Event>> listeners) {
+        for (final Map.Entry<Class<? extends Event>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
+            if (e.getValue().removeAll(listeners))
                 return true;
         return false;
     }

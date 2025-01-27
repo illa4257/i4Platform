@@ -67,13 +67,13 @@ public class CSSParser {
                     ch = re(reader);
                 } while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n');
             }
-            if (ch != '#' && ch != '.' && ch != ',' && ch != '{') {
+            if (ch != '#' && ch != '.' && ch != ':' && ch != ',' && ch != '{') {
                 final StringBuilder tag = new StringBuilder();
                 while (true) {
                     tag.append((char) ch);
                     ch = re(reader);
                     if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' ||
-                            ch == '#' || ch == '.' || ch == ',' || ch == '{') {
+                            ch == '#' || ch == '.' || ch == ':' || ch == ',' || ch == '{') {
                         selector.tag.set(tag.toString());
                         while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
                             ch = re(reader);
@@ -86,7 +86,7 @@ public class CSSParser {
                     final StringBuilder id = new StringBuilder();
                     while (true) {
                         ch = re(reader);
-                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == '.' || ch == '#') {
+                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == '.' || ch == '#' || ch == ':') {
                             while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
                                 ch = re(reader);
                             break;
@@ -110,12 +110,27 @@ public class CSSParser {
                     selector.addClass(cls.toString());
                     continue;
                 }
+                if (ch == ':') {
+                    final StringBuilder cls = new StringBuilder();
+                    while (true) {
+                        ch = re(reader);
+                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == '.' || ch == '#' || ch == ':') {
+                            while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
+                                ch = re(reader);
+                            break;
+                        }
+                        cls.append((char) ch);
+                    }
+                    selector.addPseudoClass(cls.toString());
+                    continue;
+                }
                 if (ch == ',') {
                     selectors.add(selector);
                     break;
                 }
                 if (ch == '{') {
                     selectors.add(selector);
+                    System.out.println(selectors);
                     final ConcurrentHashMap<String, StyleSetting> style = new ConcurrentHashMap<>();
                     while (true) {
                         do {

@@ -7,7 +7,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class StyleSelector {
     public final SyncVar<String> id = new SyncVar<>(), tag = new SyncVar<>();
-    public final ConcurrentLinkedQueue<String> classes = new ConcurrentLinkedQueue<>();
+    public final ConcurrentLinkedQueue<String> classes = new ConcurrentLinkedQueue<>(),
+            pseudoClasses = new ConcurrentLinkedQueue<>();
 
     public boolean isIdEmpty() {
         final String id = this.id.get();
@@ -38,8 +39,34 @@ public class StyleSelector {
         return this;
     }
 
+    public StyleSelector addPseudoClass(final String pseudoClass) {
+        pseudoClasses.add(pseudoClass);
+        return this;
+    }
+
     @Override
     public String toString() {
-        return "StyleSelector:" + tag.get() + "#" + id.get() + "." + String.join(".", classes);
+        final StringBuilder r = new StringBuilder();
+        r.append("StyleSelector{");
+
+        String v = tag.get();
+        if (v != null && !v.isEmpty())
+            r.append(v);
+
+        v = id.get();
+        if (v != null && !v.isEmpty())
+            r.append('#').append(v);
+
+        v = String.join(".", classes);
+        if (!v.isEmpty())
+            r.append('.').append(v);
+
+        v = String.join(":", pseudoClasses);
+        if (!v.isEmpty())
+            r.append(':').append(v);
+
+        r.append('}');
+
+        return r.toString();
     }
 }
