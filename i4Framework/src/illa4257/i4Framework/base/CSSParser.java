@@ -130,7 +130,6 @@ public class CSSParser {
                 }
                 if (ch == '{') {
                     selectors.add(selector);
-                    System.out.println(selectors);
                     final ConcurrentHashMap<String, StyleSetting> style = new ConcurrentHashMap<>();
                     while (true) {
                         do {
