@@ -19,6 +19,7 @@ public class Button extends Component {
     public Button() { this(null); }
     public Button(final String text) {
         this.text = new SyncVar<>(text);
+        setFocusable(true);
         addEventListener(MouseUpEvent.class, e -> {
             if (
                     e.localX < 0 || e.localX > width.calcInt() ||
