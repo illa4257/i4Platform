@@ -1,9 +1,9 @@
 package illa4257.i4Framework.swing.components;
 
+import illa4257.i4Framework.base.Cursor;
 import illa4257.i4Framework.base.EventListener;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Container;
-import illa4257.i4Framework.base.components.Panel;
 import illa4257.i4Framework.base.events.components.RecalculateEvent;
 import illa4257.i4Framework.base.events.components.RepaintEvent;
 import illa4257.i4Framework.base.events.input.*;
@@ -13,7 +13,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+
+import static java.awt.Cursor.*;
 
 public class SwingComponent extends JComponent implements ISwingComponent {
     public final Component component;
@@ -36,7 +37,14 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(final MouseEvent event) {
-                component.fire(new MouseDownEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), MouseButton.fromCode(event.getButton() - 1)));
+                component.fire(new MouseDownEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(),
+                        MouseButton.fromCode(event.getButton() - 1)));
+            }
+
+            @Override
+            public void mouseReleased(final MouseEvent event) {
+                component.fire(new MouseUpEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(),
+                        MouseButton.fromCode(event.getButton() - 1)));
             }
 
             @Override
@@ -50,12 +58,23 @@ public class SwingComponent extends JComponent implements ISwingComponent {
             }
 
             @Override
-            public void mouseReleased(final MouseEvent event) {
-                component.fire(new MouseUpEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), MouseButton.fromCode(event.getButton() - 1)));
+            public void mouseMoved(final MouseEvent event) {
+                component.fire(new MouseMoveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY()));
             }
         });
+        addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseMoved(final MouseEvent event) {
+                component.fire(new MouseMoveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY()));
+            }
 
-        addMouseWheelListener(event -> component.fire(new MouseScrollEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), event.getUnitsToScroll())));
+            @Override
+            public void mouseDragged(final MouseEvent event) {
+                component.fire(new MouseMoveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY()));
+            }
+        });
+        addMouseWheelListener(event -> component.fire(new MouseScrollEvent(getGlobalX(event),
+                getGlobalY(event), event.getX(), event.getY(), event.getUnitsToScroll())));
 
         listeners = new EventListener[] {
                 component.addEventListener(RecalculateEvent.class, e -> {
@@ -90,6 +109,8 @@ public class SwingComponent extends JComponent implements ISwingComponent {
 
     @Override
     protected void paintComponent(final Graphics graphics) {
+        final Cursor c = component.getCursor("cursor");
+        setCursor(getPredefinedCursor(c == Cursor.TEXT ? TEXT_CURSOR : DEFAULT_CURSOR));
         final Graphics2D g = (Graphics2D) graphics;
         component.paint(new SwingContext(g));
     }
