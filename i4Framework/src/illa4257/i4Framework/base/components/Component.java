@@ -5,9 +5,9 @@ import illa4257.i4Framework.base.EventListener;
 import illa4257.i4Framework.base.events.components.*;
 import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.SingleEvent;
+import illa4257.i4Framework.base.events.input.MouseDownEvent;
 import illa4257.i4Framework.base.events.input.MouseEnterEvent;
 import illa4257.i4Framework.base.events.input.MouseLeaveEvent;
-import illa4257.i4Framework.base.events.input.MouseUpEvent;
 import illa4257.i4Framework.base.points.*;
 import illa4257.i4Utils.IDestructor;
 import illa4257.i4Utils.SyncVar;
@@ -167,6 +167,11 @@ public class Component implements IDestructor {
         return s != null ? s.image(null) : null;
     }
 
+    public Cursor getCursor(final String name) {
+        final StyleSetting s = getStyle(name);
+        return s != null ? s.cursor() : Cursor.DEFAULT;
+    }
+
     public boolean isFocusable() {
         synchronized (locker) {
             return isFocusable;
@@ -186,7 +191,7 @@ public class Component implements IDestructor {
             if (isFocusable == newValue)
                 return;
             if (newValue) {
-                focusListeners.add(addEventListener(MouseUpEvent.class, e -> requestFocus()));
+                focusListeners.add(addEventListener(MouseDownEvent.class, e -> requestFocus()));
             } else {
                 removeEventListeners(focusListeners);
                 focusListeners.clear();

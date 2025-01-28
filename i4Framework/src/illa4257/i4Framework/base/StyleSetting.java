@@ -53,13 +53,13 @@ public class StyleSetting {
     public StyleSetting set(final String value) { return set(String.class, value); }
     public StyleSetting set(final Color value) { return set(Color.class, value); }
 
-    public Color color() {
-        return computeIfAbsentF(Color.class, Color::styleSettingParser);
-    }
+    public Color color() { return computeIfAbsentF(Color.class, Color::styleSettingParser); }
 
     public Color color(final Color defaultColor) {
         return computeIfAbsentF(Color.class, k -> Color.styleSettingParser(k, defaultColor));
     }
+
+    public Cursor cursor() { return computeIfAbsentF(Cursor.class, Cursor::from); }
 
     public Image image(final Image defaultImage) {
         return computeIfAbsentF(Image.class, k -> {
