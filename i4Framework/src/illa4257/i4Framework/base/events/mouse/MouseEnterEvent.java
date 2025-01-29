@@ -1,4 +1,4 @@
-package illa4257.i4Framework.base.events.input;
+package illa4257.i4Framework.base.events.mouse;
 
 public class MouseEnterEvent extends MouseEvent {
     public MouseEnterEvent(final int x, final int y) {

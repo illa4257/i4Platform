@@ -1,4 +1,4 @@
-package illa4257.i4Framework.base.events.input;
+package illa4257.i4Framework.base.events.mouse;
 
 public class MouseMoveEvent extends MouseEvent {
     public MouseMoveEvent(final int x, final int y) { super(x, y); }

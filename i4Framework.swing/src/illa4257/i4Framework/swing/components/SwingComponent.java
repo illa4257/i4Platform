@@ -6,7 +6,7 @@ import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Container;
 import illa4257.i4Framework.base.events.components.RecalculateEvent;
 import illa4257.i4Framework.base.events.components.RepaintEvent;
-import illa4257.i4Framework.base.events.input.*;
+import illa4257.i4Framework.base.events.mouse.*;
 import illa4257.i4Framework.swing.SwingContext;
 
 import javax.swing.*;

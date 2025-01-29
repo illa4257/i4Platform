@@ -1,4 +1,4 @@
-package illa4257.i4Framework.base.events.input;
+package illa4257.i4Framework.base.events.mouse;
 
 import illa4257.i4Framework.base.events.Event;
 

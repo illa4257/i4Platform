@@ -2,7 +2,7 @@ package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.Color;
 import illa4257.i4Framework.base.Context;
-import illa4257.i4Framework.base.events.input.MouseUpEvent;
+import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.points.PPointSubtract;
 import illa4257.i4Framework.base.points.PointAttach;
 import illa4257.i4Framework.base.points.PointSet;

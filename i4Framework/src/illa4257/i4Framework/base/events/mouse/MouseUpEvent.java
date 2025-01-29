@@ -1,4 +1,4 @@
-package illa4257.i4Framework.base.events.input;
+package illa4257.i4Framework.base.events.mouse;
 
 public class MouseUpEvent extends MouseEvent {
     public final MouseButton button;
