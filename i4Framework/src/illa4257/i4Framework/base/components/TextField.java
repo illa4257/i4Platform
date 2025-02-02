@@ -126,7 +126,7 @@ public class TextField extends Component {
             i -= 1;
         }
 
-        final int si = selectionIndex.get();
+        final int si = selectionIndex.get(), startIndex = index.get();
         final char[] arr = new char[] { 'H' };
         final float w = width.calcFloat(), th = context.bounds(arr).y, y = (height.calcFloat() - th) / 2;
         final boolean isF = isFocused();
@@ -137,23 +137,10 @@ public class TextField extends Component {
             for (; x < w; i++) {
                 if (text.getChar(i, null) == null)
                     break;
-                if (si == i) {
+                if (si == i)
                     selectBeginX = x;
-                    if (selectEndX != -1) {
-                        context.setColor(getColor("--selection-color"));
-                        context.drawRect(selectEndX, y, x - selectEndX, th);
-                        context.setColor(textColor);
-                    }
-                }
-                if (isF && i == index.get()) {
-                    if (selectBeginX != -1) {
-                        context.setColor(getColor("--selection-color"));
-                        context.drawRect(selectBeginX, y, x - selectBeginX, th);
-                        context.setColor(textColor);
-                    } else
-                        selectEndX = x;
-                    context.drawRect(x, y, 2, th);
-                }
+                if (i == startIndex)
+                    selectEndX = x;
                 context.drawString(arr, x, y);
                 x += sw;
             }
@@ -162,46 +149,34 @@ public class TextField extends Component {
                 final Character ch = text.getChar(i, null);
                 if (ch == null)
                     break;
-                if (si == i) {
+                if (si == i)
                     selectBeginX = x;
-                    if (selectEndX != -1) {
-                        context.setColor(getColor("--selection-color"));
-                        context.drawRect(selectEndX, y, x - selectEndX, th);
-                        context.setColor(textColor);
-                    }
-                }
-                if (isF && i == index.get()) {
-                    if (selectBeginX != -1) {
-                        context.setColor(getColor("--selection-color"));
-                        context.drawRect(selectBeginX, y, x - selectBeginX, th);
-                        context.setColor(textColor);
-                    } else
-                        selectEndX = x;
-                    context.drawRect(x, y, 2, th);
-                }
+                if (i == startIndex)
+                    selectEndX = x;
                 arr[0] = ch;
                 context.drawString(arr, x, y);
                 x += context.bounds(arr).x;
             }
+        if (selectEndX == -1 && i == startIndex)
+            selectEndX = x;
 
-        if (index.get() >= i)
-            context.drawRect(x, y, 2, th);
-
-        if (si == -1)
+        if (si == -1 || si == startIndex) {
+            if (isF)
+                context.drawRect(selectEndX, y, 2, th);
             return;
+        }
         context.setColor(getColor("--selection-color"));
-        if (si < position.get()) {
-            if (selectEndX != -1)
-                context.drawRect(0, y, selectEndX, th);
-            else
-                context.drawRect(0, y, x, th);
+        if (selectBeginX == -1)
+            selectBeginX = si > startIndex ? x : 0;
+        if (selectEndX == -1)
+            selectEndX = x;
+        if (selectBeginX > selectEndX) {
+            final float t = selectBeginX;
+            selectBeginX = selectEndX;
+            selectEndX = t;
         }
-        if (si >= i) {
-            System.out.println("Draw");
-            System.out.println(selectBeginX + " / " + selectEndX);
-            context.drawRect(selectEndX, y, x, th);
-        }
-        if (selectEndX != -1 && si > i)
-            context.drawRect(selectEndX, y, width.calcFloat() - selectEndX, th);
+        context.drawRect(selectBeginX, y, selectEndX - selectBeginX, th);
+        context.setColor(textColor);
+        context.drawRect(si > startIndex ? selectBeginX : selectEndX, y, 2, th);
     }
 }
