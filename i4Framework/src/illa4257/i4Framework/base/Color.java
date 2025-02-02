@@ -120,10 +120,17 @@ public class Color {
                     final int l = v.length();
                     if (v.startsWith("#")) {
                         if (l == 4) {
-                            final int r = Integer.parseInt(v.substring(1, 2), 16);
-                            final int g = Integer.parseInt(v.substring(2, 3), 16);
-                            final int b = Integer.parseInt(v.substring(3, 4), 16);
+                            final int r = Integer.parseInt(v.substring(1, 2), 16),
+                                    g = Integer.parseInt(v.substring(2, 3), 16),
+                                    b = Integer.parseInt(v.substring(3, 4), 16);
                             return new Color(r * 16 + r, g * 16 + g, b * 16 + b);
+                        }
+                        if (l == 5) {
+                            final int r = Integer.parseInt(v.substring(1, 2), 16),
+                                    g = Integer.parseInt(v.substring(2, 3), 16),
+                                    b = Integer.parseInt(v.substring(3, 4), 16),
+                                    a = Integer.parseInt(v.substring(4, 5), 16);
+                            return new Color(r * 16 + r, g * 16 + g, b * 16 + b, a * 16 + a);
                         }
                         if (l == 7)
                             return fromRGB(Integer.parseInt(v.substring(1), 16));
