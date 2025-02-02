@@ -3,10 +3,10 @@ package illa4257.i4Framework.android;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import illa4257.i4Framework.base.Color;
+import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
-import illa4257.i4Framework.base.Image;
-import illa4257.i4Framework.base.Vector2D;
+import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.base.math.Vector2D;
 
 public class AndroidGContext implements Context {
     public final Paint paint = new Paint();

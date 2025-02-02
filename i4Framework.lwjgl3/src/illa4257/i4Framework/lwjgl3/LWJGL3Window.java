@@ -1,6 +1,6 @@
 package illa4257.i4Framework.lwjgl3;
 
-import illa4257.i4Framework.base.EventListener;
+import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.components.RecalculateEvent;

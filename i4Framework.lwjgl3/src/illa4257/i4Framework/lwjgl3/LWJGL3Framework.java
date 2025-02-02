@@ -6,7 +6,6 @@ import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.components.Window;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
