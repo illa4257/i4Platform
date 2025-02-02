@@ -2,7 +2,7 @@ package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
-import illa4257.i4Framework.base.HorizontalAlign;
+import illa4257.i4Framework.base.math.HorizontalAlign;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.points.PointAttach;
 

@@ -1,4 +1,6 @@
-package illa4257.i4Framework.base;
+package illa4257.i4Framework.base.graphics;
+
+import illa4257.i4Framework.base.styling.StyleSetting;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;

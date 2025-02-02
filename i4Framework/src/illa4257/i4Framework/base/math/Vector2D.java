@@ -1,4 +1,4 @@
-package illa4257.i4Framework.base;
+package illa4257.i4Framework.base.math;
 
 import java.awt.geom.Rectangle2D;
 

@@ -1,5 +1,9 @@
 package illa4257.i4Framework.base;
 
+import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.base.math.Vector2D;
+
 public interface Context {
     default Context sub(final float x, final float y, final float w, final float h) { return this; }
     default void dispose() {}

@@ -1,4 +1,7 @@
-package illa4257.i4Framework.base;
+package illa4257.i4Framework.base.utils;
+
+import illa4257.i4Framework.base.styling.StyleSelector;
+import illa4257.i4Framework.base.styling.StyleSetting;
 
 import java.io.IOException;
 import java.io.Reader;

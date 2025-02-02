@@ -1,9 +1,9 @@
 package illa4257.i4Framework.base.components;
 
-import illa4257.i4Framework.base.Color;
+import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
-import illa4257.i4Framework.base.HorizontalAlign;
-import illa4257.i4Framework.base.Vector2D;
+import illa4257.i4Framework.base.math.HorizontalAlign;
+import illa4257.i4Framework.base.math.Vector2D;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.ChangeTextEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;

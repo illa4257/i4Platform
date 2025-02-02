@@ -1,14 +1,19 @@
 package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.*;
-import illa4257.i4Framework.base.EventListener;
+import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.components.*;
 import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.SingleEvent;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseEnterEvent;
 import illa4257.i4Framework.base.events.mouse.MouseLeaveEvent;
+import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.base.styling.StyleSelector;
+import illa4257.i4Framework.base.styling.StyleSetting;
 import illa4257.i4Framework.base.points.*;
+import illa4257.i4Framework.base.styling.Cursor;
 import illa4257.i4Utils.IDestructor;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.lists.DynList;

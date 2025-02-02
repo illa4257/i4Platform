@@ -1,4 +1,4 @@
-package illa4257.i4Framework.base;
+package illa4257.i4Framework.base.styling;
 
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Utils.SyncVar;

@@ -1,5 +1,8 @@
-package illa4257.i4Framework.base;
+package illa4257.i4Framework.base.styling;
 
+import illa4257.i4Framework.base.utils.Cache;
+import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Utils.runnables.Provider;
 
 import java.util.concurrent.ConcurrentHashMap;

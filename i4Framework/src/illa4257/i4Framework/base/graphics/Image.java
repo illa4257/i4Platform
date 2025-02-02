@@ -1,4 +1,4 @@
-package illa4257.i4Framework.base;
+package illa4257.i4Framework.base.graphics;
 
 import java.awt.image.BufferedImage;
 import java.io.Closeable;
