@@ -1,12 +1,15 @@
 package illa4257.i4Utils.logger;
 
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class i4Logger implements LogHandler {
+    public static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     private static final Object locker = new Object();
     private static i4Logger parent = null;
 
@@ -132,6 +135,20 @@ public class i4Logger implements LogHandler {
         };
     }
 
+    public PrintStream newPrintStream(final Level level) {
+        return new PrintStream(newOutputStream(level)) {
+            @Override
+            public void println(final String x) {
+                log(level, x);
+            }
+
+            @Override
+            public void println(Object obj) {
+                log(level, obj);
+            }
+        };
+    }
+
     public boolean registerHandler(final LogHandler handler) {
         if (handler == null)
             return false;
@@ -153,7 +170,7 @@ public class i4Logger implements LogHandler {
     }
 
     public String prefix(final Level level, final String name) {
-        return "[" + LocalDateTime.now() + "][" + level + "]" + (name == null ? this.name == null ? "" : "[" + this.name + "]" : "[" + name + "]");
+        return "[" + LocalDateTime.now().format(formatter) + "][" + level + "]" + (name == null ? this.name == null ? "" : "[" + this.name + "]" : "[" + name + "]");
     }
 
     public String prefix(final Level level) {
