@@ -136,8 +136,21 @@ public class IO {
     public static byte readByte(final InputStream is) throws IOException {
         final int r = is.read();
         if (r == -1)
-            throw new IOException("End");
+            throw new EOFException("End of stream reached while trying to read a byte.");
         return (byte) r;
+    }
+
+    /**
+     * Tries to read a byte, if it reaches the end, it throws IOException.
+     * @param is InputStream
+     * @return byte
+     * @throws IOException if any input stream throws IOException, or if it reaches the end.
+     */
+    public static int readByteI(final InputStream is) throws IOException {
+        final int r = is.read();
+        if (r == -1)
+            throw new EOFException("End of stream reached while trying to read a byte.");
+        return r;
     }
 
     /**
@@ -189,7 +202,7 @@ public class IO {
      * @throws IOException if any input stream throws IOException, or if it reaches the end.
      */
     public static int readBEInteger(final InputStream stream) throws IOException {
-        return (readByte(stream) << 24) + (readByte(stream) << 16) + (readByte(stream) << 8) + readByte(stream);
+        return (readByteI(stream) << 24) + (readByteI(stream) << 16) + (readByteI(stream) << 8) + readByteI(stream);
     }
 
     /**
