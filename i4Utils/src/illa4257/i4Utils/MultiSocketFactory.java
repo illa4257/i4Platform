@@ -51,7 +51,7 @@ public class MultiSocketFactory {
         this(new InetSocketAddress("127.0.0.1", port), appId, port, 0, 0);
     }
 
-    private void log(final Throwable ex) {
+    private static void log(final Throwable ex) {
         final i4Logger l = i4Logger.INSTANCE;
         l.log(Level.ERROR, l.prefix(Level.ERROR, "MultiSocket"), ex);
     }
@@ -138,6 +138,7 @@ public class MultiSocketFactory {
                                                 System.out.println("Accept code: " + b);
                                                 if (clients.putIfAbsent(b, s) != null)
                                                     continue;
+                                                osm.write(0);
                                                 IO.writeBEInteger(osm, b);
                                                 osm.flush();
                                                 break;
@@ -146,7 +147,6 @@ public class MultiSocketFactory {
                                         ac.preventClosing.set(true);
                                         return;
                                     } else if (a == ACCEPT) {
-                                        System.out.println("Accepting");
                                         try (final Socket client = clients.remove(IO.readBEInteger(is))) {
                                             if (client == null)
                                                 return;
@@ -169,6 +169,11 @@ public class MultiSocketFactory {
                                                 log(ex);
                                             }
                                             ct.join();
+                                            try {
+                                                client.close();
+                                            } catch (final Exception ex) {
+                                                log(ex);
+                                            }
                                             return;
                                         }
                                     }
@@ -204,49 +209,62 @@ public class MultiSocketFactory {
     }
 
     private static void transfer(final OutputStream to, final InputStream from) throws IOException {
-        boolean autoSize = true;
-        int r, cs;
-        byte[] d = new byte[32];
-        while (true) {
-            final byte o = IO.readByte(from);
-            switch (o) {
-                case SINGLE_BYTE:
-                    to.write(IO.readByte(from));
-                    to.flush();
-                    break;
-                case RAW:
-                    int length = IO.readBEInteger(from);
-                    if (length == 0)
+        try {
+            boolean autoSize = true;
+            int r, cs;
+            byte[] d = new byte[32];
+            while (true) {
+                final byte o = IO.readByte(from);
+                switch (o) {
+                    case SINGLE_BYTE:
+                        to.write(IO.readByte(from));
+                        to.flush();
                         break;
-                    if (autoSize) {
-                        cs = 32;
-                        if (length > 1024 * 1024)
-                            cs = 10 * 1024 * 1024;
-                        else if (length > 1024)
-                            cs = 10 * 1024;
-                        else if (length > 64)
-                            cs = 128;
-                        if (d.length != cs)
-                            d = new byte[cs];
-                    }
-                    for (;length > 0; length -= r) {
-                        if (length > d.length)
-                            r = from.read(d);
-                        else
-                            r = from.read(d, 0, length);
-                        if (r == -1)
-                            throw new IOException("End");
-                        to.write(d, 0, r);
-                    }
-                    to.flush();
-                    break;
-                case SET_BUFFER_SIZE_MODE:
-                    autoSize = IO.readByte(from) > 0;
-                    break;
-                case SET_BUFFER_SIZE:
-                    autoSize = false;
-                    d = new byte[IO.readBEInteger(from)];
-                    break;
+                    case RAW:
+                        int length = IO.readBEInteger(from);
+                        if (length == 0)
+                            break;
+                        if (autoSize) {
+                            cs = 32;
+                            if (length > 1024 * 1024)
+                                cs = 10 * 1024 * 1024;
+                            else if (length > 1024)
+                                cs = 10 * 1024;
+                            else if (length > 64)
+                                cs = 128;
+                            if (d.length != cs)
+                                d = new byte[cs];
+                        }
+                        for (; length > 0; length -= r) {
+                            if (length > d.length)
+                                r = from.read(d);
+                            else
+                                r = from.read(d, 0, length);
+                            if (r == -1)
+                                throw new EOFException("End");
+                            to.write(d, 0, r);
+                        }
+                        to.flush();
+                        break;
+                    case SET_BUFFER_SIZE_MODE:
+                        autoSize = IO.readByte(from) > 0;
+                        break;
+                    case SET_BUFFER_SIZE:
+                        autoSize = false;
+                        d = new byte[IO.readBEInteger(from)];
+                        break;
+                }
+            }
+        } finally {
+            try {
+                to.close();
+            } catch (final Exception ex) {
+                log(ex);
+            }
+            try {
+                from.close();
+            } catch (final Exception ex) {
+                log(ex);
             }
         }
     }
@@ -296,7 +314,6 @@ public class MultiSocketFactory {
         if (s == null)
             return null;
         try {
-            System.out.println("Trying to reserve");
             final OutputStream os = s.getOutputStream();
             os.write(RESERVE);
             os.flush();
