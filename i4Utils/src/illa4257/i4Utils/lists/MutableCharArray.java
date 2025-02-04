@@ -369,6 +369,7 @@ public class MutableCharArray {
                 return defaultValue;
             if (i < page.length)
                 return page.charArray[page.offset + i];
+            i -= page.length;
             CharArrayPage c = page;
             while ((c = c.next) != null)
                 if (i < c.length)
