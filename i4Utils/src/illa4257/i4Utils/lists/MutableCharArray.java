@@ -392,12 +392,14 @@ public class MutableCharArray {
                 throw new IndexOutOfBoundsException();
             if (i < page.length)
                 return page.charArray[page.offset + i];
+            i -= page.length;
             CharArrayPage c = page;
-            while ((c = c.next) != null)
+            while ((c = c.next) != null) {
                 if (i < c.length)
                     return c.charArray[c.offset + i];
                 else
                     i -= c.length;
+            }
             throw new IndexOutOfBoundsException();
         }
     }
