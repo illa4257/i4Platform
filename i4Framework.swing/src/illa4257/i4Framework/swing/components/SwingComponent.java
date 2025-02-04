@@ -1,5 +1,8 @@
 package illa4257.i4Framework.swing.components;
 
+import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
+import illa4257.i4Framework.base.events.keyboard.KeyTypeEvent;
+import illa4257.i4Framework.base.events.keyboard.KeyUpEvent;
 import illa4257.i4Framework.base.styling.Cursor;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.components.Component;
@@ -11,6 +14,8 @@ import illa4257.i4Framework.swing.SwingContext;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -75,6 +80,22 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         });
         addMouseWheelListener(event -> component.fire(new MouseScrollEvent(getGlobalX(event),
                 getGlobalY(event), event.getX(), event.getY(), event.getUnitsToScroll())));
+        addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+                component.fire(new KeyTypeEvent(e.getKeyCode(), e.getKeyChar()));
+            }
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+                component.fire(new KeyDownEvent(e.getKeyCode(), e.getKeyChar()));
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                component.fire(new KeyUpEvent(e.getKeyCode(), e.getKeyChar()));
+            }
+        });
 
         listeners = new EventListener[] {
                 component.addEventListener(RecalculateEvent.class, e -> {
