@@ -20,11 +20,15 @@ import java.awt.event.*;
 
 public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWindow {
     public final Window window;
+    public final SwingFramework framework;
     public final Container root;
     public EventListener[] l;
 
-    public SwingWindow() { this(null); }
-    public SwingWindow(final Window window) {
+    public SwingWindow(final SwingFramework framework) { this(framework, null); }
+    public SwingWindow(final SwingFramework framework, final Window window) {
+        if (framework == null)
+            throw new IllegalArgumentException("Framework is null");
+        this.framework = framework;
         this.window = window == null ? new Window() : window;
         setContentPane(root = new JPanel() {
             @Override
@@ -93,17 +97,17 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
                     return;
                 window.link();
                 pack();
-                SwingFramework.add(this);
+                framework.add(this);
             } else {
                 window.frameworkWindow.setIfEquals(null, this);
                 window.unlink();
-                SwingFramework.remove(this);
+                framework.remove(this);
             }
             super.setVisible(b);
         }
         if (window.isVisible() != b) {
             window.setVisible(b);
-            window.invokeAll();
+            framework.updated();
         }
     }
 
