@@ -1,5 +1,7 @@
 package illa4257.i4Utils;
 
+import illa4257.i4Utils.runnables.Provider;
+
 import java.util.Objects;
 
 public class SyncVar<T> {
@@ -39,6 +41,14 @@ public class SyncVar<T> {
                 return false;
             v = newValue;
             return true;
+        }
+    }
+
+    public T computeIfAbsentP(final Provider<T> provider) {
+        synchronized (locker) {
+            if (v == null)
+                return v = provider.run();
+            return v;
         }
     }
 
