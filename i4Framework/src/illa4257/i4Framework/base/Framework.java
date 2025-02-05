@@ -19,6 +19,17 @@ public abstract class Framework {
         return false;
     }
 
+    protected final Object updateNotifier = new Object();
+    protected boolean isUpdated;
+
+    public void updated() {
+        synchronized (updateNotifier) {
+            if (isUpdated)
+                return;
+            isUpdated = true;
+            updateNotifier.notifyAll();
+        }
+    }
 
     public abstract boolean isUIThread(final Component component);
 

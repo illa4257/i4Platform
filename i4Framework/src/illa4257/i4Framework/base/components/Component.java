@@ -23,6 +23,7 @@ import illa4257.i4Utils.logger.i4Logger;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Component implements IDestructor {
@@ -38,7 +39,8 @@ public class Component implements IDestructor {
     public final PointSet startX = new PointSet(), startY = new PointSet(), endX = new PointSet(), endY = new PointSet();
     public final Point width = new PPointSubtract(endX, startX), height = new PPointSubtract(endY, startY);
 
-    private final DynList<Runnable> repeatedInvoke = new DynList<>(Runnable.class);
+    protected final DynList<Runnable> repeatedInvoke = new DynList<>(Runnable.class);
+    protected final AtomicBoolean isRepeated = new AtomicBoolean(false);
     private final PagedTmpList<Runnable> invoke = new PagedTmpList<>(Runnable.class);
 
     private final ConcurrentHashMap<Class<? extends Event>, ConcurrentLinkedQueue<EventListener<? extends Event>>>
@@ -234,6 +236,25 @@ public class Component implements IDestructor {
     public Object getLocker() { return locker; }
     public Container getParent() { return parent.get(); }
 
+    public Window getWindow() {
+        final Container c = parent.get();
+        return c instanceof Window ? (Window) c : c != null ? c.getWindow() : null;
+    }
+
+    public Framework getFramework() {
+        final Window w = getWindow();
+        if (w == null)
+            return null;
+        final FrameworkWindow fw = w.frameworkWindow.get();
+        return fw != null ? fw.getFramework() : null;
+    }
+
+    protected void updated() {
+        final Framework f = getFramework();
+        if (f != null)
+            f.updated();
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     protected void invokeAll() {
         Event event;
@@ -265,7 +286,7 @@ public class Component implements IDestructor {
             }
     }
 
-    public void invokeLater(final Runnable runnable) { invoke.add(runnable); }
+    public void invokeLater(final Runnable runnable) { invoke.add(runnable); updated(); }
 
     public void invokeAndWait(final Runnable runnable) throws InterruptedException {
         if (Framework.isThread(this)) {
@@ -284,12 +305,33 @@ public class Component implements IDestructor {
                     l.notifyAll();
                 }
             });
+            updated();
             l.wait();
         }
     }
 
-    public void onTick(final Runnable runnable) { repeatedInvoke.add(runnable); }
-    public void offTick(final Runnable runnable) { repeatedInvoke.remove(runnable); }
+    public boolean isRepeated() { return isRepeated.get(); }
+
+    protected void repeated(final boolean v) {
+        final Container c = getParent();
+        if (c == null)
+            return;
+        c.repeated(v);
+    }
+
+    public void onTick(final Runnable runnable) {
+        if (repeatedInvoke.add(runnable)) {
+            isRepeated.set(true);
+            repeated(true);
+            updated();
+        }
+    }
+    public void offTick(final Runnable runnable) {
+        if (repeatedInvoke.remove(runnable) && repeatedInvoke.isEmpty()) {
+            isRepeated.set(false);
+            repeated(false);
+        }
+    }
 
     private <T extends Event> EventListener<T> addEventListenerInternal(final Class<T> eventType, final EventListener<T> listener, final ConcurrentHashMap<Class<? extends Event>, ConcurrentLinkedQueue<EventListener<?>>> listeners) {
         if (listeners.computeIfAbsent(eventType, t -> new ConcurrentLinkedQueue<>()).add(listener))
@@ -348,6 +390,7 @@ public class Component implements IDestructor {
                 }
         }
         events.add(event);
+        updated();
     }
 
     public void fireLater(final Event event) { invokeLater(() -> fire(event)); }

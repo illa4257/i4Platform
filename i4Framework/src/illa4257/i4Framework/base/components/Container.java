@@ -56,6 +56,7 @@ public class Container extends Component implements Iterable<Component> {
                 c.remove(c);
             component.fire(new StyleUpdateEvent());
             fire(new AddComponentEvent(component));
+            updated();
         }
         return r;
     }
@@ -67,6 +68,7 @@ public class Container extends Component implements Iterable<Component> {
                 component.unlink();
             component.parent.setIfEquals(null, this);
             fire(new RemoveComponentEvent(component));
+            updated();
         }
         return r;
     }
@@ -149,6 +151,20 @@ public class Container extends Component implements Iterable<Component> {
             focused = null;
             return false;
         }
+    }
+
+    @Override
+    protected void repeated(final boolean v) {
+        if (v) {
+            if (isRepeated.getAndSet(true))
+                return;
+        } else
+            if (!repeatedInvoke.isEmpty() || components.stream().anyMatch(c -> c.isRepeated.get()))
+                return;
+        final Container c = getParent();
+        if (c == null)
+            return;
+        c.repeated(v);
     }
 
     @Override
