@@ -1,5 +1,7 @@
 package illa4257.i4Framework.base.components;
 
+import illa4257.i4Framework.base.events.keyboard.KeyEvent;
+import illa4257.i4Framework.base.events.keyboard.KeyPressEvent;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.events.mouse.MouseButton;
@@ -46,6 +48,47 @@ public class TextField extends Component {
                     position.set(Math.min(position.get() + 1, text.size() - 16));
                 repaint();
             }
+        });
+        addEventListener(KeyPressEvent.class, e -> {
+            if (e.keyCode == KeyEvent.BACKSPACE) {
+                int i = index.get();
+                if (i == 0)
+                    return;
+                index.set(--i);
+                text.remove(i);
+                repaint();
+                return;
+            }
+            if (e.keyCode == KeyEvent.DELETE) {
+                int i = index.get();
+                if (i == 0)
+                    return;
+                text.removeB(i);
+                repaint();
+                return;
+            }
+            if (e.keyCode == KeyEvent.LEFT) {
+                int i = index.get();
+                if (i == 0)
+                    return;
+                index.set(--i);
+                repaint();
+                return;
+            }
+            if (e.keyCode == KeyEvent.RIGHT) {
+                final int i = index.get();
+                if (i == text.size())
+                    return;
+                index.set(i + 1);
+                repaint();
+                return;
+            }
+            if (e.keyChar == KeyEvent.ENTER || KeyEvent.isNotVisible(e.keyCode))
+                return;
+            if (e.keyChar >= 1 && e.keyChar <= 26)
+                return;
+            text.add(e.keyChar, index.getAndIncrement());
+            repaint();
         });
     }
 
@@ -161,7 +204,7 @@ public class TextField extends Component {
             selectEndX = x;
 
         if (si == -1 || si == startIndex) {
-            if (isF)
+            if (isF && startIndex <= i)
                 context.drawRect(selectEndX, y, 2, th);
             return;
         }
