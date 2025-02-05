@@ -56,17 +56,18 @@ public class DynList<T> {
         }
     }
 
-    public void add(final T value) {
+    public boolean add(final T value) {
         if (value == null)
-            return;
+            return false;
         synchronized (locker) {
             current.add(value);
+            return true;
         }
     }
 
-    public void remove(final T value) {
+    public boolean remove(final T value) {
         if (value == null)
-            return;
+            return false;
         int i = 0;
         Page c;
         synchronized (locker) {
@@ -77,7 +78,7 @@ public class DynList<T> {
                         c.array[i - 1] = c.array[i];
                     c.array[i] = null;
                     c.sz--;
-                    return;
+                    return true;
                 }
             }
         }
@@ -93,10 +94,39 @@ public class DynList<T> {
                             c.array[i - 1] = c.array[i];
                         c.array[i] = null;
                         c.sz--;
-                        return;
+                        return true;
                     }
                 c = c.next;
             }
+        return false;
+    }
+
+    public boolean isEmpty() {
+        Page c;
+        synchronized (locker) {
+            c = root;
+        }
+        while (c != null)
+            synchronized (c.pageLocker) {
+                if (c.sz > 0)
+                    return false;
+                c = c.next;
+            }
+        return true;
+    }
+
+    public int size() {
+        Page c;
+        synchronized (locker) {
+            c = root;
+        }
+        int r = 0;
+        while (c != null)
+            synchronized (c.pageLocker) {
+                r += c.sz;
+                c = c.next;
+            }
+        return r;
     }
 
     public void reset() {
