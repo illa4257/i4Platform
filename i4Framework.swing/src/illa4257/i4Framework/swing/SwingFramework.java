@@ -36,13 +36,9 @@ public class SwingFramework extends Framework {
         }
 
         public void onTick() {
-            try {
-                synchronized (updateNotifier) {
-                    if (isUpdated)
-                        isUpdated = false;
-                }
-            } catch (final Exception ex) {
-                i4Logger.INSTANCE.log(ex);
+            synchronized (updateNotifier) {
+                if (isUpdated)
+                    isUpdated = false;
             }
             isNotRepeated = true;
             for (final SwingWindow w : frames)
@@ -72,6 +68,8 @@ public class SwingFramework extends Framework {
                     }
                 }
             } catch (final Exception ex) {
+                if (ex instanceof InterruptedException)
+                    return;
                 i4Logger.INSTANCE.log(ex);
             }
         }
