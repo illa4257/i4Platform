@@ -203,6 +203,7 @@ public class Component implements IDestructor {
                 removeEventListeners(focusListeners);
                 focusListeners.clear();
             }
+            isFocusable = newValue;
         }
     }
 
@@ -370,7 +371,6 @@ public class Component implements IDestructor {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void fire(Event event) {
-        //System.out.println(this + " / " + event);
         if (event == null)
             return;
         final Class<? extends Event> c = event.getClass();
