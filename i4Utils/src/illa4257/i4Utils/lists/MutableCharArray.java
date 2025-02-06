@@ -40,11 +40,11 @@ public class MutableCharArray {
 
         public char getChar(final int i) {
             if (i < 0)
-                throw new IndexOutOfBoundsException();
+                throw new IndexOutOfBoundsException("Index out of range: " + i);
             synchronized (locker) {
                 if (i < length)
                     return charArray[offset + i];
-                throw new IndexOutOfBoundsException();
+                throw new IndexOutOfBoundsException("Index out of range: " + i);
             }
         }
 
@@ -120,15 +120,16 @@ public class MutableCharArray {
         }
     }
 
-    public void remove(int index) {
+    public void remove(final int index) {
         if (index < 0)
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException("Index out of range: " + index);
         synchronized (locker) {
             if (page == null)
-                throw new IndexOutOfBoundsException();
+                throw new IndexOutOfBoundsException("Index out of range: " + index);
+            int i = index;
             CharArrayPage p = page, pp = null;
             while (p != null) {
-                if (index == 0) {
+                if (i == 0) {
                     p.offset++;
                     if (--p.length == 0)
                         if (pp == null)
@@ -137,22 +138,22 @@ public class MutableCharArray {
                             pp.next = p.clear();
                     return;
                 }
-                if (p.length - 1 == index) {
+                if (p.length - 1 == i) {
                     p.length--;
                     return;
                 }
-                if (p.length > index) {
-                    final CharArrayPage t = new CharArrayPage(Arrays.copyOfRange(p.charArray, p.offset + index + 1, p.offset + p.length));
+                if (p.length > i) {
+                    final CharArrayPage t = new CharArrayPage(Arrays.copyOfRange(p.charArray, p.offset + i + 1, p.offset + p.length));
                     t.next = p.next;
-                    p.length = index;
+                    p.length = i;
                     p.next = t;
                     return;
                 }
-                index -= p.length;
+                i -= p.length;
                 pp = p;
                 p = p.next;
             }
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException("Index out of range: " + index);
         }
     }
 
@@ -233,11 +234,11 @@ public class MutableCharArray {
 
     public void add(final char ch, final int index) {
         if (index < 0)
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException("Index out of range: " + index);
         synchronized (locker) {
             if (page == null) {
                 if (index > 0)
-                    throw new IndexOutOfBoundsException();
+                    throw new IndexOutOfBoundsException("Index out of range: " + index);
                 page = new CharArrayPage(pageSize);
                 page.charArray[0] = ch;
                 page.length++;
@@ -284,7 +285,7 @@ public class MutableCharArray {
                 p.length++;
                 return;
             }
-            throw new IndexOutOfBoundsException(index);
+            throw new IndexOutOfBoundsException("Index out of range: " + index);
         }
     }
 
@@ -317,17 +318,18 @@ public class MutableCharArray {
     }
 
     public void add(final char[] charArray, final int index) { addDirect(charArray.clone(), index); }
-    public void addDirect(final char[] charArray, int index) {
+    public void addDirect(final char[] charArray, final int index) {
         if (index < 0)
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException("Index out of range: " + index);
         synchronized (locker) {
             if (page == null) {
                 page = new CharArrayPage(charArray);
                 return;
             }
+            int i = index;
             CharArrayPage p = page, pp = null;
             while (p != null) {
-                if (index == 0) {
+                if (i == 0) {
                     final CharArrayPage t = new CharArrayPage(charArray);
                     t.next = p;
                     if (pp == null)
@@ -336,42 +338,43 @@ public class MutableCharArray {
                         pp.next = t;
                     return;
                 }
-                if (p.length == index) {
+                if (p.length == i) {
                     final CharArrayPage t = new CharArrayPage(charArray);
                     t.next = p.next;
                     p.next = t;
                     return;
                 }
-                if (p.length > index) {
-                    final CharArrayPage s = new CharArrayPage(Arrays.copyOfRange(p.charArray, p.offset + index, p.offset + p.length));
+                if (p.length > i) {
+                    final CharArrayPage s = new CharArrayPage(Arrays.copyOfRange(p.charArray, p.offset + i, p.offset + p.length));
                     s.next = p.next;
-                    p.length = index;
+                    p.length = i;
                     final CharArrayPage t = new CharArrayPage(charArray);
                     t.next = s;
                     p.next = t;
                     return;
                 }
 
-                index -= p.length;
+                i -= p.length;
                 pp = p;
                 p = p.next;
             }
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException("Index out of range: " + index);
         }
     }
 
     public void add(final char[] charArray, final int index, final int offset, final int length) { addDirect(charArray.clone(), index, offset, length); }
-    public void addDirect(final char[] charArray, int index, final int offset, final int length) {
+    public void addDirect(final char[] charArray, final int index, final int offset, final int length) {
         if (index < 0)
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException("Index out of range: " + index);
         synchronized (locker) {
             if (page == null) {
                 page = new CharArrayPage(charArray, offset, length);
                 return;
             }
+            int i = index;
             CharArrayPage p = page, pp = null;
             while (p != null) {
-                if (index == 0) {
+                if (i == 0) {
                     final CharArrayPage t = new CharArrayPage(charArray, offset, length);
                     t.next = p;
                     if (pp == null)
@@ -380,27 +383,27 @@ public class MutableCharArray {
                         pp.next = t;
                     return;
                 }
-                if (p.length == index) {
+                if (p.length == i) {
                     final CharArrayPage t = new CharArrayPage(charArray, offset, length);
                     t.next = p.next;
                     p.next = t;
                     return;
                 }
-                if (p.length > index) {
-                    final CharArrayPage s = new CharArrayPage(Arrays.copyOfRange(p.charArray, p.offset + index, p.offset + p.length));
+                if (p.length > i) {
+                    final CharArrayPage s = new CharArrayPage(Arrays.copyOfRange(p.charArray, p.offset + i, p.offset + p.length));
                     s.next = p.next;
-                    p.length = index;
+                    p.length = i;
                     final CharArrayPage t = new CharArrayPage(charArray, offset, length);
                     t.next = s;
                     p.next = t;
                     return;
                 }
 
-                index -= p.length;
+                i -= p.length;
                 pp = p;
                 p = p.next;
             }
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException("Index out of range: " + index);
         }
     }
 
@@ -428,15 +431,15 @@ public class MutableCharArray {
      * @param i index
      * @return char
      */
-    public char getChar(int i) {
-        if (i < 0)
-            throw new IndexOutOfBoundsException();
+    public char getChar(final int index) {
+        if (index < 0)
+            throw new IndexOutOfBoundsException("Index out of range: " + index);
         synchronized (locker) {
             if (page == null)
                 throw new IndexOutOfBoundsException();
-            if (i < page.length)
-                return page.charArray[page.offset + i];
-            i -= page.length;
+            if (index < page.length)
+                return page.charArray[page.offset + index];
+            int i = index - page.length;
             CharArrayPage c = page;
             while ((c = c.next) != null) {
                 if (i < c.length)
@@ -444,7 +447,7 @@ public class MutableCharArray {
                 else
                     i -= c.length;
             }
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException("Index out of range: " + index);
         }
     }
 
