@@ -14,9 +14,7 @@ import illa4257.i4Framework.swing.SwingContext;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
+import java.awt.event.*;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 
@@ -37,7 +35,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
 
     public SwingComponent(final Component component) {
         this.component = component;
-        setFocusable(true);
+        setFocusable(component.isFocusable());
         setOpaque(false);
 
         addMouseListener(new MouseAdapter() {
@@ -107,7 +105,11 @@ public class SwingComponent extends JComponent implements ISwingComponent {
                     setLocation(component.startX.calcInt(), component.startY.calcInt());
                     setSize(component.width.calcInt(), component.height.calcInt());
                 }),
-                component.addEventListener(RepaintEvent.class, e -> repaint())
+                component.addEventListener(RepaintEvent.class, e -> repaint()),
+                component.addEventListener(illa4257.i4Framework.base.events.components.FocusEvent.class, e -> {
+                    if (e.value)
+                        requestFocus();
+                })
         };
 
         if (component instanceof Container) {
