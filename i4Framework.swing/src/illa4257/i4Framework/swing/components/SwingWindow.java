@@ -43,6 +43,10 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent windowEvent) {
+                if (!SwingWindow.this.window.frameworkWindow.setIfEquals(null, SwingWindow.this))
+                    return;
+                SwingWindow.this.window.unlink();
+                framework.remove(SwingWindow.this);
                 setVisible(false);
             }
         });
@@ -99,7 +103,8 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
                 pack();
                 framework.add(this);
             } else {
-                window.frameworkWindow.setIfEquals(null, this);
+                if (!window.frameworkWindow.setIfEquals(null, this))
+                    return;
                 window.unlink();
                 framework.remove(this);
             }
