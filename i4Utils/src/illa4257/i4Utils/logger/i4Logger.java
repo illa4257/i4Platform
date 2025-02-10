@@ -2,6 +2,7 @@ package illa4257.i4Utils.logger;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -218,6 +219,8 @@ public class i4Logger implements LogHandler {
 
     public void log(final Throwable throwable) {
         log(Level.ERROR, prefix(Level.ERROR), throwable.toString(), throwable.getStackTrace());
+        if (throwable instanceof InvocationTargetException)
+            log(((InvocationTargetException) throwable).getTargetException());
     }
 
     public void log(final Level level, final Object... objects) {
