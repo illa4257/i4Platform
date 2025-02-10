@@ -166,47 +166,47 @@ public class MutableCharArray {
                     throw new IndexOutOfBoundsException();
                 return;
             }
-            if (to > size())
-                throw new IndexOutOfBoundsException();
             CharArrayPage p = page, pp = null;
             while (p != null) {
-                if (from == 0) {
-                    if (p.length >= to) {
-                        p.offset += to;
-                        p.length -= to;
-                        if (p.length == 0)
-                            if (pp == null)
-                                page = p.clear();
-                            else
-                                pp.next = p.clear();
-                        return;
-                    }
+                if (from >= p.length) {
+                    from -= p.length;
                     to -= p.length;
-                    p = p.clear();
-                    if (pp == null)
-                        page = p;
-                    else
-                        pp.next = p;
-                    continue;
-                }
-                if (p.length == to) {
-                    p.length = from;
-                    return;
-                }
-                if (p.length > from && to > p.length) {
-                    to -= p.length;
-                    p.length = from;
-                    from = 0;
                     pp = p;
                     p = p.next;
                     continue;
                 }
-                from = Math.max(from - p.length, 0);
-                to -= p.length;
-                pp = p;
-                p = p.next;
+                if (to >= p.length) {
+                    if (from > 0) {
+                        to -= p.length;
+                        p.length = from;
+                        from = 0;
+                        pp = p;
+                        p = p.next;
+                        continue;
+                    }
+                    to -= p.length;
+                    p = p.clear();
+                    if (pp != null)
+                        pp.next = p;
+                    else
+                        page = p;
+                    if (to == 0)
+                        return;
+                    continue;
+                }
+                if (from > 0) {
+                    final CharArrayPage o = p.next;
+                    p.next = new CharArrayPage(Arrays.copyOfRange(p.charArray, p.offset + from, p.offset + p.length));
+                    p.next.next = o;
+                    p.length = from;
+                    p = p.next;
+                    to -= from;
+                }
+                p.offset += to;
+                p.length -= to;
+                return;
             }
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException(from + " / " + to);
         }
     }
 
@@ -428,7 +428,7 @@ public class MutableCharArray {
 
     /**
      * Retrieves a character at a specific index.
-     * @param i index
+     * @param index index
      * @return char
      */
     public char getChar(final int index) {
