@@ -13,10 +13,7 @@ import java.awt.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static java.awt.RenderingHints.*;
 
@@ -68,7 +65,7 @@ public class SwingFramework extends Framework {
                     }
                 }
             } catch (final Exception ex) {
-                if (ex instanceof InterruptedException)
+                if (ex instanceof InterruptedException || ex instanceof RejectedExecutionException)
                     return;
                 i4Logger.INSTANCE.log(ex);
             }
@@ -98,7 +95,8 @@ public class SwingFramework extends Framework {
         if (frame == null)
             return;
         synchronized (frames) {
-            if (frames.isEmpty() && frames.add(frame))
+            final boolean isEmpty = frames.isEmpty();
+            if (frames.add(frame) && isEmpty)
                 timer.computeIfAbsentP(Instance::new);
         }
     }
