@@ -1,0 +1,28 @@
+Window {
+    background-color: #ddd;
+    background-image: background2;
+}
+
+Panel {
+    background-color: #eee;
+}
+
+label,
+button,
+textField {
+    color: #333;
+}
+
+button,
+textField {
+    background-color: #fff;
+}
+
+textField {
+    cursor: text;
+    --selection-color: #3333;
+}
+
+textField:focus {
+    --selection-color: #33b3;
+}
