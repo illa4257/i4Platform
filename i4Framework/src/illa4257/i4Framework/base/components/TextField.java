@@ -52,6 +52,18 @@ public class TextField extends Component {
         addEventListener(KeyPressEvent.class, e -> {
             if (e.keyCode == KeyEvent.BACKSPACE) {
                 int i = index.get();
+                int si = selectionIndex.get();
+                if (si != -1) {
+                    if (si > i)
+                        text.removeRange(i, si);
+                    else {
+                        text.removeRange(si, i);
+                        index.set(si);
+                    }
+                    selectionIndex.set(-1);
+                    repaint();
+                    return;
+                }
                 if (i == 0)
                     return;
                 index.set(--i);
