@@ -138,7 +138,9 @@ public class SwingComponent extends JComponent implements ISwingComponent {
     @Override
     protected void paintComponent(final Graphics graphics) {
         final Cursor c = component.getCursor("cursor");
-        setCursor(getPredefinedCursor(c == Cursor.TEXT ? TEXT_CURSOR : DEFAULT_CURSOR));
+        final int cursor = c == Cursor.TEXT ? TEXT_CURSOR : DEFAULT_CURSOR;
+        if (getCursor().getType() != cursor)
+            setCursor(getPredefinedCursor(cursor));
         final Graphics2D g = (Graphics2D) graphics;
         component.paint(new SwingContext(g));
     }
