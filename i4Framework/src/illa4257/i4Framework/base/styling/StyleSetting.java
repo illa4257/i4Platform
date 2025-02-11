@@ -40,16 +40,26 @@ public class StyleSetting {
         return this;
     }
 
-    public <T> T computeIfAbsent(final Class<T> type, final T defaultValue) {
-        return (T) values.computeIfAbsent(type, k -> defaultValue);
+    public <T> T computeIfAbsent(final Class<T> type, final T computeValue) {
+        return (T) values.computeIfAbsent(type, k -> computeValue);
     }
 
-    public <T> T computeIfAbsentP(final Class<T> type, final Provider<T> defaultValue) {
-        return (T) values.computeIfAbsent(type, k -> defaultValue.run());
+    public <T> T computeIfAbsentP(final Class<T> type, final Provider<T> computeFunction) {
+        return (T) values.computeIfAbsent(type, k -> computeFunction.run());
     }
 
-    public <T> T computeIfAbsentF(final Class<T> type, final Function<StyleSetting, T> defaultValue) {
-        return (T) values.computeIfAbsent(type, k -> defaultValue.apply(this));
+    public <T> T computeIfAbsentP(final Class<T> type, final Provider<T> computeFunction, final T defaultValue) {
+        final T r = (T) values.computeIfAbsent(type, k -> computeFunction.run());
+        return r != null ? computeFunction.run() : defaultValue;
+    }
+
+    public <T> T computeIfAbsentF(final Class<T> type, final Function<StyleSetting, T> computeFunction) {
+        return (T) values.computeIfAbsent(type, k -> computeFunction.apply(this));
+    }
+
+    public <T> T computeIfAbsentF(final Class<T> type, final Function<StyleSetting, T> computeFunction, final T defaultValue) {
+        final T r = (T) values.computeIfAbsent(type, k -> computeFunction.apply(this));
+        return r != null ? r : defaultValue;
     }
 
     public StyleSetting set(final int value) { return set(Integer.class, value); }
@@ -59,7 +69,7 @@ public class StyleSetting {
     public Color color() { return computeIfAbsentF(Color.class, Color::styleSettingParser); }
 
     public Color color(final Color defaultColor) {
-        return computeIfAbsentF(Color.class, k -> Color.styleSettingParser(k, defaultColor));
+        return computeIfAbsentF(Color.class, Color::styleSettingParser, defaultColor);
     }
 
     public Cursor cursor() { return computeIfAbsentF(Cursor.class, Cursor::from); }
@@ -68,9 +78,9 @@ public class StyleSetting {
         return computeIfAbsentF(Image.class, k -> {
             final String value = k.get(String.class);
             if (value == null)
-                return defaultImage;
+                return null;
             return Cache.images.get(value);
-        });
+        }, defaultImage);
     }
 
     @Override
