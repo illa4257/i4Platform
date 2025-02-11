@@ -12,6 +12,7 @@ public interface Context {
     Vector2D bounds(final char[] string);
 
     void setColor(final Color color);
+    void drawLine(final float x1, final float y1, final float x2, final float y2);
     void drawRect(final float x, final float y, final float w, final float h);
     void drawString(final String str, final float x, final float y);
     void drawString(final char[] str, final float x, final float y);
