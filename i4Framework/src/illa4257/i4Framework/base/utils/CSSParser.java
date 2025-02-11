@@ -89,7 +89,7 @@ public class CSSParser {
                     final StringBuilder id = new StringBuilder();
                     while (true) {
                         ch = re(reader);
-                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == '.' || ch == '#' || ch == ':') {
+                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == ',' || ch == '.' || ch == '#' || ch == ':') {
                             while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
                                 ch = re(reader);
                             break;
@@ -103,7 +103,7 @@ public class CSSParser {
                     final StringBuilder cls = new StringBuilder();
                     while (true) {
                         ch = re(reader);
-                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == '.' || ch == '#' || ch == ':') {
+                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == ',' || ch == '.' || ch == '#' || ch == ':') {
                             while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
                                 ch = re(reader);
                             break;
@@ -117,7 +117,7 @@ public class CSSParser {
                     final StringBuilder cls = new StringBuilder();
                     while (true) {
                         ch = re(reader);
-                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == '.' || ch == '#' || ch == ':') {
+                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == ',' || ch == '.' || ch == '#' || ch == ':') {
                             while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
                                 ch = re(reader);
                             break;
