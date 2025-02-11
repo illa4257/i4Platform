@@ -24,14 +24,16 @@ public class Label extends Component {
         if (width.calcFloat() <= 0)
             return;
         super.paint(ctx);
-        final Color tc = getColor("color");
-        if (tc.alpha <= 0)
-            return;
-        ctx.setColor(tc);
         final String[] ll;
         synchronized (locker) {
             ll = lines;
         }
+        if (ll == null || ll.length == 0)
+            return;
+        final Color tc = getColor("color");
+        if (tc.alpha <= 0)
+            return;
+        ctx.setColor(tc);
         final Vector2D[] v2d = new Vector2D[ll.length];
         float h = 0, y;
         for (int i = 0; i < ll.length; i++) {
