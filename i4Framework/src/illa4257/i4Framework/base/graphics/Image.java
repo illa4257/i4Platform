@@ -1,5 +1,7 @@
 package illa4257.i4Framework.base.graphics;
 
+import illa4257.i4Utils.logger.i4Logger;
+
 import java.awt.image.BufferedImage;
 import java.io.Closeable;
 import java.nio.ByteBuffer;
@@ -8,7 +10,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Image implements AutoCloseable {
+public class Image implements Closeable {
     public final int width, height;
     private final Object locker = new Object();
     private int[] pixels = null;
@@ -89,7 +91,7 @@ public class Image implements AutoCloseable {
     public final ConcurrentHashMap<Object, Object> imageMap = new ConcurrentHashMap<>();
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         synchronized (locker) {
             if (byteBuffer != null) {
                 byteBuffer.clear();
@@ -99,10 +101,14 @@ public class Image implements AutoCloseable {
         final Iterator<Map.Entry<Object, Object>> cache = imageMap.entrySet().iterator();
         while (cache.hasNext()) {
             final Object v = cache.next().getValue();
-            if (v instanceof Closeable)
-                ((Closeable) v).close();
-            else if (v instanceof AutoCloseable)
-                ((AutoCloseable) v).close();
+            try {
+                if (v instanceof Closeable)
+                    ((Closeable) v).close();
+                else if (v instanceof AutoCloseable)
+                    ((AutoCloseable) v).close();
+            } catch (final Exception ex) {
+                i4Logger.INSTANCE.log(ex);
+            }
             cache.remove();
         }
     }
