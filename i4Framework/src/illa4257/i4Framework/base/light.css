@@ -1,28 +1,27 @@
 Window {
     background-color: #ddd;
-    background-image: background2;
 }
 
 Panel {
     background-color: #eee;
 }
 
-label,
-button,
-textField {
+Label,
+Button,
+TextField {
     color: #333;
 }
 
-button,
-textField {
+Button,
+TextField {
     background-color: #fff;
 }
 
-textField {
+TextField {
     cursor: text;
     --selection-color: #3333;
 }
 
-textField:focus {
+TextField:focus {
     --selection-color: #33b3;
 }
