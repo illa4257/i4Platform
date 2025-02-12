@@ -83,6 +83,10 @@ public class StyleSetting {
         }, defaultImage);
     }
 
+    public StyleNumber number(final StyleNumber defaultValue) {
+        return computeIfAbsentF(StyleNumber.class, StyleNumber::styleSettingParser, defaultValue);
+    }
+
     @Override
     public String toString() {
         return "StyleSetting" + values;

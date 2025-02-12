@@ -9,7 +9,10 @@ import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseEnterEvent;
 import illa4257.i4Framework.base.events.mouse.MouseLeaveEvent;
 import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.base.math.Orientation;
+import illa4257.i4Framework.base.styling.StyleNumber;
 import illa4257.i4Framework.base.styling.StyleSelector;
 import illa4257.i4Framework.base.styling.StyleSetting;
 import illa4257.i4Framework.base.points.*;
@@ -52,7 +55,7 @@ public class Component implements IDestructor {
     public final SyncVar<String> id = new SyncVar<>(), tag = new SyncVar<>();
     public final ConcurrentLinkedQueue<String> classes = new ConcurrentLinkedQueue<>();
     public final ConcurrentHashMap<String, StyleSetting> styles = new ConcurrentHashMap<>();
-    public final ConcurrentHashMap<StyleSelector, ConcurrentHashMap<String, StyleSetting>> stylesheet = new ConcurrentHashMap<>();
+    public final ConcurrentLinkedQueue<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> stylesheet = new ConcurrentLinkedQueue<>();
 
     public final ConcurrentLinkedQueue<String> pseudoClasses = new ConcurrentLinkedQueue<>();
     private final ArrayList<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> cache = new ArrayList<>();
@@ -65,12 +68,16 @@ public class Component implements IDestructor {
         listeners = new Runnable[] {
                 () -> fire(new RecalculateEvent())
         };
+        addEventListener(ChangeParentEvent.class, e -> {
+            fire(new StyleUpdateEvent());
+        });
         addEventListener(StyleUpdateEvent.class, e -> {
             synchronized (cache) {
                 cache.clear();
                 cache.add(new AbstractMap.SimpleImmutableEntry<>(null, styles));
                 cacheStyles(this, new ArrayList<>());
             }
+            repaint();
         });
         addEventListener(HoverEvent.class, e -> {
             synchronized (locker) {
@@ -103,7 +110,7 @@ public class Component implements IDestructor {
 
     private void cacheStyles(final Component c, final ArrayList<StyleSelector> selectors) {
         int l = selectors.size();
-        for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> e : c.stylesheet.entrySet())
+        for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> e : c.stylesheet)
             if (e.getKey().check(this)) {
                 int i = 0;
                 for (; i < l; i++) {
@@ -152,6 +159,22 @@ public class Component implements IDestructor {
             }
             return null;
         }
+    }
+
+    public String getString(final String name, final String defaultValue) {
+        final StyleSetting s = getStyle(name);
+        if (s == null)
+            return defaultValue;
+        final String r = s.get(String.class);
+        return r != null ? r : defaultValue;
+    }
+
+    public float calcStyleNumber(final String name, final Orientation orientation, final float defaultValue) {
+        final StyleSetting s = getStyle(name);
+        if (s == null)
+            return defaultValue;
+        final StyleNumber r = s.number(null);
+        return r != null ? r.calc(this, orientation) : defaultValue;
     }
 
     public Color getColor(final String name, final Color defaultColor) {
@@ -478,6 +501,30 @@ public class Component implements IDestructor {
     }
 
     public void paint(final Context context) {
+        final float
+                w = width.calcFloat(), h = height.calcFloat(),
+                d = 3, // Fix
+                borderRadius = calcStyleNumber("border-radius", Orientation.HORIZONTAL, 0);
+
+        if (borderRadius > 0) {
+            // 256 / 144 / 64 = 3
+
+            final IPath p = context.newPath();
+
+            p.begin(0, borderRadius);
+            p.curveTo(0, 0, borderRadius, 0);
+            p.lineTo(w - borderRadius, 0);
+            p.curveTo(w - d, 0, w, borderRadius);
+            p.lineTo(w, h - borderRadius);
+            p.curveTo(w - d, h - d, w - borderRadius, h);
+            p.lineTo(borderRadius, h);
+            p.curveTo(0, h - d, 0, h - borderRadius);
+            p.lineTo(0, borderRadius);
+
+            p.close();
+            context.setClip(p);
+        }
+
         final Color bg = getColor("background-color");
         if (bg.alpha > 0) {
             context.setColor(bg);

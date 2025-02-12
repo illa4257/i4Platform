@@ -6,8 +6,11 @@ import illa4257.i4Framework.base.styling.StyleSetting;
 import java.io.IOException;
 import java.io.Reader;
 import java.rmi.UnexpectedException;
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class CSSParser {
     private static int r(final Reader reader) throws IOException {
@@ -52,7 +55,7 @@ public class CSSParser {
      * @throws IOException If reading is fails, or reached end of reader.
      * @throws UnexpectedException If unexpected characters are encountered during parsing.
      */
-    public static void parse(final ConcurrentHashMap<StyleSelector, ConcurrentHashMap<String, StyleSetting>> stylesheet,
+    public static void parse(final ConcurrentLinkedQueue<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> stylesheet,
                              final Reader reader) throws IOException {
         final ArrayList<StyleSelector> selectors = new ArrayList<>();
         int ch;
@@ -165,7 +168,7 @@ public class CSSParser {
                         style.put(name.toString(), new StyleSetting(value.toString()));
                     }
                     for (final StyleSelector s : selectors)
-                        stylesheet.put(s, style);
+                        stylesheet.add(new AbstractMap.SimpleImmutableEntry<>(s, style));
                     selectors.clear();
                     break;
                 }

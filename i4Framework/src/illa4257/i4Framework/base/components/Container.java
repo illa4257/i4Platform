@@ -1,10 +1,7 @@
 package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.Context;
-import illa4257.i4Framework.base.events.components.AddComponentEvent;
-import illa4257.i4Framework.base.events.components.FocusEvent;
-import illa4257.i4Framework.base.events.components.RemoveComponentEvent;
-import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
+import illa4257.i4Framework.base.events.components.*;
 
 import java.util.Iterator;
 import java.util.Spliterator;
@@ -54,7 +51,7 @@ public class Container extends Component implements Iterable<Component> {
             final Container c = component.parent.getAndSet(this);
             if (c != null && c != this)
                 c.remove(c);
-            component.fire(new StyleUpdateEvent());
+            component.fire(new ChangeParentEvent());
             fire(new AddComponentEvent(component));
             updated();
         }
@@ -67,6 +64,7 @@ public class Container extends Component implements Iterable<Component> {
             if (getLinkNumber() > 0)
                 component.unlink();
             component.parent.setIfEquals(null, this);
+            component.fire(new ChangeParentEvent());
             fire(new RemoveComponentEvent(component));
             updated();
         }
