@@ -1,6 +1,7 @@
 package illa4257.i4Framework.base;
 
 import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Framework.base.math.Vector2D;
 
@@ -12,6 +13,10 @@ public interface Context {
     Vector2D bounds(final char[] string);
 
     void setColor(final Color color);
+    void setClip(final IPath path);
+
+    IPath newPath();
+
     void drawLine(final float x1, final float y1, final float x2, final float y2);
     void drawRect(final float x, final float y, final float w, final float h);
     void drawString(final String str, final float x, final float y);

@@ -2,6 +2,7 @@ package illa4257.i4Framework.swing;
 
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Framework.base.math.Vector2D;
 
@@ -30,6 +31,16 @@ public class SwingContext implements Context {
     @Override
     public void setColor(final Color color) {
         graphics.setColor((color != null ? color : Color.TRANSPARENT).toAwtColor());
+    }
+
+    @Override
+    public void setClip(final IPath path) {
+        graphics.setClip(((SwingPath) path).path);
+    }
+
+    @Override
+    public SwingPath newPath() {
+        return new SwingPath();
     }
 
     @Override
