@@ -503,22 +503,19 @@ public class Component implements IDestructor {
     public void paint(final Context context) {
         final float
                 w = width.calcFloat(), h = height.calcFloat(),
-                d = 3, // Fix
                 borderRadius = calcStyleNumber("border-radius", Orientation.HORIZONTAL, 0);
 
         if (borderRadius > 0) {
-            // 256 / 144 / 64 = 3
-
             final IPath p = context.newPath();
 
             p.begin(0, borderRadius);
-            p.curveTo(0, 0, borderRadius, 0);
+            p.arcTo(borderRadius, 0, 0, 1.57);
             p.lineTo(w - borderRadius, 0);
-            p.curveTo(w - d, 0, w, borderRadius);
+            p.arcTo(w, borderRadius, 0, 1.57);
             p.lineTo(w, h - borderRadius);
-            p.curveTo(w - d, h - d, w - borderRadius, h);
+            p.arcTo(w - borderRadius, h, 0, 1.57);
             p.lineTo(borderRadius, h);
-            p.curveTo(0, h - d, 0, h - borderRadius);
+            p.arcTo(0, h - borderRadius, 0, 1.57);
             p.lineTo(0, borderRadius);
 
             p.close();
