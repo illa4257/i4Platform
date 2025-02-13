@@ -7,7 +7,7 @@ public class KeyEvent implements Event {
         BACKSPACE = '\b', DELETE = 127, TAB = '\t', ENTER = '\n',
 
         /* Modifiers */
-        SHIFT = 16, CTRL = 17, ALT = 18,
+        SHIFT = 16, CTRL = 17, ALT = 18, CAPS_LOCK = 20,
 
         /* Arrows */
         LEFT = 37, UP = 38, RIGHT = 39, DOWN = 40,
@@ -16,7 +16,7 @@ public class KeyEvent implements Event {
         F1 = 112, F2 = 113, F3 = 114, F4 = 115, F5 = 116, F6 = 117, F7 = 118, F8 = 119, F9 = 120,
         F10 = 121, F11 = 122, F12 = 123,
 
-        CONTEXT_MENU = 525,
+        WINDOWS_KEY = 524, CONTEXT_MENU = 525,
 
         COPY = 65485, PASTE = 65487
     ;
@@ -24,7 +24,7 @@ public class KeyEvent implements Event {
     public static boolean isNotVisible(final int key) {
         return
             /* Modifiers */
-                (key >= SHIFT && key <= ALT) ||
+                (key >= SHIFT && key <= ALT) || key == CAPS_LOCK ||
 
             /* Arrows */
                 (key >= LEFT && key <= DOWN) ||
@@ -33,7 +33,7 @@ public class KeyEvent implements Event {
                 (key >= F1 && key <= F12) ||
 
             /* Operations */
-                key == CONTEXT_MENU ||
+                key == WINDOWS_KEY || key == CONTEXT_MENU ||
                 key == COPY || key == PASTE
         ;
     }
