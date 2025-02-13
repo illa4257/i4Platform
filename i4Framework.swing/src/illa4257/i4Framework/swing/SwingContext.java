@@ -17,6 +17,10 @@ public class SwingContext implements Context {
         g.setFont(SwingFramework.font);
     }
 
+    @Override
+    public Object getClipI() {
+        return graphics.getClip();
+    }
 
     @Override
     public Vector2D bounds(final String string) {
@@ -31,6 +35,16 @@ public class SwingContext implements Context {
     @Override
     public void setColor(final Color color) {
         graphics.setColor((color != null ? color : Color.TRANSPARENT).toAwtColor());
+    }
+
+    @Override
+    public void setStrokeWidth(final float newWidth) {
+        graphics.setStroke(new BasicStroke(newWidth));
+    }
+
+    @Override
+    public void setClipI(final Object clipArea) {
+        graphics.setClip((Shape) clipArea);
     }
 
     @Override

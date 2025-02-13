@@ -12,6 +12,7 @@ import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Framework.base.math.Orientation;
+import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.styling.StyleNumber;
 import illa4257.i4Framework.base.styling.StyleSelector;
 import illa4257.i4Framework.base.styling.StyleSetting;
@@ -503,18 +504,51 @@ public class Component implements IDestructor {
     public void paint(final Context context) {
         final float
                 w = width.calcFloat(), h = height.calcFloat(),
-                borderRadius = calcStyleNumber("border-radius", Orientation.HORIZONTAL, 0);
+                borderRadius = calcStyleNumber("border-radius", Orientation.HORIZONTAL, 0),
+                borderWidth = calcStyleNumber("border-width", Orientation.HORIZONTAL, 0);
 
-        if (borderRadius > 0) {
+        final Color borderColor = getColor("border-color"),
+                    bg = getColor("background-color");
+
+        if (borderWidth >= 0.5f && borderColor.alpha > 0) {
+            final Object o = context.getClipI();
+            context.setClipI(null);
+
+            context.setColor(borderColor);
+
+            if (borderRadius >= 0.5f) {
+                final float br2 = borderRadius * 2;
+
+                context.drawArc(borderRadius - .5f, borderRadius, borderRadius + 1, borderRadius + borderWidth, -1.57, 1.57);
+                context.drawArc(borderRadius - .5f, h - borderRadius - 1, borderRadius + 1, borderRadius + borderWidth, 3.14, 1.57);
+                context.drawArc(w - borderRadius - 1, borderRadius, borderRadius + 1, borderRadius + borderWidth, 0, 1.57);
+                context.drawArc(w - borderRadius - 1, h - borderRadius - 1, borderRadius + 1, borderRadius + borderWidth, 1.57, 1.57);
+
+                context.drawRect(borderRadius, -borderWidth, w - br2, borderWidth);
+                context.drawRect(borderRadius, h, w - br2, borderWidth);
+
+                context.drawRect(-borderWidth, borderRadius, borderWidth, h - br2);
+                context.drawRect(w, borderRadius, borderWidth, h - br2);
+            } else {
+                context.drawRect(-borderWidth, -borderWidth, w + borderWidth * 2, borderWidth);
+                context.drawRect(-borderWidth, h, w + borderWidth * 2, borderWidth);
+                context.drawRect(-borderWidth, 0, borderWidth, h);
+                context.drawRect(w, 0, borderWidth, h);
+            }
+
+            context.setClipI(o);
+        }
+
+        if (borderRadius >= 0.5f) {
             final IPath p = context.newPath();
 
             p.begin(0, borderRadius);
-            p.arcTo(borderRadius, 0, 0, 1.57);
+            p.arcTo(borderRadius + .5f, 0, 0, 1.57);
             p.lineTo(w - borderRadius, 0);
             p.arcTo(w, borderRadius, 0, 1.57);
             p.lineTo(w, h - borderRadius);
             p.arcTo(w - borderRadius, h, 0, 1.57);
-            p.lineTo(borderRadius, h);
+            p.lineTo(borderRadius - .5f, h);
             p.arcTo(0, h - borderRadius, 0, 1.57);
             p.lineTo(0, borderRadius);
 
@@ -522,11 +556,11 @@ public class Component implements IDestructor {
             context.setClip(p);
         }
 
-        final Color bg = getColor("background-color");
         if (bg.alpha > 0) {
             context.setColor(bg);
             context.drawRect(0, 0, width.calcFloat(), height.calcFloat());
         }
+
         final Image img = getImage("background-image");
         if (img != null)
             context.drawImage(img, 0, 0, width.calcFloat(), height.calcFloat());
