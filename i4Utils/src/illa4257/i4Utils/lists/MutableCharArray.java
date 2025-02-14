@@ -206,6 +206,8 @@ public class MutableCharArray {
                 p.length -= to;
                 return;
             }
+            if (to == 0)
+                return;
             throw new IndexOutOfBoundsException(from + " / " + to);
         }
     }
