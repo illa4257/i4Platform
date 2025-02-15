@@ -1,20 +1,31 @@
 Window {
-    background-color: #ddd;
+    background-color: #fff;
 }
 
 Panel {
-    background-color: #eee;
+    background-color: #F0F0F0;
 }
 
 Label,
 Button,
 TextField {
-    color: #333;
+    color: #212121;
+}
+
+.secondary-color {
+    color: #757575;
 }
 
 Button,
 TextField {
     background-color: #fff;
+    border-width: 1px;
+    border-radius: 8px;
+    border-color: #D1D1D1;
+}
+
+Button:hover {
+    background-color: #f9f9f9;
 }
 
 TextField {
