@@ -6,6 +6,7 @@ Panel {
     background-color: #F0F0F0;
 }
 
+TabPane,
 Label,
 Button,
 TextField {
@@ -25,7 +26,7 @@ TextField {
 }
 
 Button:hover {
-    background-color: #f9f9f9;
+    background-color: #E9E9E9;
 }
 
 TextField {
@@ -35,4 +36,10 @@ TextField {
 
 TextField:focus {
     --selection-color: #33b3;
+}
+
+TabPane {
+    --tabs-background-color: #C8C8C8;
+    --tab-background-color: #DCDCDC;
+    --tab-selected-background-color: #F0F0F0;
 }
