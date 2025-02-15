@@ -22,6 +22,7 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
     public final Window window;
     public final SwingFramework framework;
     public final Container root;
+    @SuppressWarnings("rawtypes")
     public EventListener[] l;
 
     public SwingWindow(final SwingFramework framework) { this(framework, null); }
@@ -84,7 +85,7 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
     }
 
     @Override public Component getComponent() { return window; }
-    @Override public Framework getFramework() { return SwingFramework.INSTANCE; }
+    @Override public Framework getFramework() { return framework; }
     @Override public Window getWindow() { return window; }
 
     @Override
@@ -147,7 +148,8 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
     @Override
     public void dispose() {
         super.dispose();
-        for (final EventListener li : l)
+        for (@SuppressWarnings("rawtypes") final EventListener li : l)
+            //noinspection unchecked
             window.removeEventListener(li);
     }
 }
