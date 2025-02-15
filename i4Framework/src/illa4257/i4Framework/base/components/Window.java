@@ -1,5 +1,6 @@
 package illa4257.i4Framework.base.components;
 
+import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.events.components.ChangeTextEvent;
 import illa4257.i4Framework.base.events.components.FocusEvent;
@@ -11,6 +12,20 @@ public class Window extends Container {
     public final SyncVar<FrameworkWindow> frameworkWindow = new SyncVar<>();
 
     public Window() { super(); visible = false; }
+
+    @Override public Window getWindow() { return this; }
+
+    @Override
+    public Framework getFramework() {
+        final FrameworkWindow fw = frameworkWindow.get();
+        if (fw != null) {
+            final Framework f = fw.getFramework();
+            if (f != null)
+                return f;
+        }
+        final Container p = parent.get();
+        return p != null ? p.getFramework() : null;
+    }
 
     @Override
     protected boolean childFocus(Component targetChild, Component target) {

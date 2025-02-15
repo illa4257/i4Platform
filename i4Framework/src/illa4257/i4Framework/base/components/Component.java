@@ -69,9 +69,7 @@ public class Component implements IDestructor {
         listeners = new Runnable[] {
                 () -> fire(new RecalculateEvent())
         };
-        addEventListener(ChangeParentEvent.class, e -> {
-            fire(new StyleUpdateEvent());
-        });
+        addEventListener(ChangeParentEvent.class, e -> fire(new StyleUpdateEvent()));
         addEventListener(StyleUpdateEvent.class, e -> {
             synchronized (cache) {
                 cache.clear();
@@ -106,7 +104,6 @@ public class Component implements IDestructor {
         });
         addEventListener(MouseEnterEvent.class, e -> fire(new HoverEvent(true)));
         addEventListener(MouseLeaveEvent.class, e -> fire(new HoverEvent(false)));
-        fire(new StyleUpdateEvent());
     }
 
     private void cacheStyles(final Component c, final ArrayList<StyleSelector> selectors) {
@@ -263,15 +260,14 @@ public class Component implements IDestructor {
 
     public Window getWindow() {
         final Container c = parent.get();
-        return c instanceof Window ? (Window) c : c != null ? c.getWindow() : null;
+        return c != null ? c.getWindow() : null;
     }
 
     public Framework getFramework() {
         final Window w = getWindow();
         if (w == null)
             return null;
-        final FrameworkWindow fw = w.frameworkWindow.get();
-        return fw != null ? fw.getFramework() : null;
+        return w.getFramework();
     }
 
     protected void updated() {
@@ -491,6 +487,7 @@ public class Component implements IDestructor {
         fire(new ChangePointEvent());
     }
 
+    @SuppressWarnings("AssignmentUsedAsCondition")
     public void setSize(final float width, final float height) {
         final boolean x, y;
         if (x = aSet(endX, width, startX))
