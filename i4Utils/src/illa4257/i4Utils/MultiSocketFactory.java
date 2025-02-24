@@ -10,12 +10,12 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class MultiSocketFactory {
+public class MultiSocketFactory implements Closeable {
     private static final byte[] VERSION = new byte[] { 1, 0, 0, 0 };
 
     protected static final byte
             /* Methods */
-            RESERVE = 0, ACCEPT = 1, CONNECT = 2,
+            RESERVE = 0, ACCEPT = 1, CONNECT = 2, CLOSE = 3,
 
             /* Operations */
             RAW = 0, SINGLE_BYTE = 1, SET_BUFFER_SIZE_MODE = 3, SET_BUFFER_SIZE = 4;
@@ -59,6 +59,8 @@ public class MultiSocketFactory {
     private final ConcurrentHashMap<String, Socket> servers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Socket> clients = new ConcurrentHashMap<>();
 
+    private SyncVar<ServerSocket> server = new SyncVar<>();
+
     public void host() {
         synchronized (locker) {
             if (t != null)
@@ -67,6 +69,10 @@ public class MultiSocketFactory {
                 final ServerSocket server = new ServerSocket();
                 try {
                     server.bind(addr);
+                    if (!this.server.setIfNull(server)) {
+                        server.close();
+                        return;
+                    }
                 } catch (final Exception ex) {
                     server.close();
                     throw ex;
@@ -118,9 +124,15 @@ public class MultiSocketFactory {
                                         if (sm == null) {
                                             os.write(1);
                                             os.flush();
-                                            System.out.println(is.read());
-                                            System.out.println("Stop reserving");
+                                            try {
+                                                if (is.read() == CLOSE)
+                                                    System.out.println("Stop reserving");
+                                            } catch (final Exception ex) {
+                                                log(ex);
+                                            }
                                             servers.remove(applicationId).close();
+                                            if (servers.isEmpty())
+                                                close();
                                             return;
                                         }
                                     } else if (a == CONNECT) {
@@ -187,6 +199,7 @@ public class MultiSocketFactory {
                     } catch (final Exception ex) {
                         log(ex);
                     }
+                    this.server.setIfEquals(null, server);
                     synchronized (locker) {
                         if (t == null)
                             return;
@@ -362,5 +375,12 @@ public class MultiSocketFactory {
             log(ex);
             return null;
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        final ServerSocket s = server.getAndSet(null);
+        if (s != null)
+            s.close();
     }
 }
