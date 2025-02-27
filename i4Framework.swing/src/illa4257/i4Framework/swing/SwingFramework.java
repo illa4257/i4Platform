@@ -123,6 +123,12 @@ public class SwingFramework extends Framework {
     }
 
     @Override public boolean isUIThread(final Component component) { return SwingUtilities.isEventDispatchThread(); }
+
+    @Override
+    public void invokeLater(final Runnable runnable) {
+        SwingUtilities.invokeLater(runnable);
+    }
+
     @Override public FrameworkWindow newWindow(final Window window) { return new SwingWindow(this, window); }
 
     @Override
