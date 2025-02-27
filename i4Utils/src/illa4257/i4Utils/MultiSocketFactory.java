@@ -197,7 +197,8 @@ public class MultiSocketFactory implements Closeable {
                             }).start();
                         }
                     } catch (final Exception ex) {
-                        log(ex);
+                        if (!(ex instanceof SocketException && ("Socket closed".equals(ex.getMessage()) || "socket closed".equals(ex.getMessage()))))
+                            log(ex);
                     }
                     this.server.setIfEquals(null, server);
                     synchronized (locker) {
