@@ -9,9 +9,12 @@ import java.util.function.Consumer;
 public class OS {
     private static final ArrayList<Consumer<Theme>> themeList = new ArrayList<>();
     private static boolean isStarted = false;
+    /**
+     * I'll move {@link illa4257.i4Utils.themeDetectors} to {@link illa4257.i4Framework}.
+     *
+     * @deprecated
+     */
     private static IThemeDetector themeDetector = null;
-
-    public static final Arch ARCH = Arch.INSTANCE;
 
     /**
      * I'll move {@link illa4257.i4Utils.themeDetectors} to {@link illa4257.i4Framework}.
