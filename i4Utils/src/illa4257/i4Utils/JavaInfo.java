@@ -1,5 +1,6 @@
 package illa4257.i4Utils;
 
+import illa4257.i4Utils.logger.Level;
 import illa4257.i4Utils.logger.i4Logger;
 
 import java.io.File;
@@ -11,12 +12,55 @@ public class JavaInfo {
     public final Arch arch;
     public final String pathSeparator;
     public final File path;
+    public final Distribution distribution;
 
-    public JavaInfo(final int majorVersion, final Arch arch, final String pathSeparator, final File path) {
+    public enum Distribution {
+        /** OpenJDK */
+        OPEN_JDK("OpenJDK"),
+        /** AdoptOpenJDK */
+        ADOPT_OPEN_JDK("AdoptOpenJDK"),
+
+        /** GraalVM */
+        GRAALVM("GraalVM"),
+
+        /** Oracle */
+        ORACLE("Oracle"),
+
+        UNKNOWN("Unknown");
+
+        public final String displayName;
+
+        Distribution(final String displayName) {
+            this.displayName = displayName;
+        }
+    }
+
+    public JavaInfo(final int majorVersion, final Arch arch, final String pathSeparator, final File path, final Distribution distribution) {
         this.majorVersion = majorVersion;
         this.arch = arch;
         this.pathSeparator = pathSeparator;
         this.path = path;
+        this.distribution = distribution;
+    }
+
+    public static Distribution getDistribution(String vendor, String vendorVersion, String runtimeName) {
+        if (vendor == null)
+            vendor = "null";
+        if (vendor.equalsIgnoreCase("AdoptOpenJDK"))
+            return Distribution.ADOPT_OPEN_JDK;
+        runtimeName = runtimeName != null ? runtimeName.toLowerCase() : "null";
+        if (vendor.equalsIgnoreCase("Oracle Corporation")) {
+            if (runtimeName.contains("java(tm) se"))
+                return Distribution.ORACLE;
+        }
+        vendor = vendor.toLowerCase();
+        vendorVersion = vendorVersion != null ? vendorVersion.toLowerCase() : "null";
+        if (vendor.contains("graalvm") || vendorVersion.contains("graalvm"))
+            return Distribution.GRAALVM;
+        if (runtimeName.equals("openjdk runtime environment"))
+            return Distribution.OPEN_JDK;
+        i4Logger.INSTANCE.log(Level.WARN, "Unknown java distribution: " + vendor + " / " + vendorVersion + " / " + runtimeName);
+        return Distribution.UNKNOWN;
     }
 
     public static JavaInfo check(final File java) throws Exception {
@@ -26,7 +70,7 @@ public class JavaInfo {
         if (java.isFile())
             e = java;
         else {
-            final File t1 = new File(java, OS.ARCH.IS_WINDOWS ? "java.exe" : "java"), t2 = new File(java, OS.ARCH.IS_WINDOWS ? "bin/java.exe" : "bin/java");
+            final File t1 = new File(java, Arch.JVM.IS_WINDOWS ? "java.exe" : "java"), t2 = new File(java, Arch.JVM.IS_WINDOWS ? "bin/java.exe" : "bin/java");
             if (t1.exists() && t1.isFile())
                 e = t1;
             else if (t2.exists() && t2.isFile())
@@ -34,7 +78,8 @@ public class JavaInfo {
             else
                 throw new Exception("Not exist!");
         }
-        final Process p = new ProcessBuilder(e.getAbsolutePath(), "-XshowSettings:properties", "-version").start();
+        final ProcessBuilder b = new ProcessBuilder(e.getAbsolutePath(), "-XshowSettings:properties", "-version");
+        final Process p = b.start();
         final ConcurrentHashMap<String, String> variables = new ConcurrentHashMap<>();
         final Thread processKiller = new Thread(() -> {
             try {
@@ -53,8 +98,13 @@ public class JavaInfo {
         try (final Scanner s = new Scanner(p.getErrorStream())) {
             scan(variables, s);
         }
-        p.waitFor();
-        processKiller.interrupt();
+        try {
+            p.waitFor();
+            processKiller.interrupt();
+        } catch (final Exception ex) {
+            p.destroyForcibly();
+            i4Logger.INSTANCE.log(ex);
+        }
 
         if (
                 !variables.containsKey("os.name") ||
@@ -66,9 +116,10 @@ public class JavaInfo {
             throw new Exception("No information.");
         if (variables.get("java.specification.version").startsWith("1."))
             variables.put("java.specification.version", variables.get("java.specification.version").substring(2));
+
         return new JavaInfo(Integer.parseInt(variables.get("java.specification.version")),
                 new Arch(variables.get("os.name"), variables.get("os.arch"), variables.get("java.vendor")),
-                variables.get("path.separator"), e);
+                variables.get("path.separator"), e, getDistribution(variables.get("java.vendor"), variables.get("java.vendor.version"), variables.get("java.runtime.name")));
     }
 
     private static void scan(final ConcurrentHashMap<String, String> vars, final Scanner s) {
