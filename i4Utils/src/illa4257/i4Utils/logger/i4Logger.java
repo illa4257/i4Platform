@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class i4Logger implements LogHandler {
-    public static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+    public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     private static final Object locker = new Object();
     private static i4Logger parent = null;
 
@@ -171,7 +171,7 @@ public class i4Logger implements LogHandler {
     }
 
     public String prefix(final Level level, final String name) {
-        return "[" + LocalDateTime.now().format(formatter) + "][" + level + "]" + (name == null ? this.name == null ? "" : "[" + this.name + "]" : "[" + name + "]");
+        return "[" + LocalDateTime.now().format(TIME_FORMATTER) + "][" + level + "]" + (name == null ? this.name == null ? "" : "[" + this.name + "]" : "[" + name + "]");
     }
 
     public String prefix(final Level level) {
