@@ -73,8 +73,10 @@ public class Arch {
         return JVM;
     }
 
+    /** Original data */
     public final String osName, arch, vendor;
 
+    /** Architecture */
     public final boolean
             IS_X86,
             IS_X86_32,
@@ -89,14 +91,14 @@ public class Arch {
             IS_32BIT,
             IS_64BIT;
 
-    /** Operating Systems */
+    /** Operating System */
     public final boolean
             IS_WINDOWS,
             IS_LINUX,
             IS_ANDROID,
             IS_MACOS;
 
-    /** Platforms */
+    /** Platform */
     public final boolean
             IS_DESKTOP,
             IS_MOBILE;
