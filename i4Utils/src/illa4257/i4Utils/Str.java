@@ -27,4 +27,12 @@ public class Str {
 
         return builder.toString();
     }
+
+    public static StringBuilder repeat(final StringBuilder builder, final String str, int n) {
+        for (; n > 0; n--)
+            builder.append(str);
+        return builder;
+    }
+
+    public static String repeat(final String str, final int n) { return repeat(new StringBuilder(), str, n).toString(); }
 }
