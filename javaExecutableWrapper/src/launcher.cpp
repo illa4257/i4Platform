@@ -40,6 +40,18 @@ size_t find(char* str, const char* chars) {
     return std::string::npos;
 }
 
+size_t find(std::string& str, const char* chars) {
+    size_t l = str.length();
+    char ch;
+    for (size_t i = 0; i < l; i++) {
+        ch = str.at(i);
+        for (const char* sch = chars; *sch != '\0'; sch++)
+            if (ch == *sch)
+                return i;
+    }
+    return std::string::npos;
+}
+
 int main(int argc, char* argv[]) {
     PROCESS_INFORMATION pi;
     ZeroMemory(&pi, sizeof(pi));
@@ -55,7 +67,7 @@ int main(int argc, char* argv[]) {
             while (std::getline(configFile, line)) {
                 if (line.empty() || line.front() == '#' || line.front() == ';')
                     continue;
-                pos = line.find('=');
+                pos = find(line, "=:");
                 if (pos == std::string::npos || pos == 0)
                     continue;
                 key = trim(line.substr(0, pos));
@@ -92,7 +104,9 @@ int main(int argc, char* argv[]) {
         si.cb = sizeof(si);
 
         if (!CreateProcess(NULL, (LPSTR) (command + startArgs + (ARGS[0] != '\0' ? ' ' + std::string(ARGS) : "") + programArgs).c_str(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
-            std::cerr << "Failed to create a process (" << GetLastError() << ").\n";
+            const DWORD err = GetLastError();
+            MessageBox(NULL, ("Failed to create a process (" + std::to_string(err) + std::string(").")).c_str(), "Error", MB_OK | MB_ICONERROR);
+            std::cerr << "Failed to create a process (" << err << ")." << std::endl;
             return 1;
         }
     }
