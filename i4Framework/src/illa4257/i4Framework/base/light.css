@@ -43,3 +43,12 @@ TabPane {
     --tab-background-color: #DCDCDC;
     --tab-selected-background-color: #F0F0F0;
 }
+
+ScrollPane {
+    background-color: #b0b0b0;
+}
+
+ScrollBar {
+    background-color: #a0a0a0;
+    thumb-color: #f0f0f0;
+}
