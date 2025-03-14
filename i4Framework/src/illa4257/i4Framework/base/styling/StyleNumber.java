@@ -56,10 +56,10 @@ public class StyleNumber {
         if (b.length() == 0)
             return null;
         final float n = Float.parseFloat(b.toString());
-        final char u = s.charAt(i++);
+        final char u = i < l ? s.charAt(i++) : ' ';
         if (u == '%')
             return new StyleNumber(n / 100, Unit.PERCENT);
-        if (u == 'p' && i < l && s.charAt(i) == 'x')
+        if ((u == 'p' && i < l && s.charAt(i) == 'x') || u == ' ')
             return new StyleNumber(n, Unit.PX);
         return null;
     }
