@@ -1,20 +1,20 @@
 package illa4257.i4Framework.base.components;
 
-import illa4257.i4Framework.base.graphics.Color;
-import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.events.EventListener;
+import illa4257.i4Framework.base.events.SingleEvent;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.events.components.ChangePointEvent;
 import illa4257.i4Framework.base.points.PointAttach;
 
 public class ScrollPane extends Container {
     private int scrollBarWidth = 8;
-    private Color background = Color.repeat3(176);
 
     private Container c = null;
     public final ScrollBar vBar = new ScrollBar(), hBar = new ScrollBar(Orientation.HORIZONTAL);
     private boolean bv = true, bh = true;
     private int ow = -1, oh = -1;
+
+    private static class ReCalcBars implements SingleEvent {}
 
     public ScrollPane() {
         vBar.setUnitIncrement(8);
@@ -30,6 +30,51 @@ public class ScrollPane extends Container {
         hBar.setEndY(height);
         add(hBar);
 
+        addEventListener(ReCalcBars.class, e -> {
+            if (c == null)
+                return;
+            final int cw = c.width.calcInt(), ch = c.height.calcInt();
+            int w = width.calcInt(), h = height.calcInt();
+
+            boolean nv = ch > h, nh;
+            if (nv)
+                w -= scrollBarWidth;
+            nh = cw > w;
+            if (nh) {
+                h -= scrollBarWidth;
+                if (!nv && (nv = ch > h))
+                    w -= scrollBarWidth;
+            }
+
+            if (nv != bv)
+                if (bv = nv)
+                    vBar.setEndX(width);
+                else
+                    vBar.setEndX(new PointAttach(scrollBarWidth, width));
+
+            if (nh != bh)
+                if (bh = nh)
+                    hBar.setEndY(height);
+                else
+                    hBar.setEndY(new PointAttach(scrollBarWidth, height));
+
+            final int sh = Math.max(ch - h, 0), sw = Math.max(cw - w, 0);
+            vBar.setMax(sh);
+            hBar.setMax(sw);
+            if (c == null)
+                return;
+            if (ow != cw || oh != ch) {
+                if (sh == 0)
+                    c.setY(0);
+                if (sw == 0)
+                    c.setX(0);
+                ow = cw;
+                oh = ch;
+            }
+            vBar.repaint();
+            hBar.repaint();
+        });
+
         vBar.addEventListener(ScrollBar.ScrollEvent.class, event -> {
             if (c == null)
                 return;
@@ -41,61 +86,11 @@ public class ScrollPane extends Container {
             c.setX(-event.newValue);
         });
 
-        width.subscribe(this::reCalc);
-        height.subscribe(this::reCalc);
+        width.subscribe(() -> fire(new ReCalcBars()));
+        height.subscribe(() -> fire(new ReCalcBars()));
     }
 
-    private void reCalc() {
-        if (c == null)
-            return;
-        final int cw = c.width.calcInt(), ch = c.height.calcInt();
-        if (ow == cw && oh == ch)
-            return;
-        ow = cw;
-        oh = ch;
-        int w = width.calcInt(), h = height.calcInt();
-
-        boolean nv = ch > h, nh;
-        if (nv)
-            w -= scrollBarWidth;
-        nh = cw > w;
-        if (nh) {
-            h -= scrollBarWidth;
-            if (!nv && (nv = ch > h))
-                w -= scrollBarWidth;
-        }
-
-        if (nv != bv)
-            if (bv = nv)
-                vBar.setEndX(width);
-            else
-                vBar.setEndX(new PointAttach(scrollBarWidth, width));
-
-        if (nh != bh)
-            if (bh = nh)
-                hBar.setEndY(height);
-            else
-                hBar.setEndY(new PointAttach(scrollBarWidth, height));
-
-        final int sh = Math.max(ch - h, 0), sw = Math.max(cw - w, 0);
-        vBar.setMax(sh);
-        hBar.setMax(sw);
-        if (c == null)
-            return;
-        if (sh == 0)
-            c.setY(0);
-        if (sw == 0)
-            c.setX(0);
-    }
-
-    private final EventListener<ChangePointEvent> l = e -> {
-        /*final StackTraceElement[] s = Thread.currentThread().getStackTrace();
-        invokeLater(() -> {
-            Log.printStacktrace(s);
-            this.reCalc();
-        });*/
-        this.reCalc();
-    };
+    private final EventListener<ChangePointEvent> l = e -> fire(new ReCalcBars());
 
     public void setContent(final Container container) {
         synchronized (locker) {
@@ -105,9 +100,9 @@ public class ScrollPane extends Container {
             }
             if (add(c = container))
                 container.addEventListener(ChangePointEvent.class, l);
-            reCalc();
             vBar.setScroll(0);
             hBar.setScroll(0);
+            fire(new ReCalcBars());
         }
     }
 
@@ -120,14 +115,5 @@ public class ScrollPane extends Container {
             c.setX(x);
             c.setY(y);
         }
-    }
-
-    @Override
-    public void paint(final Context ctx) {
-        final Color bg = background;
-        if (bg == null)
-            return;
-        ctx.setColor(bg);
-        ctx.drawRect(0, 0, width.calcFloat(), height.calcFloat());
     }
 }

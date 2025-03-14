@@ -19,7 +19,6 @@ public class ScrollBar extends Component {
         }
     }
 
-    private Color background = Color.repeat3(160), thumbColor = Color.repeat3(192);
     private Orientation orientation;
     private int unitIncrement = 1, min = 0, max = 0, scroll = 0, thumbOffset = 0, thumbLength = 0;
 
@@ -52,12 +51,8 @@ public class ScrollBar extends Component {
             thumbLength = orientation == Orientation.VERTICAL ? height.calcInt() : width.calcInt();
             return;
         }
-        /*final float l = (orientation == Orientation.VERTICAL ? height.calcFloat() : width.calcFloat()) / len;
-        thumbLength = Math.round(l * unitIncrement);
-        thumbOffset = Math.round(l * scroll);*/
         final float s = orientation == Orientation.VERTICAL ? height.calcFloat() : width.calcFloat();
         float l = s / len;
-        //thumbLength = Math.round(l * unitIncrement);
         thumbLength = Math.round(s / l);
         thumbOffset = Math.round((s - thumbLength) / len * (scroll - Math.min(min, max)));
     }
@@ -89,8 +84,10 @@ public class ScrollBar extends Component {
 
     @Override
     public void paint(final Context ctx) {
-        ctx.setColor(background);
-        ctx.drawRect(0, 0, width.calcFloat(), height.calcFloat());
+        super.paint(ctx);
+        final Color thumbColor = getColor("thumb-color");
+        if (thumbColor.alpha <= 0)
+            return;
         ctx.setColor(thumbColor);
         if (orientation == Orientation.VERTICAL)
             ctx.drawRect(0, thumbOffset, width.calcFloat(), thumbLength);
