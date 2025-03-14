@@ -18,7 +18,7 @@ import illa4257.i4Framework.base.styling.StyleSelector;
 import illa4257.i4Framework.base.styling.StyleSetting;
 import illa4257.i4Framework.base.points.*;
 import illa4257.i4Framework.base.styling.Cursor;
-import illa4257.i4Utils.IDestructor;
+import illa4257.i4Utils.Destructor;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.lists.DynList;
 import illa4257.i4Utils.lists.PagedTmpList;
@@ -28,12 +28,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
-public class Component implements IDestructor {
+public class Component extends Destructor {
     protected final Object locker = new Object();
     boolean isFocused = false, isFocusable = false, isHovered = false;
-    private final AtomicInteger linkNumber = new AtomicInteger(0);
     private final Runnable[] listeners;
 
     protected final SyncVar<Container> parent = new SyncVar<>();
@@ -238,10 +236,6 @@ public class Component implements IDestructor {
             return false;
         return p.childFocus(this, this);
     }
-
-    @Override public int getLinkNumber() { return linkNumber.get(); }
-    @Override public int addLinkNumber() { return linkNumber.incrementAndGet(); }
-    @Override public int decLinkNumber() { return linkNumber.decrementAndGet(); }
 
     @Override
     public void onConstruct() {
