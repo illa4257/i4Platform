@@ -3,6 +3,8 @@ package illa4257.i4Utils;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.function.Function;
 
 public class Str {
     public static final String
@@ -35,4 +37,18 @@ public class Str {
     }
 
     public static String repeat(final String str, final int n) { return repeat(new StringBuilder(), str, n).toString(); }
+
+    public static <T> StringBuilder join(final StringBuilder builder, final String delimiter, final List<T> items, Function<T, String> func) {
+        if (items == null || items.isEmpty())
+            return builder;
+        builder.append(func.apply(items.get(0)));
+        final int l = items.size();
+        for (int i = 1; i < l; i++)
+            builder.append(delimiter).append(func.apply(items.get(i)));
+        return builder;
+    }
+
+    public static <T> String join(final String delimiter, final List<T> items, Function<T, String> func) {
+        return join(new StringBuilder(), delimiter, items, func).toString();
+    }
 }
