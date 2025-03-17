@@ -8,6 +8,16 @@ import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class JavaInfo {
+    public static final JavaInfo CURRENT;
+
+    static {
+        CURRENT = new JavaInfo(Integer.parseInt(System.getProperty("java.specification.version")), Arch.JVM,
+                File.pathSeparator,
+                new File(System.getProperty("java.home"), "bin/" + (Arch.JVM.IS_WINDOWS ? "java.exe" : "java")),
+                getDistribution(System.getProperty("java.vendor"), System.getProperty("java.vendor.version"),
+                        System.getProperty("java.runtime.name")));
+    }
+
     public final int majorVersion;
     public final Arch arch;
     public final String pathSeparator;
