@@ -19,7 +19,7 @@ public class ScrollBar extends Component {
         }
     }
 
-    private Orientation orientation;
+    private final Orientation orientation;
     private int unitIncrement = 1, min = 0, max = 0, scroll = 0, thumbOffset = 0, thumbLength = 0;
 
     public ScrollBar() { this(Orientation.VERTICAL); }
@@ -52,8 +52,7 @@ public class ScrollBar extends Component {
             return;
         }
         final float s = orientation == Orientation.VERTICAL ? height.calcFloat() : width.calcFloat();
-        float l = s / len;
-        thumbLength = Math.round(s / l);
+        thumbLength = Math.round(s / (len + s) * s);
         thumbOffset = Math.round((s - thumbLength) / len * (scroll - Math.min(min, max)));
     }
 
