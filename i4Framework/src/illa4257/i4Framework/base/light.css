@@ -46,6 +46,7 @@ TabPane {
 
 ScrollPane {
     background-color: #b0b0b0;
+    --scrollbar-width: 16px;
 }
 
 ScrollBar {
