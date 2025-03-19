@@ -1,9 +1,7 @@
 package illa4257.i4Utils.web;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 
 public class i4URI {
     public final int port;
@@ -11,15 +9,17 @@ public class i4URI {
     public final String
             scheme,
             domain,
+            fullPath,
             path;
 
     public final char[][] userInfo;
 
-    private static boolean isEmpty(final String str) {
-        return str == null || str.isEmpty();
-    }
+    /// Any changes will not be represented in the field called `path`.
+    public final Map<String, String> queries;
 
-    private static char[][] parseUserInfo(final String userInfo) {
+    private static boolean isEmpty(final String str) { return str == null || str.isEmpty(); }
+
+    public static char[][] parseUserInfo(final String userInfo) {
         if (isEmpty(userInfo))
             return new char[0][];
         final String[] l = userInfo.split(":");
@@ -30,12 +30,29 @@ public class i4URI {
         return ll.toArray(new char[1][]);
     }
 
+    public static void parseQueries(final Map<String, String> map, final String queries) {
+        if (map == null)
+            throw new IllegalArgumentException("Map cannot be null");
+        if (queries == null || queries.isEmpty())
+            return;
+        for (final String query : queries.split("&")) {
+            if (query.isEmpty())
+                continue;
+            final int eq = query.indexOf('=');
+            if (eq == -1) {
+                map.put(query, null);
+                continue;
+            }
+            map.put(query.substring(0, eq), query.substring(eq + 1));
+        }
+    }
+
     public i4URI(
             final String scheme,
             final char[][] userInfo,
             final String domain,
             final int port,
-            final String path
+            final String fullPath
     ) {
         if (isEmpty(scheme))
             throw new IllegalArgumentException("Scheme cannot be null or empty");
@@ -45,24 +62,29 @@ public class i4URI {
         this.userInfo = userInfo == null ? new char[0][] : userInfo;
         this.domain = domain.toLowerCase();
         this.port = port;
-        this.path = isEmpty(path) ? null : path;
+        this.fullPath = isEmpty(fullPath) ? null : fullPath;
+        if (this.fullPath == null) {
+            this.queries = null;
+            this.path = null;
+            return;
+        }
+        this.queries = new HashMap<>();
+        final int q = this.fullPath.indexOf('?');
+        if (q == -1) {
+            this.path = this.fullPath;
+            return;
+        }
+        this.path = this.fullPath.substring(0, q);
+        parseQueries(this.queries, this.fullPath.substring(q + 1));
     }
 
     public i4URI(
             final String scheme,
             final String domain,
             final int port,
-            final String path
+            final String fullPath
     ) {
-        if (isEmpty(scheme))
-            throw new IllegalArgumentException("Scheme cannot be null or empty");
-        if (isEmpty(domain))
-            throw new IllegalArgumentException("Domain cannot be null or empty");
-        this.scheme = scheme.toLowerCase();
-        this.userInfo = new char[0][];
-        this.domain = domain.toLowerCase();
-        this.port = port;
-        this.path = isEmpty(path) ? null : path;
+        this(scheme, null, domain, port, fullPath);
     }
 
     public i4URI(
@@ -70,29 +92,29 @@ public class i4URI {
             final String domain,
             final String path
     ) {
-        if (isEmpty(scheme))
-            throw new IllegalArgumentException("Scheme cannot be null or empty");
-        if (isEmpty(domain))
-            throw new IllegalArgumentException("Domain cannot be null or empty");
-        this.scheme = scheme.toLowerCase();
-        this.userInfo = new char[0][];
-        this.domain = domain.toLowerCase();
-        this.port = -1;
-        this.path = isEmpty(path) ? null : path;
+        this(scheme, null, domain, -1, path);
     }
 
     public i4URI(final URI uri) {
-        this.scheme = uri.getScheme();
-        this.userInfo = parseUserInfo(uri.getUserInfo());
-        this.domain = uri.getHost();
-        this.port = uri.getPort();
-        this.path = uri.getPath();
+        scheme = uri.getScheme();
+        userInfo = parseUserInfo(uri.getUserInfo());
+        domain = uri.getHost();
+        port = uri.getPort();
+        path = uri.getPath();
+        queries = new HashMap<>();
+        final String q = uri.getQuery();
+        if (q == null) {
+            fullPath = path;
+            return;
+        }
+        fullPath = path + '?' + q;
+        parseQueries(queries, q);
     }
 
     public i4URI(String uri, final String defaultScheme) {
         if (isEmpty(uri))
             throw new IllegalArgumentException("URI cannot be null or empty");
-        int colon = uri.indexOf(':'), splash = uri.indexOf('/'), atSymbol, i;
+        int colon = uri.indexOf(':'), splash = uri.indexOf('/'), atSymbol, query, min, i;
 
         // Scheme
         if (colon > -1 && (colon == splash - 1 || splash == -1)) {
@@ -113,35 +135,61 @@ public class i4URI {
         // User Info
         atSymbol = uri.indexOf('@');
         splash = uri.indexOf('/');
-        if (atSymbol > -1 && (atSymbol < splash || splash == -1)) {
+        query = uri.indexOf('?');
+        if (splash != -1 && query != -1)
+            min = Math.min(splash, query);
+        else if (query == -1)
+            min = splash;
+        else
+            min = query;
+        if (atSymbol > -1 && (atSymbol < min || min == -1)) {
             userInfo = parseUserInfo(uri.substring(0, atSymbol));
             uri = uri.substring(atSymbol + 1);
-            splash = uri.indexOf('/');
+            if (splash != -1)
+                splash = uri.indexOf('/');
+            if (query != -1)
+                query = uri.indexOf('?');
+            if (splash != -1 && query != -1)
+                min = Math.min(splash, query);
+            else if (query == -1)
+                min = splash;
+            else
+                min = query;
         } else
             userInfo = new char[0][];
         colon = uri.indexOf(':');
 
         // Domain
-        if (colon == -1 && splash == -1) {
+        if (colon == -1 && min == -1) {
             domain = uri;
             port = -1;
-            path = null;
+            fullPath = path = null;
+            queries = null;
             return;
         }
-        if (colon > -1 && (colon < splash || splash == -1)) {
+        if (colon > -1 && (colon < min || min == -1)) {
             domain = uri.substring(0, colon);
             colon++;
-            if (splash == -1) {
+            if (min == -1) {
                 port = Integer.parseInt(uri.substring(colon));
-                path = null;
+                fullPath = path = null;
+                queries = null;
                 return;
             }
-            port = Integer.parseInt(uri.substring(colon, splash));
+            port = Integer.parseInt(uri.substring(colon, min));
         } else {
-            domain = uri.substring(0, splash);
+            domain = uri.substring(0, min);
             port = -1;
         }
-        path = uri.substring(splash);
+        fullPath = splash == min ? uri.substring(splash) : '/' + uri.substring(min);
+        queries = new HashMap<>();
+        query = fullPath.indexOf('?');
+        if (query == -1) {
+            path = fullPath;
+            return;
+        }
+        path = fullPath.substring(0, query);
+        parseQueries(queries, fullPath.substring(query + 1));
     }
 
     public i4URI(final String uri) { this(uri, null); }
@@ -157,12 +205,12 @@ public class i4URI {
                         Objects.equals(scheme, i4URI.scheme) &&
                         Arrays.deepEquals(userInfo, i4URI.userInfo) &&
                         Objects.equals(domain, i4URI.domain) &&
-                        Objects.equals(path, i4URI.path);
+                        Objects.equals(fullPath, i4URI.fullPath);
     }
 
-    @Override public int hashCode() { return Objects.hash(scheme, Arrays.deepHashCode(userInfo), domain, port, path); }
+    @Override public int hashCode() { return Objects.hash(scheme, Arrays.deepHashCode(userInfo), domain, port, fullPath); }
 
     @Override public String toString() {
-        return scheme + "://" + domain + (port > -1 ? ":" + port : "") + (path != null ? path : "");
+        return scheme + "://" + domain + (port > -1 ? ":" + port : "") + (fullPath != null ? fullPath : "");
     }
 }
