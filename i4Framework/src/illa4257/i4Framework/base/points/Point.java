@@ -1,12 +1,12 @@
 package illa4257.i4Framework.base.points;
 
+import illa4257.i4Utils.Destructor;
 import illa4257.i4Utils.IDestructor;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class Point implements IDestructor {
-    private final AtomicInteger linkNumber = new AtomicInteger(0);
+public abstract class Point extends Destructor {
     private float cacheFloat;
     private int cacheInt;
 
@@ -62,10 +62,6 @@ public abstract class Point implements IDestructor {
         ci = true;
         return cacheInt;
     }
-
-    @Override public int getLinkNumber() { return linkNumber.get(); }
-    @Override public int addLinkNumber() { return linkNumber.incrementAndGet(); }
-    @Override public int decLinkNumber() { return linkNumber.decrementAndGet(); }
 
     @Override
     public void onConstruct() {
