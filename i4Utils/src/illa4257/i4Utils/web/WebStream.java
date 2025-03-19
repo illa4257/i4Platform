@@ -36,8 +36,6 @@ public class WebStream implements AutoCloseable {
     }
 
     public void write(final byte[] bytes) throws IOException {
-        System.out.println(outputStream);
-        System.out.println(Arrays.toString(bytes));
         outputStream.write(bytes);
     }
 
