@@ -32,6 +32,12 @@ public class WebSocket extends WebStream {
         super(socket);
         this.isServer = isServer;
 
+        if (isServer) {
+            responseCode = 200;
+            responseStatus = "OK";
+        } else
+            method = path = "";
+
         readData();
     }
 
@@ -41,13 +47,10 @@ public class WebSocket extends WebStream {
             method = readStr(' ', 16);
             path = readStr(' ', 32);
             protocol = readStrLn(16);
-            responseCode = 200;
-            responseStatus = "OK";
         } else {
             protocol = readStr(' ', 16);
             responseCode = Integer.parseInt(readStr(' ', 4));
             responseStatus = readStrLn(32);
-            method = path = "";
         }
 
         for (int limit = 64; limit > 0; limit--) {
