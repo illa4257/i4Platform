@@ -165,6 +165,21 @@ public class Component extends Destructor {
         return r != null ? r : defaultValue;
     }
 
+    public StyleNumber getNumber(final String name, final StyleNumber defaultValue) {
+        final StyleSetting s = getStyle(name);
+        return s != null ? s.number(defaultValue) : defaultValue;
+    }
+
+    public float getFloat(final String name, final float defaultValue) {
+        final StyleNumber n = getNumber(name, null);
+        return n != null ? n.number : defaultValue;
+    }
+
+    public int getInt(final String name, final int defaultValue) {
+        final StyleNumber n = getNumber(name, null);
+        return n != null ? Math.round(n.number) : defaultValue;
+    }
+
     public float calcStyleNumber(final String name, final Orientation orientation, final float defaultValue) {
         final StyleSetting s = getStyle(name);
         if (s == null)
