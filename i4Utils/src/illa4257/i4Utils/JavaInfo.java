@@ -59,12 +59,14 @@ public class JavaInfo {
         if (vendor.equalsIgnoreCase("AdoptOpenJDK"))
             return Distribution.ADOPT_OPEN_JDK;
         runtimeName = runtimeName != null ? runtimeName.toLowerCase() : "null";
+        vendorVersion = vendorVersion != null ? vendorVersion.toLowerCase() : "null";
         if (vendor.equalsIgnoreCase("Oracle Corporation")) {
+            if (vendorVersion.contains("graalvm"))
+                return Distribution.GRAALVM;
             if (runtimeName.contains("java(tm) se"))
                 return Distribution.ORACLE;
         }
         vendor = vendor.toLowerCase();
-        vendorVersion = vendorVersion != null ? vendorVersion.toLowerCase() : "null";
         if (vendor.contains("graalvm") || vendorVersion.contains("graalvm"))
             return Distribution.GRAALVM;
         if (runtimeName.equals("openjdk runtime environment"))
