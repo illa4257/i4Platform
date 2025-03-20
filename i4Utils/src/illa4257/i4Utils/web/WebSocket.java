@@ -45,7 +45,7 @@ public class WebSocket extends WebStream {
         headers.clear();
         if (isServer) {
             method = readStr(' ', 16);
-            path = readStr(' ', 32);
+            path = readStr(' ', 128);
             protocol = readStrLn(16);
         } else {
             protocol = readStr(' ', 16);
