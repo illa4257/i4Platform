@@ -2,7 +2,8 @@ package illa4257.i4Framework.base.events.keyboard;
 
 import illa4257.i4Framework.base.events.Event;
 
-public class KeyEvent implements Event {
+@SuppressWarnings("unused")
+public class KeyEvent extends Event {
     public static final int
         BACKSPACE = '\b', DELETE = 127, TAB = '\t', ENTER = '\n',
 
@@ -42,6 +43,12 @@ public class KeyEvent implements Event {
     public final char keyChar;
 
     public KeyEvent(final int keyCode, final char keyChar) {
+        this.keyCode = keyCode;
+        this.keyChar = keyChar;
+    }
+
+    public KeyEvent(final int keyCode, final char keyChar, final boolean isSystem) {
+        super(isSystem);
         this.keyCode = keyCode;
         this.keyChar = keyChar;
     }

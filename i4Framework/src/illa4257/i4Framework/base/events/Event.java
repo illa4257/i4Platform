@@ -1,3 +1,12 @@
 package illa4257.i4Framework.base.events;
 
-public interface Event {}
+public class Event implements IEvent {
+    public final boolean isSystem;
+    public boolean isPrevented = false, isParentPrevented = true;
+
+    public Event() { isSystem = false; }
+    public Event(final boolean isSystem) { this.isSystem = isSystem; }
+
+    @Override public boolean isPrevented() { return isPrevented; }
+    @Override public boolean isParentPrevented() { return isParentPrevented; }
+}

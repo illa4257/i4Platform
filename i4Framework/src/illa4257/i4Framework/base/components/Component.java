@@ -3,7 +3,7 @@ package illa4257.i4Framework.base.components;
 import illa4257.i4Framework.base.*;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.components.*;
-import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Framework.base.events.IEvent;
 import illa4257.i4Framework.base.events.SingleEvent;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseEnterEvent;
@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@SuppressWarnings("UnusedReturnValue")
 public class Component extends Destructor {
     protected final Object locker = new Object();
     boolean isFocused = false, isFocusable = false, isHovered = false;
@@ -45,11 +46,11 @@ public class Component extends Destructor {
     protected final AtomicBoolean isRepeated = new AtomicBoolean(false);
     private final PagedTmpList<Runnable> invoke = new PagedTmpList<>(Runnable.class);
 
-    private final ConcurrentHashMap<Class<? extends Event>, ConcurrentLinkedQueue<EventListener<? extends Event>>>
+    private final ConcurrentHashMap<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<? extends IEvent>>>
         eventListeners = new ConcurrentHashMap<>(),
         directEventListeners = new ConcurrentHashMap<>();
 
-    private final ConcurrentLinkedQueue<Event> events = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<IEvent> events = new ConcurrentLinkedQueue<>();
 
     public final SyncVar<String> id = new SyncVar<>(), tag = new SyncVar<>();
     public final ConcurrentLinkedQueue<String> classes = new ConcurrentLinkedQueue<>();
@@ -225,7 +226,7 @@ public class Component extends Destructor {
         }
     }
 
-    private final ArrayList<EventListener<? extends Event>> focusListeners = new ArrayList<>();
+    private final ArrayList<EventListener<? extends IEvent>> focusListeners = new ArrayList<>();
 
     public void setFocusable(final boolean newValue) {
         synchronized (locker) {
@@ -287,10 +288,10 @@ public class Component extends Destructor {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     protected void invokeAll() {
-        Event event;
+        IEvent event;
         while ((event = events.poll()) != null) {
-            final Class<? extends Event> c = event.getClass();
-            for (final Map.Entry<Class<? extends Event>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
+            final Class<? extends IEvent> c = event.getClass();
+            for (final Map.Entry<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
                 if (c.isAssignableFrom(e.getKey()))
                     for (final EventListener l : e.getValue())
                         try {
@@ -363,55 +364,55 @@ public class Component extends Destructor {
         }
     }
 
-    private <T extends Event> EventListener<T> addEventListenerInternal(final Class<T> eventType, final EventListener<T> listener, final ConcurrentHashMap<Class<? extends Event>, ConcurrentLinkedQueue<EventListener<?>>> listeners) {
+    private <T extends IEvent> EventListener<T> addEventListenerInternal(final Class<T> eventType, final EventListener<T> listener, final ConcurrentHashMap<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> listeners) {
         if (listeners.computeIfAbsent(eventType, t -> new ConcurrentLinkedQueue<>()).add(listener))
             return listener;
         return null;
     }
 
-    public <T extends Event> EventListener<T> addEventListener(final Class<T> eventType, final EventListener<T> listener) {
+    public <T extends IEvent> EventListener<T> addEventListener(final Class<T> eventType, final EventListener<T> listener) {
         return addEventListenerInternal(eventType, listener, eventListeners);
     }
 
-    public <T extends Event> EventListener<T> addDirectEventListener(final Class<T> eventType, final EventListener<T> listener) {
+    public <T extends IEvent> EventListener<T> addDirectEventListener(final Class<T> eventType, final EventListener<T> listener) {
         return addEventListenerInternal(eventType, listener, directEventListeners);
     }
 
-    public <T extends Event> boolean removeEventListener(final EventListener<T> listener) {
-        for (final Map.Entry<Class<? extends Event>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
+    public <T extends IEvent> boolean removeEventListener(final EventListener<T> listener) {
+        for (final Map.Entry<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
             if (e.getValue().remove(listener))
                 return true;
         return false;
     }
 
-    public boolean removeEventListeners(final Collection<EventListener<? extends Event>> listeners) {
-        for (final Map.Entry<Class<? extends Event>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
+    public boolean removeEventListeners(final Collection<EventListener<? extends IEvent>> listeners) {
+        for (final Map.Entry<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
             if (e.getValue().removeAll(listeners))
                 return true;
         return false;
     }
 
-    public <T extends Event> boolean removeDirectEventListener(final EventListener<T> listener) {
-        for (final Map.Entry<Class<? extends Event>, ConcurrentLinkedQueue<EventListener<?>>> e : directEventListeners.entrySet())
+    public <T extends IEvent> boolean removeDirectEventListener(final EventListener<T> listener) {
+        for (final Map.Entry<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> e : directEventListeners.entrySet())
             if (e.getValue().remove(listener))
                 return true;
         return false;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public void fire(Event event) {
+    public void fire(IEvent event) {
         if (event == null)
             return;
-        final Class<? extends Event> c = event.getClass();
-        for (final Map.Entry<Class<? extends Event>, ConcurrentLinkedQueue<EventListener<?>>> e : directEventListeners.entrySet())
+        final Class<? extends IEvent> c = event.getClass();
+        for (final Map.Entry<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> e : directEventListeners.entrySet())
             if (c.isAssignableFrom(e.getKey()))
                 for (final EventListener l : e.getValue())
                     l.run(event);
         if (event instanceof SingleEvent) {
             final Class<?> ec = event.getClass();
-            for (final Event e : events)
+            for (final IEvent e : events)
                 if (e.getClass().equals(ec)) {
-                    final Event event1 = ((SingleEvent) event).combine((SingleEvent) e);
+                    final IEvent event1 = ((SingleEvent) event).combine((SingleEvent) e);
                     if (event1 == null || event1 == e)
                         return;
                     events.remove(e);
@@ -422,7 +423,7 @@ public class Component extends Destructor {
         updated();
     }
 
-    public void fireLater(final Event event) { invokeLater(() -> fire(event)); }
+    public void fireLater(final IEvent event) { invokeLater(() -> fire(event)); }
 
     public void repaint() { fire(new RepaintEvent()); }
 

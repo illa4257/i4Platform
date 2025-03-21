@@ -1,5 +1,6 @@
 package illa4257.i4Framework.base.components;
 
+import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.SingleEvent;
 import illa4257.i4Framework.base.math.Orientation;
@@ -12,7 +13,7 @@ public class ScrollPane extends Container {
     public final ScrollBar vBar = new ScrollBar(), hBar = new ScrollBar(Orientation.HORIZONTAL);
     private int ow = -1, oh = -1;
 
-    private static class ReCalcBars implements SingleEvent {
+    private static class ReCalcBars extends Event implements SingleEvent {
         private final boolean first;
 
         public ReCalcBars(final boolean isFirst) { first = isFirst; }

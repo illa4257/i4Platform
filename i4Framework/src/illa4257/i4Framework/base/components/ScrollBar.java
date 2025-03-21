@@ -1,15 +1,15 @@
 package illa4257.i4Framework.base.components;
 
+import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.events.components.ChangePointEvent;
-import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.mouse.MouseScrollEvent;
 import illa4257.i4Framework.base.events.components.RepaintEvent;
 
 public class ScrollBar extends Component {
-    public static class ScrollEvent implements Event {
+    public static class ScrollEvent extends Event {
         public final int oldValue, newValue, delta;
 
         public ScrollEvent(final int oldValue, final int newValue) {
