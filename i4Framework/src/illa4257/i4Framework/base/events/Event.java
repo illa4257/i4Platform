@@ -8,5 +8,8 @@ public class Event implements IEvent {
     public Event(final boolean isSystem) { this.isSystem = isSystem; }
 
     @Override public boolean isPrevented() { return isPrevented; }
-    @Override public boolean isParentPrevented() { return isParentPrevented; }
+    @Override public boolean isParentPrevented() { return isParentPrevented || isPrevented; }
+
+    public Event prevent(final boolean prevent) { isPrevented = prevent; return this; }
+    public Event parentPrevent(final boolean prevent) { isParentPrevented = prevent; return this; }
 }
