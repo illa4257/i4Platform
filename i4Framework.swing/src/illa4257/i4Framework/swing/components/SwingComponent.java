@@ -3,6 +3,7 @@ package illa4257.i4Framework.swing.components;
 import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyPressEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyUpEvent;
+import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.styling.Cursor;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.components.Component;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 
 import static java.awt.Cursor.*;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class SwingComponent extends JComponent implements ISwingComponent {
     public final Component component;
     public final EventListener[] listeners;
@@ -77,8 +79,13 @@ public class SwingComponent extends JComponent implements ISwingComponent {
                 component.fire(new MouseMoveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY()));
             }
         });
-        addMouseWheelListener(event -> component.fire(new MouseScrollEvent(getGlobalX(event),
-                getGlobalY(event), event.getX(), event.getY(), event.getUnitsToScroll())));
+        addMouseWheelListener(event -> {
+            if (event.getUnitsToScroll() == 0)
+                return;
+            component.fire(new MouseScrollEvent(getGlobalX(event),
+                    getGlobalY(event), event.getX(), event.getY(), event.getUnitsToScroll(), !event.isShiftDown() ?
+                    Orientation.VERTICAL : Orientation.HORIZONTAL).parentPrevent(false));
+        });
         addKeyListener(new KeyListener() {
             private final ArrayList<Integer> pressed = new ArrayList<>();
 

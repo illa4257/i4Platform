@@ -3,6 +3,8 @@ package illa4257.i4Framework.base.components;
 import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.SingleEvent;
+import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
+import illa4257.i4Framework.base.events.mouse.MouseScrollEvent;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.events.components.ChangePointEvent;
 import illa4257.i4Framework.base.points.Point;
@@ -38,10 +40,18 @@ public class ScrollPane extends Container {
         addEventListener(ReCalcBars.class, e -> {
             if (c == null)
                 return;
+            final int scrollBarWidth = getInt("--scrollbar-width", 0);
+            if (scrollBarWidth <= 0)
+                return;
             final int cw = c.width.calcInt(), ch = c.height.calcInt();
             int w = width.calcInt(), h = height.calcInt();
 
-            final int scrollBarWidth = getInt("--scrollbar-width", 0);
+            if (e.first) {
+                ((PointNumber) viewableWidth).set(w - scrollBarWidth);
+                ((PointNumber) viewableHeight).set(h - scrollBarWidth);
+                fireLater(new ReCalcBars(false));
+                return;
+            }
 
             boolean nv = ch > h;
             if (nv)
@@ -56,11 +66,6 @@ public class ScrollPane extends Container {
                 ((PointNumber) viewableWidth).set(w);
             if (((PointNumber) viewableHeight).get() != h)
                 ((PointNumber) viewableHeight).set(h);
-
-            if (e.first) {
-                fire(new ReCalcBars(false));
-                return;
-            }
 
             final int sh = Math.max(ch - h, 0), sw = Math.max(cw - w, 0);
             vBar.setMax(sh);
@@ -92,6 +97,17 @@ public class ScrollPane extends Container {
 
         width.subscribe(() -> fire(new ReCalcBars(true)));
         height.subscribe(() -> fire(new ReCalcBars(true)));
+        addEventListener(StyleUpdateEvent.class, ignored -> fire(new ReCalcBars(true)));
+        addEventListener(MouseScrollEvent.class, e -> {
+            final ScrollBar bar = e.orientation == Orientation.VERTICAL ? vBar : hBar;
+            if (
+                    e.scroll == 0 ||
+                    (bar.getMin() == bar.getScroll() && e.scroll < 0) ||
+                    (bar.getMax() == bar.getScroll() && e.scroll > 0)
+            )
+                return;
+            bar.fire(e);
+        });
     }
 
     private final EventListener<ChangePointEvent> l = e -> fire(new ReCalcBars(true));

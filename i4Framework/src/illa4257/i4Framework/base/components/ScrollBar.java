@@ -28,11 +28,14 @@ public class ScrollBar extends Component {
         this.orientation = orientation;
         addEventListener(ChangePointEvent.class, event -> reCalc());
         addEventListener(MouseScrollEvent.class, event -> {
+            if (event.orientation != orientation)
+                return;
             final int old = scroll, min = Math.min(this.min, this.max), max = Math.max(this.max, this.min);
             scroll = Math.max(Math.min(scroll + event.scroll * unitIncrement, max), min);
             if (old == scroll)
                 return;
             reCalc();
+            event.parentPrevent(true);
             fire(new ScrollEvent(old, scroll));
             fire(new RepaintEvent());
         });
