@@ -167,9 +167,9 @@ public class Container extends Component implements Iterable<Component> {
 
     @Override
     public void invokeAll() {
-        super.invokeAll();
         for (final Component component : components)
             component.invokeAll();
+        super.invokeAll();
     }
 
     public final void paintComponents(final Context ctx) {

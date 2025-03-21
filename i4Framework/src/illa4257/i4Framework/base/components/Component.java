@@ -289,16 +289,26 @@ public class Component extends Destructor {
     @SuppressWarnings({"unchecked", "rawtypes"})
     protected void invokeAll() {
         IEvent event;
+        m:
         while ((event = events.poll()) != null) {
             final Class<? extends IEvent> c = event.getClass();
             for (final Map.Entry<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
                 if (c.isAssignableFrom(e.getKey()))
-                    for (final EventListener l : e.getValue())
+                    for (final EventListener l : e.getValue()) {
                         try {
                             l.run(event);
                         } catch (final Throwable ex) {
                             i4Logger.INSTANCE.log(ex);
                         }
+                        if (event.isPrevented())
+                            continue m;
+                    }
+            if (!event.isParentPrevented()) {
+                final Container p = getParent();
+                if (p == null)
+                    continue;
+                p.fire(event);
+            }
         }
         invoke.nextPage();
         for (final Runnable r : invoke)
