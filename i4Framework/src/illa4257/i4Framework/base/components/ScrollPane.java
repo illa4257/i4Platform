@@ -49,7 +49,7 @@ public class ScrollPane extends Container {
             if (e.first) {
                 ((PointNumber) viewableWidth).set(w - scrollBarWidth);
                 ((PointNumber) viewableHeight).set(h - scrollBarWidth);
-                fireLater(new ReCalcBars(false));
+                fire(new ReCalcBars(false));
                 return;
             }
 
