@@ -16,7 +16,6 @@ import static illa4257.i4Framework.base.math.HorizontalAlign.LEFT;
 
 public class Button extends Component {
     private final SyncVar<String> text;
-    private final SyncVar<Color> foreground = new SyncVar<>(Color.BLACK);
 
     public Button() { this(null); }
     public Button(final String text) {
@@ -36,10 +35,6 @@ public class Button extends Component {
         final String old;
         if (!Objects.equals(old = this.text.getAndSet(text), text))
             fire(new ChangeTextEvent(old, text));
-    }
-
-    public void setForeground(final Color newColor) {
-        foreground.set(newColor);
     }
 
     @Override
