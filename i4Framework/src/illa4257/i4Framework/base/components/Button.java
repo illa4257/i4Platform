@@ -11,10 +11,12 @@ import illa4257.i4Utils.SyncVar;
 
 import java.util.Objects;
 
+import static illa4257.i4Framework.base.math.HorizontalAlign.CENTER;
+import static illa4257.i4Framework.base.math.HorizontalAlign.LEFT;
+
 public class Button extends Component {
     private final SyncVar<String> text;
     private final SyncVar<Color> foreground = new SyncVar<>(Color.BLACK);
-    private final SyncVar<HorizontalAlign> horizontalAlign = new SyncVar<>(HorizontalAlign.CENTER);
 
     public Button() { this(null); }
     public Button(final String text) {
@@ -36,10 +38,6 @@ public class Button extends Component {
             fire(new ChangeTextEvent(old, text));
     }
 
-    public void setHorizontalAlign(final HorizontalAlign align) {
-        this.horizontalAlign.set(align);
-    }
-
     public void setForeground(final Color newColor) {
         foreground.set(newColor);
     }
@@ -53,6 +51,10 @@ public class Button extends Component {
             return;
         ctx.setColor(c);
         final Vector2D s = ctx.bounds(t);
-        ctx.drawString(t, horizontalAlign.get() == HorizontalAlign.LEFT ? 0 : (width.calcFloat() - s.x) / 2, (height.calcFloat() - s.y) / 2);
+        final HorizontalAlign a = getEnumValue("text-align", HorizontalAlign.class, LEFT);
+        ctx.drawString(t, a == LEFT ? 0 :
+                        a == CENTER ? (width.calcFloat() - s.x) / 2 :
+                width.calcFloat() - s.x,
+                (height.calcFloat() - s.y) / 2);
     }
 }

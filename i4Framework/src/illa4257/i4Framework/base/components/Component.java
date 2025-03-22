@@ -214,6 +214,11 @@ public class Component extends Destructor {
         return s != null ? s.cursor() : Cursor.DEFAULT;
     }
 
+    public <T extends Enum<T>> T getEnumValue(final String name, final Class<T> tEnum, final T defaultValue) {
+        final StyleSetting s = getStyle(name);
+        return s != null ? s.enumValue(tEnum, defaultValue) : defaultValue;
+    }
+
     public boolean isFocusable() {
         synchronized (locker) {
             return isFocusable;

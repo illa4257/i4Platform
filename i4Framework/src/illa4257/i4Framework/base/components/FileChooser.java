@@ -2,7 +2,6 @@ package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
-import illa4257.i4Framework.base.math.HorizontalAlign;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.points.PointAttach;
 
@@ -78,7 +77,6 @@ public class FileChooser extends Window {
         int y = 0;
         for (final File f : l) {
             final Button btn = new Button();
-            btn.setHorizontalAlign(HorizontalAlign.LEFT);
             btn.addEventListener(ActionEvent.class, event -> {
                 if (f.isFile()) {
                     frameworkWindow.dispose();
@@ -104,7 +102,6 @@ public class FileChooser extends Window {
             int y = 0;
             for (final File f : roots) {
                 final Button btn = new Button();
-                btn.setHorizontalAlign(HorizontalAlign.LEFT);
                 btn.addEventListener(ActionEvent.class, event -> {
                     setCurrentDir(f);
                     forceRefresh();

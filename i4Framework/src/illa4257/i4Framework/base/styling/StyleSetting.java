@@ -3,6 +3,8 @@ package illa4257.i4Framework.base.styling;
 import illa4257.i4Framework.base.utils.Cache;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Utils.MiniUtil;
+import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.runnables.Provider;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,6 +87,22 @@ public class StyleSetting {
 
     public StyleNumber number(final StyleNumber defaultValue) {
         return computeIfAbsentF(StyleNumber.class, StyleNumber::styleSettingParser, defaultValue);
+    }
+
+    public <T extends Enum<T>> T enumValue(final Class<T> tEnum, final T defaultValue) {
+        if (tEnum == null)
+            return defaultValue;
+        return computeIfAbsentF(tEnum, k -> {
+            final String value = k.get(String.class);
+            if (value == null)
+                return null;
+            try {
+                return MiniUtil.enumValueOfIgnoreCase(tEnum, value);
+            } catch (final IllegalAccessException | IllegalArgumentException ex) {
+                i4Logger.INSTANCE.log(ex);
+            }
+            return null;
+        }, defaultValue);
     }
 
     @Override

@@ -23,6 +23,7 @@ TextField {
     border-width: 1px;
     border-radius: 8px;
     border-color: #D1D1D1;
+    text-align: center;
 }
 
 Button:hover {
