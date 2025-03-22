@@ -4,6 +4,7 @@ import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.points.PointAttach;
+import illa4257.i4Framework.base.styling.StyleSetting;
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
@@ -85,6 +86,7 @@ public class FileChooser extends Window {
                 setCurrentDir(f);
                 forceRefresh();
             });
+            btn.styles.put("text-align", new StyleSetting("left"));
             btn.setText(f.getName());
             btn.setY(y);
             btn.setEndX(container.width);
@@ -106,6 +108,7 @@ public class FileChooser extends Window {
                     setCurrentDir(f);
                     forceRefresh();
                 });
+                btn.styles.put("text-align", new StyleSetting("left"));
                 btn.setText(f.getName() + " (" + f.getFreeSpace() + '/' + f.getTotalSpace() + ')');
                 btn.setY(y);
                 btn.setEndX(container.width);
