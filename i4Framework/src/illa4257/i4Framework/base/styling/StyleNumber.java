@@ -68,6 +68,9 @@ public class StyleNumber {
         final String s = setting.get(String.class);
         if (s != null)
             return stringParser(s);
+        final Integer i = setting.get(Integer.class);
+        if (i != null)
+            return new StyleNumber(i, Unit.PX);
         return null;
     }
 }
