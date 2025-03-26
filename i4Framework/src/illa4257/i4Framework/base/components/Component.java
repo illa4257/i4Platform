@@ -32,12 +32,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @SuppressWarnings("UnusedReturnValue")
 public class Component extends Destructor {
     protected final Object locker = new Object();
-    boolean isFocused = false, isFocusable = false, isHovered = false;
+    volatile boolean isFocused = false, isFocusable = false, isHovered = false, visible = true;
     private final Runnable[] listeners;
 
     protected final SyncVar<Container> parent = new SyncVar<>();
-
-    boolean visible = true;
 
     public final PointSet startX = new PointSet(), startY = new PointSet(), endX = new PointSet(), endY = new PointSet();
     public final Point width = new PPointSubtract(endX, startX), height = new PPointSubtract(endY, startY);
@@ -53,11 +51,10 @@ public class Component extends Destructor {
     private final ConcurrentLinkedQueue<IEvent> events = new ConcurrentLinkedQueue<>();
 
     public final SyncVar<String> id = new SyncVar<>(), tag = new SyncVar<>();
-    public final ConcurrentLinkedQueue<String> classes = new ConcurrentLinkedQueue<>();
+    public final ConcurrentLinkedQueue<String> classes = new ConcurrentLinkedQueue<>(), pseudoClasses = new ConcurrentLinkedQueue<>();
     public final ConcurrentHashMap<String, StyleSetting> styles = new ConcurrentHashMap<>();
     public final ConcurrentLinkedQueue<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> stylesheet = new ConcurrentLinkedQueue<>();
 
-    public final ConcurrentLinkedQueue<String> pseudoClasses = new ConcurrentLinkedQueue<>();
     private final ArrayList<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> cache = new ArrayList<>();
 
     public Component() {
@@ -104,6 +101,11 @@ public class Component extends Destructor {
         addEventListener(MouseEnterEvent.class, e -> fire(new HoverEvent(true)));
         addEventListener(MouseLeaveEvent.class, e -> fire(new HoverEvent(false)));
     }
+
+    public boolean isVisible() { return visible; }
+    public boolean isFocusable() { return isFocusable; }
+    public boolean isFocused() { return isFocused; }
+    public boolean isRepeated() { return isRepeated.get(); }
 
     private void cacheStyles(final Component c, final ArrayList<StyleSelector> selectors) {
         int l = selectors.size();
@@ -217,18 +219,6 @@ public class Component extends Destructor {
     public <T extends Enum<T>> T getEnumValue(final String name, final Class<T> tEnum, final T defaultValue) {
         final StyleSetting s = getStyle(name);
         return s != null ? s.enumValue(tEnum, defaultValue) : defaultValue;
-    }
-
-    public boolean isFocusable() {
-        synchronized (locker) {
-            return isFocusable;
-        }
-    }
-
-    public boolean isFocused() {
-        synchronized (locker) {
-            return isFocused;
-        }
     }
 
     private final ArrayList<EventListener<? extends IEvent>> focusListeners = new ArrayList<>();
@@ -354,8 +344,6 @@ public class Component extends Destructor {
         }
     }
 
-    public boolean isRepeated() { return isRepeated.get(); }
-
     protected void repeated(final boolean v) {
         final Container c = getParent();
         if (c == null)
@@ -413,7 +401,7 @@ public class Component extends Destructor {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public void fire(IEvent event) {
+    public void fire(final IEvent event) {
         if (event == null)
             return;
         final Class<? extends IEvent> c = event.getClass();
@@ -447,12 +435,6 @@ public class Component extends Destructor {
             this.visible = visible;
         }
         fire(new VisibleEvent(visible));
-    }
-
-    public boolean isVisible() {
-        synchronized (locker) {
-            return visible;
-        }
     }
 
     private boolean aSet(final PointSet set, final float offset, final Point target) {
