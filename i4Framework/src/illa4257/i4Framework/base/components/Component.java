@@ -521,17 +521,6 @@ public class Component extends Destructor {
             if (borderRadius >= 0.5f) {
                 final float br2 = borderRadius * 2, brw = borderRadius + borderWidth;
 
-                /*context.drawArc(borderRadius, borderRadius, borderRadius, borderRadius + borderWidth, -1.57, 1.57);
-                context.drawArc(borderRadius, h - borderRadius, borderRadius, borderRadius + borderWidth, 3.14, 1.57);
-                context.drawArc(w - borderRadius, borderRadius, borderRadius, borderRadius + borderWidth, 0, 1.57);
-                context.drawArc(w - borderRadius, h - borderRadius, borderRadius, borderRadius + borderWidth, 1.57, 1.57);
-
-                context.drawRect(borderRadius, -borderWidth, w - br2, borderWidth);
-                context.drawRect(borderRadius, h, w - br2, borderWidth);
-
-                context.drawRect(-borderWidth, borderRadius, borderWidth, h - br2);
-                context.drawRect(w, borderRadius, borderWidth, h - br2);*/
-
                 context.drawRect(-borderWidth, borderRadius, borderWidth, h - br2);
                 context.drawRect(borderRadius, -borderWidth, w - br2, borderWidth);
                 context.drawRect(w, borderRadius, borderWidth, h - br2);
