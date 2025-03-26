@@ -21,6 +21,7 @@ public class SwappableQueue<T> implements Iterable<T> {
     public int size() { return queue1.size() + queue2.size(); }
 
     public boolean add(final T e) { return (value ? queue1 : queue2).add(e); }
+    public boolean remove(final T e) { return queue1.remove(e) || queue2.remove(e); }
 
     public ConcurrentLinkedQueue<T> get() { return value ? queue2 : queue1; }
     public ConcurrentLinkedQueue<T> swap() {
