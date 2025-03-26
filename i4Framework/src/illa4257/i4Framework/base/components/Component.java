@@ -20,8 +20,8 @@ import illa4257.i4Framework.base.points.*;
 import illa4257.i4Framework.base.styling.Cursor;
 import illa4257.i4Utils.Destructor;
 import illa4257.i4Utils.SyncVar;
-import illa4257.i4Utils.lists.DynList;
-import illa4257.i4Utils.lists.PagedTmpList;
+import illa4257.i4Utils.lists.SwappableQueue;
+import illa4257.i4Utils.lists.SwappableTmpQueue;
 import illa4257.i4Utils.logger.i4Logger;
 
 import java.util.*;
@@ -42,9 +42,9 @@ public class Component extends Destructor {
     public final PointSet startX = new PointSet(), startY = new PointSet(), endX = new PointSet(), endY = new PointSet();
     public final Point width = new PPointSubtract(endX, startX), height = new PPointSubtract(endY, startY);
 
-    protected final DynList<Runnable> repeatedInvoke = new DynList<>(Runnable.class);
+    protected final SwappableQueue<Runnable> repeatedInvoke = new SwappableQueue<>();
     protected final AtomicBoolean isRepeated = new AtomicBoolean(false);
-    private final PagedTmpList<Runnable> invoke = new PagedTmpList<>(Runnable.class);
+    private final SwappableTmpQueue<Runnable> invoke = new SwappableTmpQueue<>();
 
     private final ConcurrentHashMap<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<? extends IEvent>>>
         eventListeners = new ConcurrentHashMap<>(),
@@ -315,16 +315,14 @@ public class Component extends Destructor {
                 p.fire(event);
             }
         }
-        invoke.nextPage();
+
         for (final Runnable r : invoke)
             try {
                 r.run();
             } catch (final Throwable ex) {
                 i4Logger.INSTANCE.log(ex);
             }
-        repeatedInvoke.reset();
-        Runnable r;
-        while ((r = repeatedInvoke.next()) != null)
+        for (final Runnable r : repeatedInvoke)
             try {
                 r.run();
             } catch (final Throwable ex) {
