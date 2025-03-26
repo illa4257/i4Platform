@@ -3,7 +3,8 @@ package illa4257.i4Utils;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.Iterator;
+import java.util.Random;
 import java.util.function.Function;
 
 public class Str {
@@ -38,17 +39,29 @@ public class Str {
 
     public static String repeat(final String str, final int n) { return repeat(new StringBuilder(), str, n).toString(); }
 
-    public static <T> StringBuilder join(final StringBuilder builder, final String delimiter, final List<T> items, Function<T, String> func) {
-        if (items == null || items.isEmpty())
+    public static <T> StringBuilder join(final StringBuilder builder, final String delimiter, final Iterable<T> items, Function<T, String> func) {
+        if (items == null)
             return builder;
-        builder.append(func.apply(items.get(0)));
-        final int l = items.size();
-        for (int i = 1; i < l; i++)
-            builder.append(delimiter).append(func.apply(items.get(i)));
+        final Iterator<T> iter = items.iterator();
+        if (!iter.hasNext())
+            return builder;
+        builder.append(func.apply(iter.next()));
+        while (iter.hasNext())
+            builder.append(delimiter).append(func.apply(iter.next()));
         return builder;
     }
 
-    public static <T> String join(final String delimiter, final List<T> items, Function<T, String> func) {
+    public static <T> String join(final String delimiter, final Iterable<T> items, Function<T, String> func) {
         return join(new StringBuilder(), delimiter, items, func).toString();
+    }
+
+    public static String random(final int len) { return random(new Random(), len, CHARS_NUMS + CHARS_EN_LOW + CHARS_EN_UP); }
+
+    public static String random(final Random randomizer, int len, final String chars) {
+        final int cl = chars.length();
+        char[] buf = new char[len];
+        for (len--; len >= 0; len--)
+            buf[len] = chars.charAt(randomizer.nextInt(cl));
+        return new String(buf);
     }
 }
