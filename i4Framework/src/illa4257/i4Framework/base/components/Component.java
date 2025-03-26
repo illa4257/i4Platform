@@ -534,13 +534,13 @@ public class Component extends Destructor {
 
                 context.drawRect(-borderWidth, borderRadius, borderWidth, h - br2);
                 context.drawRect(borderRadius, -borderWidth, w - br2, borderWidth);
-                context.drawRect(w, borderRadius, w - br2, borderWidth);
+                context.drawRect(w, borderRadius, borderWidth, h - br2);
                 context.drawRect(borderRadius, h, w - br2, borderWidth);
 
-                context.drawArc(borderRadius, borderRadius, borderRadius, brw, -1.57, 1.57);
-                context.drawArc(w - borderRadius, borderRadius, borderRadius, brw, 0, 1.57);
+                context.drawArc(borderRadius - 1, borderRadius - 1, borderRadius, brw, -1.57, 1.57);
+                context.drawArc(w - borderRadius, borderRadius - 1, borderRadius, brw, 0, 1.57);
                 context.drawArc(w - borderRadius, h - borderRadius, borderRadius, brw, 1.57, 1.57);
-                context.drawArc(borderRadius, h - borderRadius, borderRadius, brw, 3.14, 1.57);
+                context.drawArc(borderRadius - 1, h - borderRadius, borderRadius, brw, 3.14, 1.57);
             } else {
                 context.drawRect(-borderWidth, -borderWidth, w + borderWidth * 2, borderWidth);
                 context.drawRect(-borderWidth, h, w + borderWidth * 2, borderWidth);
