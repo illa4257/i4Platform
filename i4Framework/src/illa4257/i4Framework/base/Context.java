@@ -23,7 +23,7 @@ public interface Context {
     void drawLine(final float x1, final float y1, final float x2, final float y2);
 
     default void drawArc(final float x, final float y, final float radius, double startAngle, double angle) {
-        final double step = angle / (radius * angle);
+        final double step = 1 / (radius * 2);
         angle += startAngle + step;
         float ox = x + (float) Math.sin(startAngle) * radius, oy = y - (float) Math.cos(startAngle) * radius;
         if (startAngle < angle) {
@@ -34,15 +34,15 @@ public interface Context {
                 drawLine(ox, oy, ox = x + (float) Math.sin(startAngle) * radius, oy = y - (float) Math.cos(startAngle) * radius);
     }
 
-    default void drawArc(final float x, final float y, float radiusFrom, final float radiusTo, double startAngle, double angle) {
-        final double step = angle / (radiusTo * angle * 3);
-        angle += startAngle + step;
+    default void drawArc(float x, float y, float radiusFrom, final float radiusTo, double startAngle, double angle) {
+        final double step = 1 / (radiusTo * 2);
+        angle += startAngle;
         if (startAngle < angle) {
-            for (startAngle += step; startAngle < angle; startAngle += step)
+            for (; startAngle < angle; startAngle += step)
                 drawLine(x + (float) Math.sin(startAngle) * radiusFrom, y - (float) Math.cos(startAngle) * radiusFrom,
                         x + (float) Math.sin(startAngle) * radiusTo, y - (float) Math.cos(startAngle) * radiusTo);
         } else
-            for (startAngle -= step; startAngle > angle; startAngle -= step)
+            for (; startAngle > angle; startAngle -= step)
                 drawLine(x + (float) Math.sin(startAngle) * radiusFrom, y - (float) Math.cos(startAngle) * radiusFrom,
                         x + (float) Math.sin(startAngle) * radiusTo, y - (float) Math.cos(startAngle) * radiusTo);
     }

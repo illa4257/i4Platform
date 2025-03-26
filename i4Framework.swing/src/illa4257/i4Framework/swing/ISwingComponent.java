@@ -1,4 +1,4 @@
-package illa4257.i4Framework.swing.components;
+package illa4257.i4Framework.swing;
 
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.components.Component;

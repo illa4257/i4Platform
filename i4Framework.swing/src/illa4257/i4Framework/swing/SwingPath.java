@@ -18,7 +18,7 @@ public class SwingPath implements IPath {
 
     @Override
     public void lineTo(final float x, final float y) {
-        path.lineTo(this.x = x, this.y = y);
+        path.lineTo(Math.ceil(this.x = x), Math.ceil(this.y = y));
     }
 
     @Override

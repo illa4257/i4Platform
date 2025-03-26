@@ -24,5 +24,21 @@ public interface IPath {
                 lineTo(x - (float) Math.cos(startAngle + r) * dx, sy + (float) Math.sin(startAngle + r) * dy);
     }
 
+    default void arc(final float startX, final float startY, final float radiusX, final float radiusY, double startAngle, double angle) {
+        final float step = 1 / Math.max(radiusX, radiusY);
+        if (angle > 0) {
+            angle += startAngle;
+            for (; startAngle < angle; startAngle += step)
+                lineTo(startX + (float) Math.sin(startAngle) * radiusX, startY - (float) Math.cos(startAngle) * radiusY);
+            return;
+        }
+        if (angle == 0)
+            lineTo(startX + (float) Math.sin(startAngle) * radiusX, startY - (float) Math.cos(startAngle) * radiusY);
+    }
+
+    default void arc(final float startX, final float startY, final float radius, final double startAngle, final double angle) {
+        arc(startX, startY, radius, radius, startAngle, angle);
+    }
+
     void close();
 }

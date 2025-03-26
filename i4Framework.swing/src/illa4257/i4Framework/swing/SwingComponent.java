@@ -1,4 +1,4 @@
-package illa4257.i4Framework.swing.components;
+package illa4257.i4Framework.swing;
 
 import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyPressEvent;
@@ -11,7 +11,6 @@ import illa4257.i4Framework.base.components.Container;
 import illa4257.i4Framework.base.events.components.RecalculateEvent;
 import illa4257.i4Framework.base.events.components.RepaintEvent;
 import illa4257.i4Framework.base.events.mouse.*;
-import illa4257.i4Framework.swing.SwingContext;
 
 import javax.swing.*;
 import java.awt.*;
@@ -149,6 +148,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         if (getCursor().getType() != cursor)
             setCursor(getPredefinedCursor(cursor));
         final Graphics2D g = (Graphics2D) graphics;
+        g.setRenderingHints(SwingFramework.RECOMMENDED);
         component.paint(new SwingContext(g));
     }
 

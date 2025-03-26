@@ -521,10 +521,10 @@ public class Component extends Destructor {
             if (borderRadius >= 0.5f) {
                 final float br2 = borderRadius * 2;
 
-                context.drawArc(borderRadius - .5f, borderRadius, borderRadius + 1, borderRadius + borderWidth, -1.57, 1.57);
-                context.drawArc(borderRadius - .5f, h - borderRadius - 1, borderRadius + 1, borderRadius + borderWidth, 3.14, 1.57);
-                context.drawArc(w - borderRadius - 1, borderRadius, borderRadius + 1, borderRadius + borderWidth, 0, 1.57);
-                context.drawArc(w - borderRadius - 1, h - borderRadius - 1, borderRadius + 1, borderRadius + borderWidth, 1.57, 1.57);
+                context.drawArc(borderRadius, borderRadius, borderRadius, borderRadius + borderWidth, -1.57, 1.57);
+                context.drawArc(borderRadius, h - borderRadius, borderRadius, borderRadius + borderWidth, 3.14, 1.57);
+                context.drawArc(w - borderRadius, borderRadius, borderRadius, borderRadius + borderWidth, 0, 1.57);
+                context.drawArc(w - borderRadius, h - borderRadius, borderRadius, borderRadius + borderWidth, 1.57, 1.57);
 
                 context.drawRect(borderRadius, -borderWidth, w - br2, borderWidth);
                 context.drawRect(borderRadius, h, w - br2, borderWidth);
@@ -543,16 +543,17 @@ public class Component extends Destructor {
 
         if (borderRadius >= 0.5f) {
             final IPath p = context.newPath();
+            final float ew = w - borderRadius, eh = h - borderRadius;
 
-            p.begin(0, borderRadius);
-            p.arcTo(borderRadius + .5f, 0, 0, 1.57);
-            p.lineTo(w - borderRadius, 0);
-            p.arcTo(w, borderRadius, 0, 1.57);
-            p.lineTo(w, h - borderRadius);
-            p.arcTo(w - borderRadius, h, 0, 1.57);
-            p.lineTo(borderRadius - .5f, h);
-            p.arcTo(0, h - borderRadius, 0, 1.57);
-            p.lineTo(0, borderRadius);
+            p.begin(borderRadius, 0);
+            p.lineTo(ew, 0); // Top Line
+            p.arc(ew, borderRadius, borderRadius, 0, 1.57f);
+            p.lineTo(w, eh); // Right line
+            p.arc(ew, eh, borderRadius, 1.57f, 1.57f);
+            p.lineTo(borderRadius, h); // Bottom line
+            p.arc(borderRadius, eh, borderRadius, 3.14f, 1.57f);
+            p.lineTo(0, borderRadius); // Left line
+            p.arc(borderRadius, borderRadius, borderRadius, -1.57f, 1.57f);
 
             p.close();
             context.setClip(p);

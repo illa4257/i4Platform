@@ -1,4 +1,4 @@
-package illa4257.i4Framework.swing.components;
+package illa4257.i4Framework.swing;
 
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.Framework;
@@ -11,8 +11,6 @@ import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.events.window.CenterWindowEvent;
 import illa4257.i4Framework.base.points.PointAttach;
-import illa4257.i4Framework.swing.SwingContext;
-import illa4257.i4Framework.swing.SwingFramework;
 
 import javax.swing.*;
 import java.awt.*;

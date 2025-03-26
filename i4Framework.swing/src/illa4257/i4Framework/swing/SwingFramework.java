@@ -4,7 +4,6 @@ import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
-import illa4257.i4Framework.swing.components.SwingWindow;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.logger.i4Logger;
 
@@ -25,7 +24,8 @@ public class SwingFramework extends Framework {
     private final SyncVar<Instance> timer = new SyncVar<>();
     private class Instance {
         final ScheduledExecutorService s = Executors.newSingleThreadScheduledExecutor();
-        private long last = System.nanoTime(), current, d;
+        private long last = System.nanoTime();
+        private long d;
         boolean isNotRepeated;
 
         {
@@ -54,6 +54,7 @@ public class SwingFramework extends Framework {
             }
             try {
                 synchronized (updateNotifier) {
+                    long current;
                     if (isUpdated || !isNotRepeated) {
                         current = System.nanoTime();
                         d = 16_000_000 - current + last + d;
