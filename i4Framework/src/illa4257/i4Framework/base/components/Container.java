@@ -54,6 +54,8 @@ public class Container extends Component implements Iterable<Component> {
             component.fire(new ChangeParentEvent());
             fire(new AddComponentEvent(component));
             updated();
+            if (component.isRepeated())
+                repeated(true);
         }
         return r;
     }
