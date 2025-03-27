@@ -4,6 +4,7 @@ import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Framework.base.math.Vector2D;
+import illa4257.i4Framework.base.utils.Geom;
 
 public interface Context {
     default Context sub(final float x, final float y, final float w, final float h) { return this; }
@@ -35,9 +36,8 @@ public interface Context {
     }
 
     default void drawArc(float x, float y, final float radiusFrom, float radiusTo, double startAngle, double angle) {
-        final double step = angle / Math.ceil(angle * radiusTo * 3.14);
+        final double step = angle / Geom.pxArcLength(radiusTo, angle);
         angle += startAngle;
-        radiusTo--;
         if (startAngle < angle) {
             for (; (float) startAngle <= (float) angle; startAngle += step)
                 drawLine(x + (float) Math.sin(startAngle) * radiusFrom, y - (float) Math.cos(startAngle) * radiusFrom,
