@@ -1,5 +1,7 @@
 package illa4257.i4Framework.base.graphics;
 
+import illa4257.i4Framework.base.utils.Geom;
+
 public interface IPath {
     float x();
     float y();
@@ -14,7 +16,6 @@ public interface IPath {
         float sx = x(), sy = y(), dx = x - sx, dy = y - sy;
 
         final double len = Math.sqrt(dx * dx + dy * dy) * angle, step = angle / len;
-
         if ((dx > 0 && dy > 0) || (dx < 0 && dy < 0)) {
             startAngle -= 1.57;
             for (double r = 0; r < angle; r += step)
@@ -24,11 +25,13 @@ public interface IPath {
                 lineTo(x - (float) Math.cos(startAngle + r) * dx, sy + (float) Math.sin(startAngle + r) * dy);
     }
 
-    default void arc(final float startX, final float startY, final float radiusX, final float radiusY, double startAngle, double angle) {
-        final float step = 1 / Math.max(radiusX, radiusY);
+    default void arc(final float startX, final float startY, final float radiusX, final float radiusY, double startAngle, final double angle) {
+        int len = Geom.pxArcLength(Math.max(radiusX, radiusY), angle);
+        if (len == 0)
+            return;
+        final float step = (float) angle / len;
         if (angle > 0) {
-            angle += startAngle;
-            for (; startAngle < angle; startAngle += step)
+            for (; len >= 0; startAngle += step, len--)
                 lineTo(startX + (float) Math.sin(startAngle) * radiusX, startY - (float) Math.cos(startAngle) * radiusY);
             return;
         }
