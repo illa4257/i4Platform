@@ -560,11 +560,11 @@ public class Component extends Destructor {
 
         if (bg.alpha > 0) {
             context.setColor(bg);
-            context.drawRect(0, 0, width.calcFloat(), height.calcFloat());
+            context.drawRect(0, 0, w, h);
         }
 
         final Image img = getImage("background-image");
         if (img != null)
-            context.drawImage(img, 0, 0, width.calcFloat(), height.calcFloat());
+            context.drawImage(img, 0, 0, w, h);
     }
 }
