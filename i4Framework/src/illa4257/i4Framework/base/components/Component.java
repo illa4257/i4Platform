@@ -106,6 +106,15 @@ public class Component extends Destructor {
     public boolean isFocusable() { return isFocusable; }
     public boolean isFocused() { return isFocused; }
     public boolean isRepeated() { return isRepeated.get(); }
+    public Component find(final float x, final float y, final float[] localPos) {
+        if (startX.calcFloat() < x && endX.calcFloat() > x &&
+                startY.calcFloat() < y && endY.calcFloat() > y) {
+            localPos[0] = x - startX.calcFloat();
+            localPos[1] = y - startY.calcFloat();
+            return this;
+        }
+        return null;
+    }
 
     private void cacheStyles(final Component c, final ArrayList<StyleSelector> selectors) {
         int l = selectors.size();

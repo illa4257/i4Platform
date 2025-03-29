@@ -29,6 +29,22 @@ public class Container extends Component implements Iterable<Component> {
         });
     }
 
+    @Override
+    public Component find(float x, float y, final float[] localPos) {
+        final Component r = super.find(x, y, localPos);
+        if (r != null) {
+            x -= r.startX.calcFloat();
+            y -= r.startY.calcFloat();
+            Component r2;
+            for (final Component c : components)
+                if ((r2 = c.find(x, y, localPos)) != null)
+                    return r2;
+            localPos[0] = x;
+            localPos[1] = y;
+        }
+        return r;
+    }
+
     public boolean contains(final Component component) { return components.contains(component); }
 
     public void clear() {
@@ -184,6 +200,7 @@ public class Container extends Component implements Iterable<Component> {
         }
     }
 
+    @SuppressWarnings("NullableProblems")
     @Override public Iterator<Component> iterator() { return components.iterator(); }
     @Override public void forEach(final Consumer<? super Component> consumer) { components.forEach(consumer); }
     @Override public Spliterator<Component> spliterator() { return components.spliterator(); }
