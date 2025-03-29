@@ -5,6 +5,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Framework.base.math.Vector2D;
 
@@ -14,6 +15,11 @@ public class AndroidGContext implements Context {
 
     {
         paint.setTextSize(50);
+    }
+
+    @Override
+    public Object getClipI() {
+        return null;
     }
 
     @Override
@@ -33,6 +39,32 @@ public class AndroidGContext implements Context {
     @Override
     public void setColor(Color color) {
         paint.setColor(color.toARGB());
+    }
+
+    @Override
+    public void setStrokeWidth(float newWidth) {
+        paint.setStrokeWidth(newWidth);
+    }
+
+    @Override
+    public void setClipI(Object clipArea) {
+
+    }
+
+    @Override
+    public void setClip(final IPath path) {
+        if (path instanceof AndroidPath)
+            canvas.clipPath(((AndroidPath) path).path);
+    }
+
+    @Override
+    public IPath newPath() {
+        return new AndroidPath();
+    }
+
+    @Override
+    public void drawLine(float x1, float y1, float x2, float y2) {
+        canvas.drawLine(x1, y1, x2, y2, paint);
     }
 
     @Override

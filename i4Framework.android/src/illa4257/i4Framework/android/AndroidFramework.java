@@ -1,9 +1,10 @@
 package illa4257.i4Framework.android;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Handler;
-import android.view.Choreographer;
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
@@ -12,48 +13,68 @@ import illa4257.i4Framework.base.components.Window;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class AndroidFramework extends Framework {
-    public static final Object locker = new Object();
-    public static AndroidFramework INSTANCE = null;
+    static final ConcurrentLinkedQueue<Activity> activities = new ConcurrentLinkedQueue<>();
+    private static int processing = 0;
+
+    private boolean isNotEnabled = true;
+    final ConcurrentLinkedQueue<AndroidWindow> windows = new ConcurrentLinkedQueue<AndroidWindow>() {
+        @Override
+        public boolean add(AndroidWindow androidWindow) {
+            if (super.add(androidWindow)) {
+                synchronized (windows) {
+                    if (isNotEnabled)
+                        onEnable();
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            if (super.remove(o)) {
+                synchronized (windows) {
+                    if (!isNotEnabled)
+                        onDisable();
+                }
+                return true;
+            }
+            return false;
+        }
+    };
+
     public final Context context;
     public final Handler uiHandler;
-
-    final Object windowLocker = new Object();
-    boolean processing = false;
-    AndroidActivity result = null;
+    private Runnable callback;
 
     public AndroidFramework(final Context context) {
         this.context = context;
         uiHandler = new Handler(context.getMainLooper());
-        synchronized (locker) {
-            if (INSTANCE == null)
-                INSTANCE = this;
+        callback = () -> {
+            for (final AndroidWindow window : windows)
+                window.window.invokeAll();
+            uiHandler.postDelayed(callback, 16);
+        };
+    }
+
+    public static void pass(final AndroidActivity activity) {
+        activities.add(activity);
+        synchronized (activities) {
+            activities.notify();
         }
     }
 
-    final ConcurrentLinkedQueue<AndroidWindow> windows = new ConcurrentLinkedQueue<>();
-    Choreographer.FrameCallback callback = null;
-    void windowsUpdated() {
-        if (!isUIThread(null)) {
-            uiHandler.post(this::windowsUpdated);
-            return;
-        }
-        synchronized (windows) {
-            final boolean isEmpty = windows.isEmpty();
-            if (isEmpty && callback != null)
-                callback = null;
-            else if (!isEmpty && callback == null) {
-                Choreographer.getInstance().postFrameCallback(callback = new Choreographer.FrameCallback() {
-                    @Override
-                    public void doFrame(long frameTimeNanos) {
-                        for (final AndroidWindow window : windows)
-                            window.window.invokeAll();
-                        synchronized (windows) {
-                            if (callback == this)
-                                Choreographer.getInstance().postFrameCallback(this);
-                        }
-                    }
-                });
+    public Activity getActivity() throws InterruptedException {
+        Activity r = activities.poll();
+        if (r != null)
+            return r;
+        synchronized (activities) {
+            while ((r = activities.poll()) == null) {
+                if (processing == 0)
+                    launchActivity();
+                activities.wait();
             }
+            return r;
         }
     }
 
@@ -64,8 +85,29 @@ public class AndroidFramework extends Framework {
                 : Thread.currentThread() == context.getMainLooper().getThread();
     }
 
-    @Override
-    public FrameworkWindow newWindow(Window window) {
-        return new AndroidWindow(this, window);
+    void onEnable() {
+        isNotEnabled = false;
+        uiHandler.postDelayed(callback, 16);
     }
+
+    void onDisable() {
+        isNotEnabled = true;
+        uiHandler.removeCallbacks(callback);
+    }
+
+    void launchActivity() {
+        synchronized (activities) {
+            if (!isUIThread(null)) {
+                uiHandler.post(this::launchActivity);
+                return;
+            }
+            processing++;
+            final Intent i = new Intent(context, AndroidActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+            context.startActivity(i);
+        }
+    }
+
+    @Override public void invokeLater(final Runnable runnable) { uiHandler.post(runnable); }
+    @Override public FrameworkWindow newWindow(final Window window) { return new AndroidWindow(this, window); }
 }

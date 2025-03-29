@@ -6,15 +6,19 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Container;
+import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.components.AddComponentEvent;
 import illa4257.i4Framework.base.events.components.RecalculateEvent;
 
 public class AndroidView extends ViewGroup {
     public final Component component;
 
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
+    private final EventListener<?>[] listeners;
+
     @Override protected void onLayout(boolean changed, int l, int t, int r, int b) {}
 
-    public AndroidView(final Component component, Context context) {
+    public AndroidView(final Component component, Context context, final boolean isNotRoot) {
         super(context);
         setWillNotDraw(false);
         this.component = component;
@@ -24,16 +28,19 @@ public class AndroidView extends ViewGroup {
             lp.topMargin = component.startY.calcInt();
             setLayoutParams(lp);
         }
-        layout(component.startX.calcInt(), component.startY.calcInt(), component.endX.calcInt(), component.endY.calcInt());
-        component.addEventListener(RecalculateEvent.class, e -> {
+        if (isNotRoot) {
             layout(component.startX.calcInt(), component.startY.calcInt(), component.endX.calcInt(), component.endY.calcInt());
-        });
+            listeners = new EventListener[] {
+                    component.addEventListener(RecalculateEvent.class, e ->
+                            layout(component.startX.calcInt(), component.startY.calcInt(), component.endX.calcInt(), component.endY.calcInt()))
+            };
+        } else
+            listeners = new EventListener[0];
+
         if (component instanceof Container) {
-            component.addDirectEventListener(AddComponentEvent.class, e -> {
-                addView(new AndroidView(e.child, context));
-            });
+            component.addDirectEventListener(AddComponentEvent.class, e -> addView(new AndroidView(e.child, context, true)));
             for (final Component c : (Container) component)
-                addView(new AndroidView(c, context));
+                addView(new AndroidView(c, context, true));
         }
     }
 

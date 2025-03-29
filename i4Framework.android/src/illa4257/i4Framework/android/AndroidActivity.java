@@ -1,37 +1,23 @@
 package illa4257.i4Framework.android;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.os.Bundle;
-import android.widget.LinearLayout;
+import android.view.MotionEvent;
+import illa4257.i4Utils.SyncVar;
 
 public class AndroidActivity extends Activity {
-    public LinearLayout root;
+    public final SyncVar<AndroidWindow> frameworkWindow = new SyncVar<>();
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getActionBar().hide();
-        root = new LinearLayout(getApplicationContext());
-        root.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
-        setContentView(root);
-
-        final AndroidFramework framework = AndroidWindow.transferFrameworks.remove(getIntent().getIntExtra("framework", -1));
-
-        synchronized(framework.windowLocker) {
-            try {
-                while (framework.result != null)
-                    framework.windowLocker.wait();
-            } catch (final InterruptedException ex) {
-                Intent intent = new Intent(framework.context, AndroidActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
-                framework.context.startActivity(intent);
-                throw new RuntimeException(ex);
-            }
-            framework.result = this;
-            framework.windowLocker.notifyAll();
-        }
+        AndroidFramework.pass(this);
     }
 
-
+    @Override
+    public boolean dispatchTouchEvent(final MotionEvent ev) {
+        final AndroidWindow w = frameworkWindow.get();
+        return w != null ? w.onDispatch(ev) : super.dispatchTouchEvent(ev);
+    }
 }
