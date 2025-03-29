@@ -1,33 +1,27 @@
 package illa4257.i4Framework.base.events.mouse;
 
 import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Framework.base.events.IMoveableInputEvent;
 
-public class MouseEvent extends Event {
-    public final int x, y, localX, localY;
-
-    public MouseEvent(final int x, final int y) {
-        this.localX = this.x = x;
-        this.localY = this.y = y;
+public class MouseEvent extends Event implements IMoveableInputEvent {
+    public MouseEvent(final float x, final float y) {
+        super(false, -1, x, y, x, y);
     }
 
-    public MouseEvent(final int x, final int y, final int localX, final int localY) {
-        this.x = x;
-        this.y = y;
-        this.localX = localX;
-        this.localY = localY;
+    public MouseEvent(final float globalX, final float globalY, final float x, final float y) {
+        super(false, -1, globalX, globalY, x, y);
     }
 
-    public MouseEvent(final int x, final int y, final boolean isSystem) {
-        super(isSystem);
-        this.localX = this.x = x;
-        this.localY = this.y = y;
+    public MouseEvent(final float x, final float y, final boolean isSystem) {
+        super(isSystem, -1, x, y, x, y);
     }
 
-    public MouseEvent(final int x, final int y, final int localX, final int localY, final boolean isSystem) {
-        super(isSystem);
-        this.x = x;
-        this.y = y;
-        this.localX = localX;
-        this.localY = localY;
+    public MouseEvent(final float globalX, final float globalY, final float x, final float y, final boolean isSystem) {
+        super(isSystem, -1, globalX, globalY, x, y);
+    }
+
+    public MouseEvent(final float globalX, final float globalY, final float x, final float y, final boolean isSystem,
+                      final int pointerId) {
+        super(isSystem, pointerId, globalX, globalY, x, y);
     }
 }

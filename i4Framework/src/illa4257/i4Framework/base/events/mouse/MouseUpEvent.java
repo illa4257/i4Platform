@@ -12,4 +12,10 @@ public class MouseUpEvent extends MouseEvent {
         super(x, y, localX, localY);
         this.button = button;
     }
+
+    public MouseUpEvent(final float globalX, final float globalY, final float x, final float y,
+                        final boolean isSystem, final int pointerId, final MouseButton button) {
+        super(globalX, globalY, x, y, isSystem, pointerId);
+        this.button = button;
+    }
 }

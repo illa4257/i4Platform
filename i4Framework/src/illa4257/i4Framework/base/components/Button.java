@@ -1,5 +1,8 @@
 package illa4257.i4Framework.base.components;
 
+import illa4257.i4Framework.base.events.EventListener;
+import illa4257.i4Framework.base.events.IMoveableInputEvent;
+import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.math.HorizontalAlign;
@@ -21,14 +24,16 @@ public class Button extends Component {
     public Button(final String text) {
         this.text = new SyncVar<>(text);
         setFocusable(true);
-        addEventListener(MouseUpEvent.class, e -> {
+        final EventListener<IMoveableInputEvent> ml = e -> {
             if (
-                    e.localX < 0 || e.localX > width.calcInt() ||
-                    e.localY < 0 || e.localY > height.calcInt()
+                    e.x() < 0 || e.x() > width.calcFloat() ||
+                            e.y() < 0 || e.y() > height.calcFloat()
             )
                 return;
             fire(new ActionEvent());
-        });
+        };
+        addEventListener(MouseUpEvent.class, ml::run);
+        addEventListener(TouchUpEvent.class, ml::run);
     }
 
     public void setText(final String text) {

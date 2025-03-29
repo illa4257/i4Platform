@@ -41,10 +41,10 @@ public class TabPane extends Container {
         setFocusable(true);
         addEventListener(MouseUpEvent.class, e -> {
             final Context ctx = lastContext;
-            if (e.localY > tabHeight.calcInt() || e.localX < 8 || ctx == null)
+            if (e.y > tabHeight.calcInt() || e.x < 8 || ctx == null)
                 return;
             final float xw = ctx.bounds("x").x + 16;
-            int x = e.localX - 8;
+            float x = e.x - 8;
             for (final Tab t : tabs) {
                 final boolean isCloseable = t.isCloseable.get();
                 final float w = ctx.bounds(t.title.get("Tab")).x + (isCloseable ? 8 + xw : 16);
@@ -57,7 +57,7 @@ public class TabPane extends Container {
                 } else
                     x -= (int) w;
             }
-            selectTab(x / 130);
+            selectTab(Math.round(x / 130));
         });
     }
 

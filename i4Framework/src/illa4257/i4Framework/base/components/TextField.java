@@ -31,14 +31,14 @@ public class TextField extends Component {
     public TextField() {
         setFocusable(true);
         addEventListener(MouseDownEvent.class, e -> {
-            index.set(getIndex(e.localX));
+            index.set(getIndex(e.x));
             selectionIndex.set(-1);
             if (e.button == MouseButton.BUTTON0)
                 md.set(true);
             repaint();
         });
         addEventListener(MouseUpEvent.class, e -> {
-            index.set(getIndex(e.localX));
+            index.set(getIndex(e.x));
             if (e.button == MouseButton.BUTTON0)
                 md.set(false);
             repaint();
@@ -47,10 +47,10 @@ public class TextField extends Component {
             if (md.get()) {
                 if (selectionIndex.get() == -1)
                     selectionIndex.set(index.get());
-                index.set(getIndex(e.localX));
-                if (e.localX <= areaOffset)
+                index.set(getIndex(e.x));
+                if (e.x <= areaOffset)
                     position.set(Math.max(position.get() - 1, 0));
-                else if (e.localX >= width.calcInt() - areaOffset)
+                else if (e.x >= width.calcInt() - areaOffset)
                     position.set(Math.min(position.get() + 1, text.size() - additionalCharacters));
                 repaint();
             }
@@ -241,7 +241,7 @@ public class TextField extends Component {
         });
     }
 
-    private int getIndex(final int localX) {
+    private int getIndex(final float localX) {
         final Context context = lastContext.get();
         if (context == null)
             return 0;
