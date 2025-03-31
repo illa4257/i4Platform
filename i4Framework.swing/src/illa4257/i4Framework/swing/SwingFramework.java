@@ -24,8 +24,6 @@ public class SwingFramework extends Framework {
     private final SyncVar<Instance> timer = new SyncVar<>();
     private class Instance {
         final ScheduledExecutorService s = Executors.newSingleThreadScheduledExecutor();
-        private long last = System.nanoTime();
-        private long d;
         boolean isNotRepeated;
 
         {
@@ -37,18 +35,18 @@ public class SwingFramework extends Framework {
                 if (isUpdated)
                     isUpdated = false;
             }
+            final long last = System.currentTimeMillis();
             isNotRepeated = true;
             try {
-                SwingUtilities.invokeAndWait(() -> {
-                    for (final SwingWindow w : frames)
-                        try {
-                            w.window.invokeAll();
-                            if (isNotRepeated && w.window.isRepeated())
-                                isNotRepeated = false;
-                        } catch (final Exception ex) {
-                            i4Logger.INSTANCE.log(ex);
-                        }
-                });
+                for (final SwingWindow w : frames)
+                    try {
+                        w.window.invokeAll();
+                        if (isNotRepeated && w.window.isRepeated())
+                            isNotRepeated = false;
+                    } catch (final Exception ex) {
+                        i4Logger.INSTANCE.log(ex);
+                    }
+                Toolkit.getDefaultToolkit().sync();
             } catch (final Exception ex) {
                 i4Logger.INSTANCE.log(ex);
             }
@@ -56,17 +54,15 @@ public class SwingFramework extends Framework {
                 synchronized (updateNotifier) {
                     long current;
                     if (isUpdated || !isNotRepeated) {
-                        current = System.nanoTime();
-                        d = 16_000_000 - current + last + d;
-                        last = current;
-                        s.schedule(this::onTick, Math.max(d, 4_000_000), TimeUnit.NANOSECONDS);
+                        current = System.currentTimeMillis();
+                        final long d = 15 - current + last;
+                        s.schedule(this::onTick, Math.max(d, 4), TimeUnit.MILLISECONDS);
                     } else {
                         updateNotifier.wait();
-                        current = System.nanoTime();
-                        d = 16_000_000 - current + last + d;
-                        last = current;
+                        current = System.currentTimeMillis();
+                        final long d = 15 - current + last;
                         if (d > 0)
-                            s.schedule(this::onTick, d, TimeUnit.NANOSECONDS);
+                            s.schedule(this::onTick, d, TimeUnit.MILLISECONDS);
                         else
                             s.submit(this::onTick);
                     }
