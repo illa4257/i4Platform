@@ -1,26 +1,28 @@
 package illa4257.i4Framework.base.components;
 
+import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.events.components.ChangeParentEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyPressEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyUpEvent;
-import illa4257.i4Framework.base.graphics.Color;
-import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.events.mouse.MouseButton;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseMoveEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
+import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.math.Vector2D;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.lists.MutableCharArray;
 
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TextField extends Component {
+public class TextArea extends Component {
     public final AtomicBoolean hideCharacters = new AtomicBoolean(false);
     public final AtomicInteger index = new AtomicInteger(0), selectionIndex = new AtomicInteger(-1), position = new AtomicInteger(0);
-    public final MutableCharArray text = new MutableCharArray();
+
     private final SyncVar<Context> lastContext = new SyncVar<>();
 
     private final AtomicBoolean md = new AtomicBoolean();
@@ -28,9 +30,30 @@ public class TextField extends Component {
     private static final int additionalCharacters = 4, areaOffset = 16, areaSize = areaOffset * 2;
     private final AtomicInteger ctrlCounter = new AtomicInteger(0), shiftCounter = new AtomicInteger(0);
 
-    public TextField() {
+    private final ArrayList<MutableCharArray> lines = new ArrayList<>();
+    private float posX = 7, animation;
+
+    public TextArea() {
         setFocusable(true);
-        addEventListener(MouseDownEvent.class, e -> {
+        MutableCharArray arr = new MutableCharArray();
+        arr.add("test uifnej n".toCharArray());
+        lines.add(arr);
+        arr = new MutableCharArray();
+        arr.add("iiiiiii".toCharArray());
+        lines.add(arr);
+        for (int i = 0; i < 10; i++) {
+            arr = new MutableCharArray();
+            arr.add("Hello, world! idsn fonf idoj ifon fonf ownfon on woenf on foe f njw enfo sasa fjiueu ihure ojfio jrio jrieoj|fioj ifoerj d".toCharArray());
+            lines.add(arr);
+        }
+        onTick(() -> {
+            animation += 0.1f;
+            if (animation > 30)
+                animation = 0;
+            posX = animation;
+            repaint();
+        });
+        /*addEventListener(MouseDownEvent.class, e -> {
             index.set(getIndex(e.x));
             selectionIndex.set(-1);
             if (e.button == MouseButton.BUTTON0)
@@ -54,7 +77,7 @@ public class TextField extends Component {
                     position.set(Math.min(position.get() + 1, text.size() - additionalCharacters));
                 repaint();
             }
-        });
+        });*/
         addEventListener(ChangeParentEvent.class, e -> {
             ctrlCounter.set(0);
             shiftCounter.set(0);
@@ -79,7 +102,7 @@ public class TextField extends Component {
                     break;
             }
         });
-        addEventListener(KeyPressEvent.class, e -> {
+        /*addEventListener(KeyPressEvent.class, e -> {
             if (e.keyCode == KeyEvent.BACKSPACE) {
                 int i = index.get();
                 int si = selectionIndex.get();
@@ -238,10 +261,10 @@ public class TextField extends Component {
                 }
             }
             repaint();
-        });
+        });*/
     }
 
-    private int getIndex(final float localX) {
+    /*private int getIndex(final float localX) {
         final Context context = lastContext.get();
         if (context == null)
             return 0;
@@ -291,84 +314,80 @@ public class TextField extends Component {
 
     public void setText(final String text) {
         this.setText(text.toCharArray());
-    }
+    }*/
 
     /**
      * Clears input.<br>
      * Use this method after use if it was used for sensitive data.
      */
     public void clear() {
-        text.clear();
+        synchronized (lines) {
+            for (final MutableCharArray arr : lines)
+                arr.clear();
+            lines.clear();
+        }
     }
+
+    private long last = System.currentTimeMillis(), d;
 
     @Override
     public void paint(final Context context) {
         super.paint(context);
         lastContext.set(context);
 
-        final Color textColor = getColor("color");
-        if (textColor.alpha <= 0)
+        Color col = getColor("color");
+        if (col.alpha <= 0)
             return;
-        context.setColor(textColor);
-
-        float x = 8;
-        int i = position.get();
-        if (i > 0) {
-            x = 0;
-            i -= 1;
-        }
-
-        final int si = selectionIndex.get(), startIndex = index.get();
-        final char[] arr = new char[] { 'H' };
-        final float w = width.calcFloat(), th = context.bounds(arr).y, y = (height.calcFloat() - th) / 2;
-        final boolean isF = isFocused();
-        float selectBeginX = -1, selectEndX = -1;
-        if (hideCharacters.get()) {
-            arr[0] = '*';
-            final float sw = context.charWidth('*');
-            for (; x < w; i++) {
-                if (text.getChar(i, null) == null)
-                    break;
-                if (si == i)
-                    selectBeginX = x;
-                if (i == startIndex)
-                    selectEndX = x;
-                context.drawString(arr, x, y);
-                x += sw;
+        context.setColor(col);
+        synchronized (lines) {
+            final int l = lines.size();
+            final char[] buff = new char[] { 'H' };
+            final float w = width.calcFloat(), h = height.calcFloat(), textHeight = context.bounds(buff).y, lineNumberEnd = context.bounds(Integer.toString(l)).x + 8, lineNumberWidth = lineNumberEnd + 8, lineStart = lineNumberWidth + 8;
+            buff[0] = 'W';
+            float y = 0, x, chw;
+            int i;
+            for (int lineIndex = 0; lineIndex < l && y < h; lineIndex++, y += textHeight) {
+                x = 8;
+                final MutableCharArray line = lines.get(lineIndex);
+                i = 0;
+                x -= posX;
+                while (true) {
+                    final Character ch = line.getChar(i, null);
+                    if (ch == null)
+                        break;
+                    chw = context.charWidth(ch);
+                    if (x > -chw)
+                        break;
+                    x += chw;
+                    i++;
+                }
+                x += lineNumberWidth;
+                for (; x < w; i++) {
+                    final Character ch = line.getChar(i, null);
+                    if (ch == null)
+                        break;
+                    buff[0] = ch;
+                    context.drawString(buff, x, y);
+                    x += context.charWidth(ch);
+                }
             }
-        } else
-            for (; x < w; i++) {
-                final Character ch = text.getChar(i, null);
-                if (ch == null)
-                    break;
-                if (si == i)
-                    selectBeginX = x;
-                if (i == startIndex)
-                    selectEndX = x;
-                arr[0] = ch;
-                context.drawString(arr, x, y);
-                x += context.charWidth(ch);
+            col = getColor("--gutter-background-color");
+            if (col.alpha > 0) {
+                context.setColor(col);
+                context.drawRect(0, 0, lineNumberWidth, height.calcFloat());
             }
-        if (selectEndX == -1 && i == startIndex)
-            selectEndX = x;
-
-        if (si == -1 || si == startIndex) {
-            if (isF && startIndex <= i)
-                context.drawRect(selectEndX, y, 2, th);
-            return;
+            col = getColor("--gutter-color");
+            if (col.alpha <= 0)
+                return;
+            context.setColor(col);
+            y = 0;
+            for (int lineIndex = 0; lineIndex < l && y < h; lineIndex++, y += textHeight)
+                context.drawString(Integer.toString(lineIndex), lineNumberEnd - context.bounds(Integer.toString(lineIndex)).x, y);
+            context.drawLine(lineNumberWidth, 0, lineNumberWidth, height.calcFloat());
         }
-        context.setColor(getColor("--selection-color"));
-        if (selectBeginX == -1)
-            selectBeginX = si > startIndex ? x : 0;
-        if (selectEndX == -1)
-            selectEndX = x;
-        if (selectBeginX > selectEndX) {
-            final float t = selectBeginX;
-            selectBeginX = selectEndX;
-            selectEndX = t;
-        }
-        context.drawRect(selectBeginX, y, selectEndX - selectBeginX, th);
-        context.setColor(textColor);
-        context.drawRect(si > startIndex ? selectBeginX : selectEndX, y, 2, th);
+        d = System.currentTimeMillis();
+        final long delta = d - last;
+        last = d;
+        context.drawString(Long.toString(delta), 0, 256);
     }
 }
