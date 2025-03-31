@@ -22,6 +22,14 @@ public class AndroidGContext implements Context {
         return null;
     }
 
+    private final char[] buff = new char[1];
+
+    @Override
+    public float charWidth(char ch) {
+        buff[0] = ch;
+        return paint.measureText(buff, 0, buff.length);
+    }
+
     @Override
     public Vector2D bounds(final String string) {
         final Rect bounds = new Rect();

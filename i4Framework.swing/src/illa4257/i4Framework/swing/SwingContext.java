@@ -23,6 +23,11 @@ public class SwingContext implements Context {
     }
 
     @Override
+    public float charWidth(final char ch) {
+        return graphics.getFontMetrics().charWidth(ch);
+    }
+
+    @Override
     public Vector2D bounds(final String string) {
         return Vector2D.fromSize(graphics.getFontMetrics().getStringBounds(string, graphics));
     }

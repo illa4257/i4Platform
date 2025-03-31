@@ -7,10 +7,12 @@ import illa4257.i4Framework.base.math.Vector2D;
 import illa4257.i4Framework.base.utils.Geom;
 
 public interface Context {
+    @SuppressWarnings("unused")
     default Context sub(final float x, final float y, final float w, final float h) { return this; }
     default void dispose() {}
 
     Object getClipI();
+    float charWidth(final char ch);
     Vector2D bounds(final String string);
     Vector2D bounds(final char[] string);
 
