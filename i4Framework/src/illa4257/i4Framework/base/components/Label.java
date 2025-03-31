@@ -5,7 +5,6 @@ import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.math.HorizontalAlign;
 import illa4257.i4Framework.base.math.Vector2D;
 import illa4257.i4Framework.base.events.components.ChangeTextEvent;
-import illa4257.i4Utils.SyncVar;
 
 import java.util.Objects;
 
@@ -14,7 +13,6 @@ public class Label extends Component {
 
     private String text;
     private String[] lines;
-    private final SyncVar<HorizontalAlign> horizontalAlign = new SyncVar<>(HorizontalAlign.CENTER);
 
     public Label() { text = null; lines = null; }
     public Label(final String text) { this.text = text; lines = text == null ? null : text.split(regExp); }
@@ -41,6 +39,7 @@ public class Label extends Component {
             h += v2d[i].y;
         }
         y = (height.calcFloat() - h) / 2;
+        final HorizontalAlign align = getEnumValue("text-align", HorizontalAlign.class, HorizontalAlign.LEFT);
         m:
         for (int i = 0; i < ll.length; i++) {
             String l = ll[i];
@@ -57,7 +56,9 @@ public class Label extends Component {
             }
             if (d3)
                 l += "...";
-            final float x = horizontalAlign.get() == HorizontalAlign.LEFT ? 0 : (width.calcFloat() - v2d[i].x) / 2;
+            final float x = align == HorizontalAlign.LEFT ? 0 :
+                    align == HorizontalAlign.CENTER ? (width.calcFloat() - v2d[i].x) / 2 :
+                    width.calcFloat() - v2d[i].x;
             ctx.drawString(l, x, y);
             y += v2d[i].y;
         }
@@ -73,9 +74,5 @@ public class Label extends Component {
             lines = text == null ? null : text.split(regExp);
         }
         fire(new ChangeTextEvent(old, text));
-    }
-
-    public void setHorizontalAlign(final HorizontalAlign align) {
-        horizontalAlign.set(align);
     }
 }
