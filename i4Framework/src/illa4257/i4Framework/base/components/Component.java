@@ -20,7 +20,6 @@ import illa4257.i4Framework.base.points.*;
 import illa4257.i4Framework.base.styling.Cursor;
 import illa4257.i4Utils.Destructor;
 import illa4257.i4Utils.SyncVar;
-import illa4257.i4Utils.lists.SwappableQueue;
 import illa4257.i4Utils.lists.SwappableTmpQueue;
 import illa4257.i4Utils.logger.i4Logger;
 
@@ -40,7 +39,7 @@ public class Component extends Destructor {
     public final PointSet startX = new PointSet(), startY = new PointSet(), endX = new PointSet(), endY = new PointSet();
     public final Point width = new PPointSubtract(endX, startX), height = new PPointSubtract(endY, startY);
 
-    protected final SwappableQueue<Runnable> repeatedInvoke = new SwappableQueue<>();
+    protected final ConcurrentLinkedQueue<Runnable> repeatedInvoke = new ConcurrentLinkedQueue<>();
     protected final AtomicBoolean isRepeated = new AtomicBoolean(false);
     private final SwappableTmpQueue<Runnable> invoke = new SwappableTmpQueue<>();
 
