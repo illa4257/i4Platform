@@ -1,83 +1,73 @@
 package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.events.SingleEvent;
 import illa4257.i4Framework.base.events.components.ChangeParentEvent;
+import illa4257.i4Framework.base.events.components.RecalculateEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyEvent;
-import illa4257.i4Framework.base.events.keyboard.KeyPressEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyUpEvent;
-import illa4257.i4Framework.base.events.mouse.MouseButton;
-import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
-import illa4257.i4Framework.base.events.mouse.MouseMoveEvent;
-import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
+import illa4257.i4Framework.base.events.mouse.MouseScrollEvent;
 import illa4257.i4Framework.base.graphics.Color;
-import illa4257.i4Framework.base.math.Vector2D;
+import illa4257.i4Framework.base.math.Orientation;
+import illa4257.i4Framework.base.points.PointAttach;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.lists.MutableCharArray;
 
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TextArea extends Component {
-    public final AtomicBoolean hideCharacters = new AtomicBoolean(false);
-    public final AtomicInteger index = new AtomicInteger(0), selectionIndex = new AtomicInteger(-1), position = new AtomicInteger(0);
-
+public class TextArea extends Container {
+    public final ScrollBar vBar = new ScrollBar(Orientation.VERTICAL), hBar = new ScrollBar(Orientation.HORIZONTAL);
     private final SyncVar<Context> lastContext = new SyncVar<>();
 
-    private final AtomicBoolean md = new AtomicBoolean();
-
-    private static final int additionalCharacters = 4, areaOffset = 16, areaSize = areaOffset * 2;
     private final AtomicInteger ctrlCounter = new AtomicInteger(0), shiftCounter = new AtomicInteger(0);
 
     private final ArrayList<MutableCharArray> lines = new ArrayList<>();
-    private float posX = 7, animation;
+    private final ArrayList<Float> lineWidths = new ArrayList<>();
+    private float posX = 0, posY = 0;
 
     public TextArea() {
         setFocusable(true);
-        MutableCharArray arr = new MutableCharArray();
-        arr.add("test uifnej n".toCharArray());
-        lines.add(arr);
-        arr = new MutableCharArray();
-        arr.add("iiiiiii".toCharArray());
-        lines.add(arr);
-        for (int i = 0; i < 10; i++) {
-            arr = new MutableCharArray();
-            arr.add("Hello, world! idsn fonf idoj ifon fonf ownfon on woenf on foe f njw enfo sasa fjiueu ihure ojfio jrio jrieoj|fioj ifoerj d".toCharArray());
-            lines.add(arr);
-        }
-        onTick(() -> {
-            animation += 0.1f;
-            if (animation > 30)
-                animation = 0;
-            posX = animation;
-            repaint();
-        });
-        /*addEventListener(MouseDownEvent.class, e -> {
-            index.set(getIndex(e.x));
-            selectionIndex.set(-1);
-            if (e.button == MouseButton.BUTTON0)
-                md.set(true);
-            repaint();
-        });
-        addEventListener(MouseUpEvent.class, e -> {
-            index.set(getIndex(e.x));
-            if (e.button == MouseButton.BUTTON0)
-                md.set(false);
-            repaint();
-        });
-        addEventListener(MouseMoveEvent.class, e -> {
-            if (md.get()) {
-                if (selectionIndex.get() == -1)
-                    selectionIndex.set(index.get());
-                index.set(getIndex(e.x));
-                if (e.x <= areaOffset)
-                    position.set(Math.max(position.get() - 1, 0));
-                else if (e.x >= width.calcInt() - areaOffset)
-                    position.set(Math.min(position.get() + 1, text.size() - additionalCharacters));
+        vBar.setStartX(vBar.endX);
+        vBar.setEndX(width);
+        vBar.setEndY(hBar.startY);
+        add(vBar);
+
+        hBar.setStartY(hBar.endY);
+        hBar.setEndX(vBar.startX);
+        hBar.setEndY(height);
+        add(hBar);
+
+        addLine("test uifnej n".toCharArray());
+        addLine("iiiiiii".toCharArray());
+        for (int i = 0; i < 100; i++)
+            addLine("Hello, world! idsn fonf idoj ifon fonf ownfon on woenf on foe f njw enfo sasa fjiueu ihure ojfio jrio jrieoj|fioj ifoerj d".toCharArray());
+        addEventListener(ReCalc.class, e -> reCalc());
+        addEventListener(RecalculateEvent.class, e -> fire(new ReCalc()));
+        vBar.addEventListener(ScrollBar.ScrollEvent.class, e -> {
+            synchronized (lines) {
+                posY = e.newValue;
                 repaint();
             }
-        });*/
+        });
+        hBar.addEventListener(ScrollBar.ScrollEvent.class, e -> {
+            synchronized (lines) {
+                posX = e.newValue;
+                repaint();
+            }
+        });
+        addEventListener(MouseScrollEvent.class, e -> {
+            final ScrollBar bar = e.orientation == Orientation.VERTICAL ? vBar : hBar;
+            if (
+                    e.scroll == 0 ||
+                            (bar.getMin() == bar.getScroll() && e.scroll < 0) ||
+                            (bar.getMax() == bar.getScroll() && e.scroll > 0)
+            )
+                return;
+            bar.fire(e);
+        });
         addEventListener(ChangeParentEvent.class, e -> {
             ctrlCounter.set(0);
             shiftCounter.set(0);
@@ -102,219 +92,64 @@ public class TextArea extends Component {
                     break;
             }
         });
-        /*addEventListener(KeyPressEvent.class, e -> {
-            if (e.keyCode == KeyEvent.BACKSPACE) {
-                int i = index.get();
-                int si = selectionIndex.get();
-                if (si != -1) {
-                    if (si > i)
-                        text.removeRange(i, si);
-                    else {
-                        text.removeRange(si, i);
-                        index.set(si);
-                        if (index.get() < position.get())
-                            position.set(index.get());
-                    }
-                    selectionIndex.set(-1);
-                    repaint();
-                    return;
-                }
-                if (i == 0)
-                    return;
-                index.set(--i);
-                text.remove(i);
-                if (position.get() >= index.get())
-                    position.set(Math.max(position.get() - 1, 0));
-                repaint();
-                return;
-            }
-            if (e.keyCode == KeyEvent.DELETE) {
-                int i = index.get();
-                int si = selectionIndex.get();
-                if (si != -1) {
-                    if (si > i)
-                        text.removeRange(i, si);
-                    else {
-                        text.removeRange(si, i);
-                        index.set(si);
-                        if (index.get() < position.get())
-                            position.set(index.get());
-                    }
-                    selectionIndex.set(-1);
-                    repaint();
-                    return;
-                }
-                if (i == 0)
-                    return;
-                text.removeB(i);
-                repaint();
-                return;
-            }
-            if (e.keyCode == KeyEvent.LEFT) {
-                int i = index.get();
-                if (i == 0)
-                    return;
-                if (shiftCounter.get() > 0) {
-                    final int si = selectionIndex.get();
-                    if (si == -1)
-                        selectionIndex.set(i);
-                    else if (si == i - 1)
-                        selectionIndex.set(-1);
-                } else if (selectionIndex.getAndSet(-1) != -1) {
-                    repaint();
-                    return;
-                }
-                index.set(--i);
-                if (position.get() >= i)
-                    position.set(Math.max(position.get() - 1, 0));
-                repaint();
-                return;
-            }
-            if (e.keyCode == KeyEvent.RIGHT) {
-                int i = index.get();
-                if (text.getChar(i, null) == null)
-                    return;
-                if (shiftCounter.get() > 0) {
-                    final int si = selectionIndex.get();
-                    if (si == -1)
-                        selectionIndex.set(i);
-                    else if (si == i + 1)
-                        selectionIndex.set(-1);
-                } else if (selectionIndex.getAndSet(-1) != -1) {
-                    repaint();
-                    return;
-                }
-                index.set(++i);
+    }
+
+    private Float getLineWidth(final int index) {
+        synchronized (lines) {
+            Float r = lineWidths.get(index);
+            if (r == null) {
                 final Context c = lastContext.get();
                 if (c != null) {
-                    float w = width.calcFloat() - areaSize, cw;
-                    final char[] arr = new char[1];
-                    int p = position.get();
-                    while (true) {
-                        final Character ch = text.getChar(p, null);
-                        if (ch == null)
-                            break;
-                        arr[0] = ch;
-                        cw = c.bounds(arr).x;
-                        if (w < cw)
-                            position.incrementAndGet();
-                        if (i < p)
-                            break;
-                        w -= cw;
-                        p++;
-                    }
-                }
-                repaint();
-                return;
-            }
-            if (e.keyChar == KeyEvent.ENTER || KeyEvent.isNotVisible(e.keyCode))
-                return;
-            if (e.keyChar == 1) {
-                final int l = text.size();
-                if (l == 0)
-                    return;
-                selectionIndex.set(0);
-                index.set(l);
-                repaint();
-                return;
-            }
-            if (e.keyChar >= 2 && e.keyChar <= 26)
-                return;
-            int i = index.get();
-            int si = selectionIndex.get();
-            if (si != -1) {
-                if (si > i) {
-                    text.removeRange(i, si);
-                } else {
-                    text.removeRange(si, i);
-                    i = si;
-                    if (index.get() < position.get())
-                        position.set(index.get());
-                }
-                selectionIndex.set(-1);
-                index.set(i + 1);
-            } else
-                i = index.getAndIncrement();
-            if (i < 0) {
-                index.set(i = 0);
-                position.set(0);
-                text.add(e.keyChar);
-            } else
-                text.add(e.keyChar, i);
-            final Context c = lastContext.get();
-            if (c != null) {
-                float w = width.calcFloat() - areaSize, cw;
-                final char[] arr = new char[1];
-                int p = position.get();
-                while (true) {
-                    final Character ch = text.getChar(p, null);
-                    if (ch == null)
-                        break;
-                    arr[0] = ch;
-                    cw = c.bounds(arr).x;
-                    if (w < cw)
-                        position.incrementAndGet();
-                    if (i < p)
-                        break;
-                    w -= cw;
-                    p++;
+                    final char[] b = lines.get(index).getChars();
+                    r = c.bounds(b).x;
+                    Arrays.fill(b, '\0');
+                    lineWidths.set(index, r);
                 }
             }
-            repaint();
-        });*/
+            return r;
+        }
     }
 
-    /*private int getIndex(final float localX) {
-        final Context context = lastContext.get();
-        if (context == null)
-            return 0;
-
-        float x = 8;
-        int i = position.get();
-        if (i > 0) {
-            x = 0;
-            i -= 1;
+    private void addLine(final char[] chars) {
+        final MutableCharArray arr = new MutableCharArray();
+        arr.addDirect(chars);
+        synchronized (lines) {
+            lines.add(arr);
+            lineWidths.add(null);
         }
+    }
 
-        final char[] arr = new char[1];
-        final float w = width.calcFloat();
-        if (hideCharacters.get()) {
-            arr[0] = '*';
-            final float sw = context.bounds(arr).x, hw = sw / 2;
-            for (; x < w; i++) {
-                if (text.getChar(i, null) == null)
-                    break;
-                if (x + hw >= localX)
-                    return i;
-                x += sw;
+    private void reCalc() {
+        final Context c = lastContext.get();
+        if (c == null) {
+            fireLater(new ReCalc());
+            return;
+        }
+        final int scrollBarWidth = getInt("--scrollbar-width", 0);
+        synchronized (lines) {
+            int m = Math.round(Math.max(lines.size() * c.bounds(new char[] { 'H' }).y - height.calcFloat() + scrollBarWidth, 0));
+            vBar.setMax(m);
+            vBar.setStartX(m > 0 ? new PointAttach(-scrollBarWidth, vBar.endX) : vBar.endX);
+
+            final int l = lines.size();
+            float r = 0;
+            for (int i = 0; i < l; i++) {
+                final float w = getLineWidth(i);
+                if (w > r)
+                    r = w;
             }
-            return i;
+            m = Math.round(Math.max(r - width.calcFloat() + scrollBarWidth + 40 + c.bounds(Integer.toString(lines.size())).x, 0));
+            hBar.setMax(m);
+            hBar.setStartY(m > 0 ? new PointAttach(-scrollBarWidth, hBar.endY) : hBar.endY);
         }
-        float cw;
-        for (; x < w; i++) {
-            final Character ch = text.getChar(i, null);
-            if (ch == null)
-                break;
-            arr[0] = ch;
-            cw = context.bounds(arr).x;
-            if (x + cw / 2 >= localX)
-                return i;
-            x += cw;
-        }
-        return i;
     }
 
-    public void setText(final char[] text) {
-        this.text.clear();
-        index.set(0);
-        position.set(0);
-        selectionIndex.set(-1);
-        this.text.add(text);
+    private static class ReCalc implements SingleEvent {
+        @Override
+        public boolean isPrevented() {
+            return false;
+        }
     }
-
-    public void setText(final String text) {
-        this.setText(text.toCharArray());
-    }*/
 
     /**
      * Clears input.<br>
@@ -325,10 +160,9 @@ public class TextArea extends Component {
             for (final MutableCharArray arr : lines)
                 arr.clear();
             lines.clear();
+            lineWidths.clear();
         }
     }
-
-    private long last = System.currentTimeMillis(), d;
 
     @Override
     public void paint(final Context context) {
@@ -340,13 +174,14 @@ public class TextArea extends Component {
             return;
         context.setColor(col);
         synchronized (lines) {
-            final int l = lines.size();
             final char[] buff = new char[] { 'H' };
-            final float w = width.calcFloat(), h = height.calcFloat(), textHeight = context.bounds(buff).y, lineNumberEnd = context.bounds(Integer.toString(l)).x + 8, lineNumberWidth = lineNumberEnd + 8, lineStart = lineNumberWidth + 8;
+            final float w = width.calcFloat(), h = height.calcFloat(), textHeight = context.bounds(buff).y;
+            final int l = Math.min(lines.size(), (int) Math.ceil((posY + h) / textHeight));
+            final float lineNumberEnd = context.bounds(Integer.toString(lines.size())).x + 8, lineNumberWidth = lineNumberEnd + 8;
             buff[0] = 'W';
-            float y = 0, x, chw;
+            float y = -posY + (int) Math.floor(posY / textHeight) * textHeight, x, chw;
             int i;
-            for (int lineIndex = 0; lineIndex < l && y < h; lineIndex++, y += textHeight) {
+            for (int lineIndex = (int) Math.floor(posY / textHeight); lineIndex < l && y < h; lineIndex++, y += textHeight) {
                 x = 8;
                 final MutableCharArray line = lines.get(lineIndex);
                 i = 0;
@@ -374,20 +209,16 @@ public class TextArea extends Component {
             col = getColor("--gutter-background-color");
             if (col.alpha > 0) {
                 context.setColor(col);
-                context.drawRect(0, 0, lineNumberWidth, height.calcFloat());
+                context.drawRect(0, 0, lineNumberWidth, h);
             }
             col = getColor("--gutter-color");
             if (col.alpha <= 0)
                 return;
             context.setColor(col);
-            y = 0;
-            for (int lineIndex = 0; lineIndex < l && y < h; lineIndex++, y += textHeight)
-                context.drawString(Integer.toString(lineIndex), lineNumberEnd - context.bounds(Integer.toString(lineIndex)).x, y);
-            context.drawLine(lineNumberWidth, 0, lineNumberWidth, height.calcFloat());
+            y = -posY + (int) Math.floor(posY / textHeight) * textHeight;
+            for (int lineIndex = (int) Math.floor(posY / textHeight); lineIndex < l && y < h; y += textHeight)
+                context.drawString(Integer.toString(++lineIndex), lineNumberEnd - context.bounds(Integer.toString(lineIndex)).x, y);
+            context.drawLine(lineNumberWidth, 0, lineNumberWidth, h);
         }
-        d = System.currentTimeMillis();
-        final long delta = d - last;
-        last = d;
-        context.drawString(Long.toString(delta), 0, 256);
     }
 }

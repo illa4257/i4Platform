@@ -1,3 +1,8 @@
+* {
+    color: #212121;
+    --scrollbar-width: 16px;
+}
+
 Window {
     background-color: #fff;
 }
@@ -6,16 +11,12 @@ Panel {
     background-color: #F0F0F0;
 }
 
-TabPane,
-Label,
-Button,
-TextArea,
-TextField {
-    color: #212121;
-}
-
 .secondary-color {
     color: #757575;
+}
+
+Button {
+    text-align: center;
 }
 
 Button,
@@ -25,7 +26,6 @@ TextField {
     border-width: 1px;
     border-radius: 8px;
     border-color: #D1D1D1;
-    text-align: center;
 }
 
 Button:hover {
@@ -56,7 +56,6 @@ TabPane {
 
 ScrollPane {
     background-color: #b0b0b0;
-    --scrollbar-width: 16px;
 }
 
 ScrollBar {
