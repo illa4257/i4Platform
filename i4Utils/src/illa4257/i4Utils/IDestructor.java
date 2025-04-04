@@ -4,6 +4,7 @@ import illa4257.i4Utils.logger.Level;
 import illa4257.i4Utils.logger.i4Logger;
 
 public interface IDestructor {
+    default boolean isConstructed() { return getLinkNumber() > 0; }
     int getLinkNumber();
     int addLinkNumber();
     int decLinkNumber();
