@@ -23,14 +23,6 @@ public class PointAttach extends Point {
             newPoint.subscribe(super::reset);
     }
 
-    /*@Override
-    public void reset() {
-        super.reset();
-        final Point p = point;
-        if (p != null)
-            p.reset();
-    }*/
-
     @Override
     protected float calc() {
         final Point p = point;

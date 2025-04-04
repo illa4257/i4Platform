@@ -3,12 +3,13 @@ package illa4257.i4Framework.base.components;
 import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.SingleEvent;
+import illa4257.i4Framework.base.events.components.RecalculateEvent;
 import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
 import illa4257.i4Framework.base.events.mouse.MouseScrollEvent;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.events.components.ChangePointEvent;
 import illa4257.i4Framework.base.points.Point;
-import illa4257.i4Framework.base.points.numbers.PointNumber;
+import illa4257.i4Framework.base.points.numbers.NumberPoint;
 
 public class ScrollPane extends Container {
     private Container c = null;
@@ -20,8 +21,9 @@ public class ScrollPane extends Container {
 
         public ReCalcBars(final boolean isFirst) { first = isFirst; }
     }
+    private final Runnable reCalcRequest = () -> fire(new ReCalcBars(true));
 
-    public final Point viewableWidth = new PointNumber(), viewableHeight = new PointNumber();
+    public final Point viewableWidth = new NumberPoint(), viewableHeight = new NumberPoint();
 
     public ScrollPane() {
         vBar.setUnitIncrement(8);
@@ -47,8 +49,8 @@ public class ScrollPane extends Container {
             int w = width.calcInt(), h = height.calcInt();
 
             if (e.first) {
-                ((PointNumber) viewableWidth).set(w - scrollBarWidth);
-                ((PointNumber) viewableHeight).set(h - scrollBarWidth);
+                ((NumberPoint) viewableWidth).set(w - scrollBarWidth);
+                ((NumberPoint) viewableHeight).set(h - scrollBarWidth);
                 fire(new ReCalcBars(false));
                 return;
             }
@@ -62,10 +64,10 @@ public class ScrollPane extends Container {
                     w -= scrollBarWidth;
             }
 
-            if (((PointNumber) viewableWidth).get() != w)
-                ((PointNumber) viewableWidth).set(w);
-            if (((PointNumber) viewableHeight).get() != h)
-                ((PointNumber) viewableHeight).set(h);
+            if (((NumberPoint) viewableWidth).get() != w)
+                ((NumberPoint) viewableWidth).set(w);
+            if (((NumberPoint) viewableHeight).get() != h)
+                ((NumberPoint) viewableHeight).set(h);
 
             final int sh = Math.max(ch - h, 0), sw = Math.max(cw - w, 0);
             vBar.setMax(sh);
@@ -95,8 +97,6 @@ public class ScrollPane extends Container {
             c.setX(-event.newValue);
         });
 
-        width.subscribe(() -> fire(new ReCalcBars(true)));
-        height.subscribe(() -> fire(new ReCalcBars(true)));
         addEventListener(StyleUpdateEvent.class, ignored -> fire(new ReCalcBars(true)));
         addEventListener(MouseScrollEvent.class, e -> {
             final ScrollBar bar = e.orientation == Orientation.VERTICAL ? vBar : hBar;
@@ -108,6 +108,7 @@ public class ScrollPane extends Container {
                 return;
             bar.fire(e);
         });
+        addEventListener(RecalculateEvent.class, e -> fire(new ReCalcBars(true)));
     }
 
     private final EventListener<ChangePointEvent> l = e -> fire(new ReCalcBars(true));
@@ -135,5 +136,18 @@ public class ScrollPane extends Container {
             c.setX(x);
             c.setY(y);
         }
+    }
+
+    @Override
+    public void onConstruct() {
+        super.onConstruct();
+        width.subscribe(reCalcRequest);
+        densityMultiplier.subscribe(reCalcRequest);
+    }
+
+    @Override
+    public void onDestruct() {
+        super.onDestruct();
+        densityMultiplier.unsubscribe(reCalcRequest);
     }
 }

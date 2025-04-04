@@ -1,6 +1,6 @@
 * {
     color: #212121;
-    --scrollbar-width: 16px;
+    --scrollbar-width: 16dp;
 }
 
 Window {
@@ -41,6 +41,7 @@ TextField {
 TextArea {
     --gutter-background-color: #ccc;
     --gutter-color: #333;
+    --gutter-padding: 8dp;
 }
 
 TextArea:focus,

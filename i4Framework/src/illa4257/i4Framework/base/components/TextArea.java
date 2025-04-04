@@ -221,4 +221,26 @@ public class TextArea extends Container {
             context.drawLine(lineNumberWidth, 0, lineNumberWidth, h);
         }
     }
+
+    private void reCalcRequest() {
+        fire(new ReCalc());
+    }
+
+    public void test() {
+        System.out.println(densityMultiplier.calcFloat());
+    }
+
+    @Override
+    public void onConstruct() {
+        super.onConstruct();
+        densityMultiplier.subscribe(this::test);
+        densityMultiplier.subscribe(this::reCalcRequest);
+    }
+
+    @Override
+    public void onDestruct() {
+        super.onDestruct();
+        densityMultiplier.unsubscribe(this::test);
+        densityMultiplier.unsubscribe(this::reCalcRequest);
+    }
 }

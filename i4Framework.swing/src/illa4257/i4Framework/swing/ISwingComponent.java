@@ -24,7 +24,7 @@ public interface ISwingComponent {
                 if (getComponent(t, e.child) != null)
                     return;
                 final SwingComponent co = new SwingComponent(e.child);
-                t.add(co);
+                t.add(co, 0);
                 co.repaint();
             }),
             c.addEventListener(RemoveComponentEvent.class, e -> {

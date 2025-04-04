@@ -5,11 +5,11 @@ import illa4257.i4Utils.SyncVar;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-public class PointMultiplierN extends Point {
+public class NumberPointMultiplier extends Point {
     private final SyncVar<Point> point = new SyncVar<>();
     private final AtomicReference<Float> number = new AtomicReference<>();
 
-    public PointMultiplierN(final Point point, float number) {
+    public NumberPointMultiplier(final Point point, float number) {
         this.point.set(point);
         this.number.set(number);
     }

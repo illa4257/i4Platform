@@ -12,7 +12,9 @@ import illa4257.i4Framework.base.events.mouse.*;
 import illa4257.i4Framework.base.events.touchscreen.TouchDownEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchMoveEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
+import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.PointAttach;
+import illa4257.i4Framework.base.points.numbers.NumberPoint;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.logger.i4Logger;
 
@@ -21,6 +23,7 @@ public class AndroidWindow implements FrameworkWindow {
     public final SyncVar<Activity> activity = new SyncVar<>();
     public final Window window;
     public final AndroidView root;
+    public final NumberPoint densityMultiplier = new NumberPoint();
 
     public AndroidWindow(final AndroidFramework framework) {
         this.framework = framework;
@@ -48,10 +51,12 @@ public class AndroidWindow implements FrameworkWindow {
                         final Activity a = framework.getActivity();
                         if (a instanceof AndroidActivity)
                             ((AndroidActivity) a).frameworkWindow.set(this);
+                        densityMultiplier.set(a.getResources().getDisplayMetrics().density);
                         framework.invokeLater(() -> {
                             activity.set(a);
                             a.setContentView(root);
                             window.setSize(root.getWidth(), root.getHeight());
+                            window.densityMultiplier.set(densityMultiplier);
                             root.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
                                 window.endX.set(new PointAttach(root.getWidth(), null));
                                 window.endY.set(new PointAttach(root.getHeight(), null));
@@ -132,6 +137,11 @@ public class AndroidWindow implements FrameworkWindow {
                 System.out.println("Unknown button: " + btn);
                 return MouseButton.UNKNOWN_BUTTON;
         }
+    }
+
+    @Override
+    public Point getDensityMultiplier() {
+        return densityMultiplier;
     }
 
     @Override

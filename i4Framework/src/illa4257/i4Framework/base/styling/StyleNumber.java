@@ -6,8 +6,8 @@ import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.math.Unit;
 import illa4257.i4Framework.base.points.ParentPoint;
 import illa4257.i4Framework.base.points.Point;
-import illa4257.i4Framework.base.points.numbers.PointMultiplierN;
-import illa4257.i4Framework.base.points.numbers.PointNumber;
+import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
+import illa4257.i4Framework.base.points.numbers.NumberPoint;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,13 +28,20 @@ public class StyleNumber {
                 return p != null ? (orientation != Orientation.VERTICAL ? p.width : p.height).calcFloat() * number : 0;
             } else
                 return 0;
+        if (unit == Unit.DP)
+            if (component != null)
+                return number * component.densityMultiplier.calcFloat();
+            else
+                return number;
         return number;
     }
 
     public Point getPoint(final Component component, final Orientation orientation) {
         if (unit == Unit.PERCENT)
-            return new PointMultiplierN(new ParentPoint(component, orientation), number);
-        return new PointNumber(number);
+            return new NumberPointMultiplier(new ParentPoint(component, orientation), number);
+        if (unit == Unit.DP)
+            return new NumberPointMultiplier(component != null ? component.densityMultiplier : null, number);
+        return new NumberPoint(number);
     }
 
     private static final List<Character>
@@ -61,6 +68,8 @@ public class StyleNumber {
             return new StyleNumber(n / 100, Unit.PERCENT);
         if ((u == 'p' && i < l && s.charAt(i) == 'x') || u == ' ')
             return new StyleNumber(n, Unit.PX);
+        if ((u == 'd' && i < l && s.charAt(i) == 'p'))
+            return new StyleNumber(n, Unit.DP);
         return null;
     }
 

@@ -82,14 +82,12 @@ public class AndroidGContext implements Context {
 
     @Override
     public void drawString(String str, float x, float y) {
-        final Rect bounds = new Rect();
-        paint.getTextBounds(str, 0, str.length(), bounds);
-        canvas.drawText(str, x, y + bounds.height(), paint);
+        canvas.drawText(str, x, y - paint.getFontMetrics().ascent, paint);
     }
 
     @Override
     public void drawString(char[] str, float x, float y) {
-        canvas.drawText(str, 0, str.length, x, y, paint);
+        canvas.drawText(str, 0, str.length, x, y - paint.getFontMetrics().ascent, paint);
     }
 
     @Override

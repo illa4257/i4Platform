@@ -12,7 +12,9 @@ import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Framework.base.math.Orientation;
+import illa4257.i4Framework.base.math.Unit;
 import illa4257.i4Framework.base.points.Point;
+import illa4257.i4Framework.base.points.numbers.NumberPointConstant;
 import illa4257.i4Framework.base.styling.StyleNumber;
 import illa4257.i4Framework.base.styling.StyleSelector;
 import illa4257.i4Framework.base.styling.StyleSetting;
@@ -36,7 +38,8 @@ public class Component extends Destructor {
 
     protected final SyncVar<Container> parent = new SyncVar<>();
 
-    public final PointSet startX = new PointSet(), startY = new PointSet(), endX = new PointSet(), endY = new PointSet();
+    public final PointSet startX = new PointSet(), startY = new PointSet(), endX = new PointSet(), endY = new PointSet(),
+            densityMultiplier = new PointSet(NumberPointConstant.ONE);
     public final Point width = new PPointSubtract(endX, startX), height = new PPointSubtract(endY, startY);
 
     protected final ConcurrentLinkedQueue<Runnable> repeatedInvoke = new ConcurrentLinkedQueue<>();
@@ -188,7 +191,7 @@ public class Component extends Destructor {
 
     public int getInt(final String name, final int defaultValue) {
         final StyleNumber n = getNumber(name, null);
-        return n != null ? Math.round(n.number) : defaultValue;
+        return n != null ? Math.round(n.unit == Unit.DP ? n.number * densityMultiplier.calcFloat() : n.number) : defaultValue;
     }
 
     public float calcStyleNumber(final String name, final Orientation orientation, final float defaultValue) {
@@ -490,8 +493,18 @@ public class Component extends Destructor {
         fire(new ChangePointEvent());
     }
 
+    public void setWidth(final Point width) {
+        endX.set(new PPointAdd(startX, width));
+        fire(new ChangePointEvent());
+    }
+
     public void setWidth(final float width) {
         endX.set(new PointAttach(width, startX));
+        fire(new ChangePointEvent());
+    }
+
+    public void setHeight(final Point height) {
+        endY.set(new PPointAdd(startY, height));
         fire(new ChangePointEvent());
     }
 
