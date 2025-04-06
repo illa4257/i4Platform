@@ -15,6 +15,7 @@ import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.math.Unit;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.numbers.NumberPointConstant;
+import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.styling.StyleNumber;
 import illa4257.i4Framework.base.styling.StyleSelector;
 import illa4257.i4Framework.base.styling.StyleSetting;
@@ -476,9 +477,24 @@ public class Component extends Destructor {
         fire(new ChangePointEvent());
     }
 
+    public void setX(final float x, final Unit unit) {
+        if (unit == Unit.DP)
+            startX.set(new NumberPointMultiplier(densityMultiplier, x));
+        else
+            startX.set(new PointAttach(x, null));
+        fire(new ChangePointEvent());
+    }
 
     public void setX(final float x) {
         startX.set(new PointAttach(x, null));
+        fire(new ChangePointEvent());
+    }
+
+    public void setY(final float y, final Unit unit) {
+        if (unit == Unit.DP)
+            startY.set(new NumberPointMultiplier(densityMultiplier, y));
+        else
+            startY.set(new PointAttach(y, null));
         fire(new ChangePointEvent());
     }
 
@@ -498,6 +514,14 @@ public class Component extends Destructor {
         fire(new ChangePointEvent());
     }
 
+    public void setWidth(final float width, final Unit unit) {
+        if (unit == Unit.DP)
+            endX.set(new PPointAdd(new NumberPointMultiplier(densityMultiplier, width), startX));
+        else
+            endX.set(new PointAttach(width, startX));
+        fire(new ChangePointEvent());
+    }
+
     public void setWidth(final float width) {
         endX.set(new PointAttach(width, startX));
         fire(new ChangePointEvent());
@@ -505,6 +529,14 @@ public class Component extends Destructor {
 
     public void setHeight(final Point height) {
         endY.set(new PPointAdd(startY, height));
+        fire(new ChangePointEvent());
+    }
+
+    public void setHeight(final float height, final Unit unit) {
+        if (unit == Unit.DP)
+            endY.set(new PPointAdd(new NumberPointMultiplier(densityMultiplier, height), startY));
+        else
+            endY.set(new PointAttach(height, startY));
         fire(new ChangePointEvent());
     }
 
