@@ -13,9 +13,7 @@ public class AndroidGContext implements Context {
     public final Paint paint = new Paint();
     public Canvas canvas;
 
-    {
-        paint.setTextSize(50);
-    }
+    public AndroidGContext() {}
 
     @Override
     public Object getClipI() {
@@ -34,14 +32,14 @@ public class AndroidGContext implements Context {
     public Vector2D bounds(final String string) {
         final Rect bounds = new Rect();
         paint.getTextBounds(string, 0, string.length(), bounds);
-        return new Vector2D(bounds.width(), bounds.height());
+        return new Vector2D(bounds.width(), bounds.height() + paint.getFontMetrics().descent);
     }
 
     @Override
     public Vector2D bounds(char[] string) {
         final Rect bounds = new Rect();
         paint.getTextBounds(string, 0, string.length, bounds);
-        return new Vector2D(bounds.width(), bounds.height());
+        return new Vector2D(bounds.width(), bounds.height() + paint.getFontMetrics().descent);
     }
 
     @Override

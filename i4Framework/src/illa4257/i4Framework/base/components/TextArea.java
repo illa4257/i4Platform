@@ -175,14 +175,16 @@ public class TextArea extends Container {
         context.setColor(col);
         synchronized (lines) {
             final char[] buff = new char[] { 'H' };
-            final float w = width.calcFloat(), h = height.calcFloat(), textHeight = context.bounds(buff).y;
+            final float w = width.calcFloat(), h = height.calcFloat(), textHeight = context.bounds(buff).y,
+                        gutterPaddingX = calcStyleNumber("--gutter-padding", Orientation.HORIZONTAL, 0);
             final int l = Math.min(lines.size(), (int) Math.ceil((posY + h) / textHeight));
-            final float lineNumberEnd = context.bounds(Integer.toString(lines.size())).x + 8, lineNumberWidth = lineNumberEnd + 8;
+            final float lineNumberEnd = context.bounds(Integer.toString(lines.size())).x + gutterPaddingX,
+                    lineNumberWidth = lineNumberEnd + gutterPaddingX;
             buff[0] = 'W';
             float y = -posY + (int) Math.floor(posY / textHeight) * textHeight, x, chw;
             int i;
             for (int lineIndex = (int) Math.floor(posY / textHeight); lineIndex < l && y < h; lineIndex++, y += textHeight) {
-                x = 8;
+                x = gutterPaddingX;
                 final MutableCharArray line = lines.get(lineIndex);
                 i = 0;
                 x -= posX;
@@ -226,21 +228,15 @@ public class TextArea extends Container {
         fire(new ReCalc());
     }
 
-    public void test() {
-        System.out.println(densityMultiplier.calcFloat());
-    }
-
     @Override
     public void onConstruct() {
         super.onConstruct();
-        densityMultiplier.subscribe(this::test);
         densityMultiplier.subscribe(this::reCalcRequest);
     }
 
     @Override
     public void onDestruct() {
         super.onDestruct();
-        densityMultiplier.unsubscribe(this::test);
         densityMultiplier.unsubscribe(this::reCalcRequest);
     }
 }

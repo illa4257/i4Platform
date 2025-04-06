@@ -1,7 +1,10 @@
 package illa4257.i4Framework.android;
 
 import android.app.Activity;
-import android.view.MotionEvent;
+import android.graphics.Color;
+import android.graphics.Insets;
+import android.os.Build;
+import android.view.*;
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
@@ -15,6 +18,7 @@ import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.PointAttach;
 import illa4257.i4Framework.base.points.numbers.NumberPoint;
+import illa4257.i4Framework.base.points.numbers.NumberPointConstant;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.logger.i4Logger;
 
@@ -39,7 +43,30 @@ public class AndroidWindow implements FrameworkWindow {
         init();
     }
 
+    private void updateSafeZone(final WindowInsets insets) {
+        final Insets rect = insets.getInsets(
+                WindowInsets.Type.systemBars()
+                        | WindowInsets.Type.displayCutout()
+        );
+
+        window.safeStartX.set(new NumberPointConstant(rect.left));
+        window.safeStartY.set(new NumberPointConstant(rect.top));
+        window.safeEndX.set(new NumberPointConstant(root.getWidth() - rect.right));
+        window.safeEndY.set(new NumberPointConstant(root.getHeight() - rect.bottom));
+    }
+
     private void init() {
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            updateSafeZone(insets);
+            return WindowInsets.CONSUMED;
+        });
+        root.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            window.endX.set(new PointAttach(root.getWidth(), null));
+            window.endY.set(new PointAttach(root.getHeight(), null));
+            updateSafeZone(root.getRootWindowInsets());
+            window.fire(new ChangePointEvent());
+            window.repaint();
+        });
         window.addDirectEventListener(VisibleEvent.class, e -> {
             if (e.value) {
                 if (!window.frameworkWindow.setIfNull(this))
@@ -57,12 +84,30 @@ public class AndroidWindow implements FrameworkWindow {
                             a.setContentView(root);
                             window.setSize(root.getWidth(), root.getHeight());
                             window.densityMultiplier.set(densityMultiplier);
-                            root.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
-                                window.endX.set(new PointAttach(root.getWidth(), null));
-                                window.endY.set(new PointAttach(root.getHeight(), null));
-                                window.fire(new ChangePointEvent());
-                                window.repaint();
-                            });
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+                                    //noinspection deprecation
+                                    a.getWindow().setDecorFitsSystemWindows(false);
+                                final WindowInsetsController controller = a.getWindow().getInsetsController();
+                                if (controller != null) {
+                                    controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                                    controller.setSystemBarsAppearance(
+                                            WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS | WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+                                            WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS | WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                                    );
+                                }
+                            } else {
+                                //noinspection deprecation
+                                a.getWindow().getDecorView().setSystemUiVisibility(
+                                        View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                );
+                                //noinspection deprecation
+                                a.getWindow().setStatusBarColor(Color.TRANSPARENT);
+                                //noinspection deprecation
+                                a.getWindow().setNavigationBarColor(Color.TRANSPARENT);
+                                //noinspection deprecation
+                                a.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+                            }
                         });
                     } catch (final Exception ex) {
                         i4Logger.INSTANCE.log(ex);

@@ -9,6 +9,10 @@ public interface FrameworkWindow {
     Window getWindow();
 
     default Point getDensityMultiplier() { return NumberPointConstant.ONE; }
+    default Point safeStartX() { return NumberPointConstant.ZERO; }
+    default Point safeStartY() { return NumberPointConstant.ZERO; }
+    default Point safeEndX() { return NumberPointConstant.ZERO; }
+    default Point safeEndY() { return NumberPointConstant.ZERO; }
 
     void dispose();
 }

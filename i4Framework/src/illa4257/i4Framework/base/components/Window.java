@@ -5,11 +5,16 @@ import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.events.components.ChangeTextEvent;
 import illa4257.i4Framework.base.events.components.FocusEvent;
 import illa4257.i4Framework.base.events.window.CenterWindowEvent;
+import illa4257.i4Framework.base.points.PointSet;
 import illa4257.i4Utils.SyncVar;
 
 public class Window extends Container {
     private final SyncVar<String> title = new SyncVar<>();
     public final SyncVar<FrameworkWindow> frameworkWindow = new SyncVar<>();
+
+    public final PointSet
+            safeStartX = new PointSet(startX), safeStartY = new PointSet(startY),
+            safeEndX = new PointSet(endX), safeEndY = new PointSet(endY);
 
     public Window() { super(); visible = false; }
 

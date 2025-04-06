@@ -22,6 +22,7 @@ public class AndroidView extends ViewGroup {
         super(context);
         setWillNotDraw(false);
         this.component = component;
+        this.context = new AndroidGContext();
         {
             final LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(component.width.calcInt(), component.height.calcInt());
             lp.leftMargin = component.startX.calcInt();
@@ -44,12 +45,13 @@ public class AndroidView extends ViewGroup {
         }
     }
 
-    protected final AndroidGContext context = new AndroidGContext();
+    protected final AndroidGContext context;
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         context.canvas = canvas;
+        context.paint.setTextSize(19f * component.densityMultiplier.calcFloat() * getResources().getConfiguration().fontScale);
         component.paint(context);
     }
 }

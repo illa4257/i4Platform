@@ -17,7 +17,7 @@ public class AndroidActivity extends Activity {
     }
 
     @Override
-    public void onConfigurationChanged(Configuration newConfig) {
+    public void onConfigurationChanged(final Configuration newConfig) {
         final AndroidWindow w = frameworkWindow.get();
         if (w != null)
             w.densityMultiplier.set(newConfig.densityDpi / 160.0f);
