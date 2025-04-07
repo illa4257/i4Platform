@@ -3,6 +3,11 @@
     --scrollbar-width: 16dp;
 }
 
+.list > Button {
+    border-width: 0;
+    border-radius: 0;
+}
+
 Window {
     background-color: #fff;
 }
