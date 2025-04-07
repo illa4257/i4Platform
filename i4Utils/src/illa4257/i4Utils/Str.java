@@ -3,25 +3,34 @@ package illa4257.i4Utils;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Function;
 
 public class Str {
     public static final String
-            CHARS_NUMS = "0123456789",
-            CHARS_EN_LOW = "abcdefghijklmnopqrstuvwxyz",
-            CHARS_EN_UP = CHARS_EN_LOW.toUpperCase(),
+            STR_NUMS = "0123456789",
+            STR_EN_LOW = "abcdefghijklmnopqrstuvwxyz",
+            STR_EN_UP = STR_EN_LOW.toUpperCase(),
             UTF_8 = StandardCharsets.UTF_8.toString(),
-            URI_CHARS = CHARS_EN_LOW + CHARS_EN_UP + CHARS_NUMS + ":/?#[]@!$&'()*+,;=-._~%"
+            STR_URI_CHARS = STR_EN_LOW + STR_EN_UP + STR_NUMS + ":/?#[]@!$&'()*+,;=-._~%"
     ;
+
+    public static final List<Character>
+            CHARS_NUMS;
+
+    static {
+        ArrayList<Character> l = new ArrayList<>();
+        for (final char c : STR_NUMS.toCharArray())
+            l.add(c);
+        CHARS_NUMS = Collections.unmodifiableList(l);
+    }
 
     public static String encodeURI(final String uri, final boolean isQuery) throws UnsupportedEncodingException {
         final String space = isQuery ? "+" : "%20";
         final StringBuilder builder = new StringBuilder();
 
         for (final char ch : uri.toCharArray())
-            if (URI_CHARS.indexOf(ch) == -1)
+            if (STR_URI_CHARS.indexOf(ch) == -1)
                 builder.append(URLEncoder.encode(String.valueOf(ch), UTF_8));
             else if (ch == ' ')
                 builder.append(space);
@@ -55,7 +64,7 @@ public class Str {
         return join(new StringBuilder(), delimiter, items, func).toString();
     }
 
-    public static String random(final int len) { return random(new Random(), len, CHARS_NUMS + CHARS_EN_LOW + CHARS_EN_UP); }
+    public static String random(final int len) { return random(new Random(), len, STR_NUMS + STR_EN_LOW + STR_EN_UP); }
 
     public static String random(final Random randomizer, int len, final String chars) {
         final int cl = chars.length();
