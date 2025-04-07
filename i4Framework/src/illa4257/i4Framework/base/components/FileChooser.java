@@ -2,18 +2,25 @@ package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
+import illa4257.i4Framework.base.IFileChooser;
 import illa4257.i4Framework.base.events.components.ActionEvent;
-import illa4257.i4Framework.base.points.PointAttach;
+import illa4257.i4Framework.base.math.Unit;
+import illa4257.i4Framework.base.points.PPointAdd;
+import illa4257.i4Framework.base.points.PPointSubtract;
+import illa4257.i4Framework.base.points.Point;
+import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.styling.StyleSetting;
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
+import java.util.function.Consumer;
 
-/**
- * @deprecated
- */
-public class FileChooser extends Window {
+public class FileChooser extends Window implements IFileChooser {
     private static final int ITEM_HEIGHT = 24;
+
+    private volatile Consumer<Boolean> onResult = null;
+
+    private final Point offset = new NumberPointMultiplier(densityMultiplier, 8);
 
     public final Framework framework;
     public final FrameworkWindow frameworkWindow;
@@ -26,6 +33,8 @@ public class FileChooser extends Window {
 
     private final Button back = new Button();
 
+    private final TextField path = new TextField();
+
     public FileChooser(final Framework framework) {
         this.framework = framework;
         frameworkWindow = framework.newWindow(this);
@@ -33,22 +42,33 @@ public class FileChooser extends Window {
         //setSize(600, 640);
         center();
 
+        tag.set("Window");
+
         back.setText("^");
-        back.setX(8);
-        back.setY(8);
-        back.setSize(32, 32);
+        back.setStartX(offset);
+        back.setStartY(offset);
+        back.setWidth(32, Unit.DP);
+        back.setHeight(32, Unit.DP);
         back.addEventListener(ActionEvent.class, e -> {
             if (current == null)
                 return;
-            setCurrentDir(current.getParentFile());
+            setCurrentDir(current.getAbsoluteFile().getParentFile());
             forceRefresh();
         });
         add(back);
 
-        //pane.setX(8);
-        pane.setY(48);
+        path.setStartX(new PPointAdd(back.endX, offset));
+        path.setStartY(offset);
+        path.setEndX(new PPointSubtract(width, offset));
+        path.setEndY(back.endY);
+        add(path);
+
+        container.classes.add("list");
+        container.setEndX(pane.viewableWidth);
+
+        pane.setY(48, Unit.DP);
         pane.setEndX(width);
-        pane.setEndY(new PointAttach(-48, height));
+        pane.setEndY(new PPointSubtract(height, new NumberPointMultiplier(densityMultiplier, 64)));
         pane.setContent(container);
         add(pane);
 
@@ -58,10 +78,10 @@ public class FileChooser extends Window {
                 return;
             frameworkWindow.dispose();
         });
-        confirm.setStartX(new PointAttach(-64, confirm.endX));
-        confirm.setStartY(new PointAttach(8, pane.endY));
-        confirm.setEndX(new PointAttach(-8, width));
-        confirm.setEndY(new PointAttach(-8, height));
+        confirm.setStartX(new PPointSubtract(confirm.endX, new NumberPointMultiplier(densityMultiplier, 64)));
+        confirm.setStartY(new PPointAdd(pane.endY, offset));
+        confirm.setEndX(new PPointSubtract(width, offset));
+        confirm.setEndY(new PPointSubtract(height, offset));
         add(confirm);
     }
 
@@ -71,6 +91,8 @@ public class FileChooser extends Window {
         synchronized (locker) {
             current = dir;
         }
+        path.setText(dir != null ? dir.getAbsolutePath() : "This PC");
+        path.repaint();
     }
 
     private void addItems(final File[] l) {
@@ -83,6 +105,8 @@ public class FileChooser extends Window {
                     frameworkWindow.dispose();
                     return;
                 }
+                path.setText(f.getAbsolutePath());
+                path.repaint();
                 setCurrentDir(f);
                 forceRefresh();
             });
@@ -99,20 +123,23 @@ public class FileChooser extends Window {
 
     private void forceRefresh() {
         if (current == null) {
-            final File[] roots = fsv.getRoots();
+            path.repaint();
+            final File[] roots = File.listRoots();
             container.clear();
             int y = 0;
             for (final File f : roots) {
                 final Button btn = new Button();
                 btn.addEventListener(ActionEvent.class, event -> {
+                    path.setText(f.getAbsolutePath());
+                    path.repaint();
                     setCurrentDir(f);
                     forceRefresh();
                 });
                 btn.styles.put("text-align", new StyleSetting("left"));
-                btn.setText(f.getName() + " (" + f.getFreeSpace() + '/' + f.getTotalSpace() + ')');
-                btn.setY(y);
+                btn.setText(fsv.getSystemDisplayName(f) + " (" + f.getFreeSpace() + '/' + f.getTotalSpace() + ')');
+                btn.setY(y, Unit.DP);
                 btn.setEndX(container.width);
-                btn.setHeight(ITEM_HEIGHT * 2);
+                btn.setHeight(ITEM_HEIGHT * 2, Unit.DP);
                 container.add(btn);
                 y += ITEM_HEIGHT * 2;
             }
@@ -124,15 +151,14 @@ public class FileChooser extends Window {
 
     private void resize() {
         int y = container.components.isEmpty() ? 0 : container.components.size() * container.components.peek().height.calcInt();
-        container.setEndX(new PointAttach(-pane.vBar.width.calcFloat(), pane.width));
         container.setHeight(y);
         pane.setScroll(0, 0);
+        pane.repaint();
+    }
 
-        invokeLater(() -> {
-            //repaint();
-            pane.repaint();
-            back.repaint();
-        });
+    @Override
+    public void setOnFinish(final Consumer<Boolean> listener) {
+        onResult = listener;
     }
 
     public void start() {
