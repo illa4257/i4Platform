@@ -8,8 +8,13 @@ and the programming language.
 ## Overview
 
 - **i4Utils**: Universal classes like SyncVar, MutableCharArray and etc.
+
+
 - **i4Framework**: UI Framework (requires `i4Utils`).
-- **i4Framework.swing**: Swing support for `i4Framework`.
+  - **i4Framework.swing**: Swing support for `i4Framework`.
+  - **i4Framework.android**: Android support for `i4Framework`.
+
+
 - **i4LCommon**: Classes for the programming language. (WIP)
 - **i4LParser**: Parser for the programming language (requires `i4LCommon`).
 
@@ -24,22 +29,50 @@ System.out.println(v.get()); // test
 
 ### i4Framework + i4Framework.swing
 ```Java
-final Window window = new Window();
-window.setSize(720, 480);
+import illa4257.i4Framework.base.*;
+import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
+import illa4257.i4Framework.base.points.PPointSubtract;
+import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
+import illa4257.i4Framework.base.utils.CSSParser;
+import illa4257.i4Framework.swing.SwingFramework;
 
-final Button btn = new Button();
-btn.setText("Click me!");
-btn.setX(8);
-btn.setY(8);
-btn.setEndX(new PointAttach(-8, window.width));
-btn.setHeight(32);
-btn.addEventListener(ActionEvent.class, e -> System.out.println("Hello, world!"));
-window.add(btn);
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
-final FrameworkWindow frameworkWindow = new SwingFrame(window);
+public class Test {
+    public static void main(final String[] args) {
+        final Window window = new Window();
 
-window.center();
-window.setVisible(true);
+        // Add styles
+        try (final InputStream is = ClassLoader.getSystemResourceAsStream("illa4257/i4Framework/light.css")) {
+            if (is != null)
+                CSSParser.parse(window.stylesheet, new BufferedReader(new InputStreamReader(is)));
+        }
+
+        // Refresh style cache
+        window.fire(new StyleUpdateEvent());
+
+        window.setSize(720, 480);
+
+        final Button btn = new Button("Click me!");
+        btn.setX(8, Unit.DP);
+        btn.setY(8, Unit.DP);
+        
+        // Set the width of the button dynamically to (window width - 8 dp)
+        btn.setEndX(new PPointSubtract(window.width, new NumberPointMultiplier(window.densityMultiplier, 8)));
+        
+        btn.setHeight(32, Unit.DP);
+        btn.addEventListener(ActionEvent.class, e -> System.out.println("Hello, world!"));
+        window.add(btn);
+
+        final FrameworkWindow frameworkWindow = SwingFramework.INSTANCE.newWindow(window);
+
+        window.center();
+        window.setVisible(true);
+    }
+}
 ```
 
 ## Contributing
