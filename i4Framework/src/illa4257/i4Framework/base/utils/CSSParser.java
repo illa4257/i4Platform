@@ -58,7 +58,9 @@ public class CSSParser {
     public static void parse(final ConcurrentLinkedQueue<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> stylesheet,
                              final Reader reader) throws IOException {
         final ArrayList<StyleSelector> selectors = new ArrayList<>();
+        StyleSelector parent = null;
         int ch;
+        m:
         while (true) {
             ch = r(reader);
             if (ch == -1)
@@ -68,18 +70,20 @@ public class CSSParser {
             if (ch == '{')
                 throw new UnexpectedException("Unknown character " + (char) ch + " / " + ch);
             final StyleSelector selector = new StyleSelector();
+            selector.parent = parent;
+            parent = null;
             if (ch == '*') {
                 do {
                     ch = re(reader);
                 } while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n');
             }
-            if (ch != '#' && ch != '.' && ch != ':' && ch != ',' && ch != '{') {
+            if (ch != '#' && ch != '.' && ch != ':' && ch != '>' && ch != ',' && ch != '{') {
                 final StringBuilder tag = new StringBuilder();
                 while (true) {
                     tag.append((char) ch);
                     ch = re(reader);
                     if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' ||
-                            ch == '#' || ch == '.' || ch == ':' || ch == ',' || ch == '{') {
+                            ch == '#' || ch == '.' || ch == ':' || ch == '>' || ch == ',' || ch == '{') {
                         selector.tag.set(tag.toString());
                         while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
                             ch = re(reader);
@@ -92,7 +96,7 @@ public class CSSParser {
                     final StringBuilder id = new StringBuilder();
                     while (true) {
                         ch = re(reader);
-                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == ',' || ch == '.' || ch == '#' || ch == ':') {
+                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == '>' || ch == ',' || ch == '.' || ch == '#' || ch == ':') {
                             while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
                                 ch = re(reader);
                             break;
@@ -106,7 +110,7 @@ public class CSSParser {
                     final StringBuilder cls = new StringBuilder();
                     while (true) {
                         ch = re(reader);
-                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == ',' || ch == '.' || ch == '#' || ch == ':') {
+                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == '>' || ch == ',' || ch == '.' || ch == '#' || ch == ':') {
                             while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
                                 ch = re(reader);
                             break;
@@ -129,6 +133,10 @@ public class CSSParser {
                     }
                     selector.addPseudoClass(cls.toString());
                     continue;
+                }
+                if (ch == '>') {
+                    parent = selector;
+                    continue m;
                 }
                 if (ch == ',') {
                     selectors.add(selector);
