@@ -7,8 +7,8 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="i4Utils" scope="PROVIDED" />
     <orderEntry type="module" module-name="i4Framework" scope="PROVIDED" />
-    <orderEntry type="module" module-name="i4Framework.desktop" scope="PROVIDED" />
+    <orderEntry type="module" module-name="i4Utils" scope="PROVIDED" />
+    <orderEntry type="library" scope="PROVIDED" name="net.java.dev.jna.platform" level="application" />
   </component>
 </module>

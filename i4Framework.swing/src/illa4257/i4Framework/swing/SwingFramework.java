@@ -4,6 +4,7 @@ import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.desktop.DesktopFramework;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.logger.i4Logger;
 
@@ -16,7 +17,7 @@ import java.util.concurrent.*;
 
 import static java.awt.RenderingHints.*;
 
-public class SwingFramework extends Framework {
+public class SwingFramework extends DesktopFramework {
     static Font font;
     static Map<RenderingHints.Key, Object> current, RECOMMENDED;
     public static final SwingFramework INSTANCE = new SwingFramework();
