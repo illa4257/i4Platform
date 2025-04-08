@@ -1,0 +1,70 @@
+* {
+    color: #f0f0f0;
+    --scrollbar-width: 16dp;
+}
+
+.list > Button {
+    border-width: 0;
+    border-radius: 0;
+}
+
+Window {
+    background-color: #202026;
+}
+
+Panel {
+    background-color: #212128;
+}
+
+.secondary-color {
+    color: #757575;
+}
+
+Button {
+    text-align: center;
+}
+
+Button,
+TextArea,
+TextField {
+    background-color: #191920;
+    border-width: 1px;
+    border-radius: 8px;
+    border-color: #446;
+}
+
+Button:hover {
+    background-color: #223;
+}
+
+TextArea,
+TextField {
+    cursor: text;
+    --selection-color: #3333;
+}
+
+TextArea {
+    --gutter-background-color: #ccc;
+    --gutter-color: #EEE;
+    --gutter-padding: 8dp;
+}
+
+TextArea:focus,
+TextField:focus {
+    --selection-color: #33b3;
+}
+
+TabPane {
+    --tabs-background-color: #212128;
+    --tab-background-color: #404049;
+    --tab-selected-background-color: #41414a;
+}
+
+ScrollPane {
+    background-color: #b0b0b0;
+}
+
+ScrollBar {
+    background-color: #a0a0a0;
+    thumb-color: #f0f0f0;
+}
