@@ -8,13 +8,10 @@ and the programming language.
 ## Overview
 
 - **i4Utils**: Universal classes like SyncVar, MutableCharArray and etc.
-
-
 - **i4Framework**: UI Framework (requires `i4Utils`).
-  - **i4Framework.swing**: Swing support for `i4Framework`.
+  - **i4Framework.desktop**: Some desktop universal utilities (Requires `jna-plaform`).
+    - **i4Framework.swing**: Swing support for `i4Framework`.
   - **i4Framework.android**: Android support for `i4Framework`.
-
-
 - **i4LCommon**: Classes for the programming language. (WIP)
 - **i4LParser**: Parser for the programming language (requires `i4LCommon`).
 
