@@ -120,6 +120,7 @@ public class JavaInfo {
 
         if (
                 !variables.containsKey("os.name") ||
+                !variables.containsKey("os.version") ||
                 !variables.containsKey("os.arch") ||
                 !variables.containsKey("java.vendor") ||
                 !variables.containsKey("path.separator") ||
@@ -130,7 +131,7 @@ public class JavaInfo {
             variables.put("java.specification.version", variables.get("java.specification.version").substring(2));
 
         return new JavaInfo(Integer.parseInt(variables.get("java.specification.version")),
-                new Arch(variables.get("os.name"), variables.get("os.arch"), variables.get("java.vendor")),
+                new Arch(variables.get("os.name"), variables.get("os.version"), variables.get("os.arch"), variables.get("java.vendor")),
                 variables.get("path.separator"), e, getDistribution(variables.get("java.vendor"), variables.get("java.vendor.version"), variables.get("java.runtime.name")));
     }
 

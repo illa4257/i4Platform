@@ -6,7 +6,7 @@ import illa4257.i4Utils.logger.i4Logger;
 import java.util.Scanner;
 
 public class Arch {
-    public static final Arch JVM = new Arch(System.getProperty("os.name"), System.getProperty("os.arch"), System.getProperty("java.vendor")),
+    public static final Arch JVM = new Arch(System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"), System.getProperty("java.vendor")),
             REAL;
 
     static {
@@ -51,7 +51,7 @@ public class Arch {
                                     i4Logger.INSTANCE.log(Level.WARN, "Unknown Windows architecture code: " + a);
                                     return JVM;
                             }
-                            return new Arch(JVM.osName, a, JVM.vendor);
+                            return new Arch(JVM.osName, JVM.osVersion, a, JVM.vendor);
                         }
                     } finally {
                         p.destroyForcibly();
@@ -63,7 +63,7 @@ public class Arch {
                 try {
                     final Process p = Runtime.getRuntime().exec(new String[] { "uname", "-m" });
                     try (final Scanner s = new Scanner(p.getInputStream())) {
-                        return new Arch(JVM.osName, s.nextLine(), JVM.vendor);
+                        return new Arch(JVM.osName, JVM.osVersion, s.nextLine(), JVM.vendor);
                     } finally {
                         p.destroyForcibly();
                     }
@@ -74,7 +74,8 @@ public class Arch {
     }
 
     /** Original data */
-    public final String osName, arch, vendor;
+    public final String osName, osVersion, arch, vendor;
+    public final SemVer osVer;
 
     /** Architecture */
     public final boolean
@@ -104,8 +105,9 @@ public class Arch {
             IS_MOBILE;
 
     @SuppressWarnings("AssignmentUsedAsCondition")
-    public Arch(String osName, String arch, final String vendor) {
+    public Arch(String osName, final String osVersion, String arch, final String vendor) {
         this.osName = osName;
+        this.osVer = new SemVer(this.osVersion = osVersion);
         this.arch = arch;
         this.vendor = vendor;
 
