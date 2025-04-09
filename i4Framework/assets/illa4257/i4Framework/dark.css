@@ -8,12 +8,13 @@
     border-radius: 0;
 }
 
+ScrollPane,
 Window {
-    background-color: #202026;
+    background-color: #131319;
 }
 
 Panel {
-    background-color: #212128;
+    background-color: #17171d;
 }
 
 .secondary-color {
@@ -58,10 +59,6 @@ TabPane {
     --tabs-background-color: #212128;
     --tab-background-color: #404049;
     --tab-selected-background-color: #41414a;
-}
-
-ScrollPane {
-    background-color: #b0b0b0;
 }
 
 ScrollBar {
