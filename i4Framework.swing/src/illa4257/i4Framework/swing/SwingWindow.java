@@ -29,13 +29,7 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
             throw new IllegalArgumentException("Framework is null");
         this.framework = framework;
         this.window = window == null ? new Window() : window;
-        setContentPane(root = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics graphics) {
-                super.paintComponent(graphics);
-                SwingWindow.this.window.paint(new SwingContext((Graphics2D) graphics));
-            }
-        });
+        setContentPane(root = new SwingComponent(this.window));
         root.setLayout(null);
         this.window.addEventListener(RepaintEvent.class, e -> root.repaint());
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -78,7 +72,6 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
         }
         setVisible(this.window.isVisible());
         setTitle(this.window.getTitle());
-        l = ISwingComponent.registerContainer(root, this.window);
         registerListeners();
     }
 
