@@ -30,8 +30,6 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
         this.framework = framework;
         this.window = window == null ? new Window() : window;
         setContentPane(root = new SwingComponent(this.window));
-        root.setLayout(null);
-        this.window.addEventListener(RepaintEvent.class, e -> root.repaint());
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
