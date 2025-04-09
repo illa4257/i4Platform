@@ -63,14 +63,9 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
                 SwingWindow.this.window.fire(new MouseUpEvent(mouseEvent.getX(), mouseEvent.getY(), MouseButton.fromCode(mouseEvent.getButton() - 1)));
             }
         });
-        for (final Component co : this.window) {
-            final SwingComponent c = new SwingComponent(co);
-            add(c);
-            c.repaint();
-        }
+        l = registerListeners();
         setVisible(this.window.isVisible());
         setTitle(this.window.getTitle());
-        registerListeners();
     }
 
     @Override public Component getComponent() { return window; }
@@ -119,19 +114,21 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
         repaint();
     }
 
-    private void registerListeners() {
+    private EventListener[] registerListeners() {
         window.addDirectEventListener(ChangeTextEvent.class, e -> setTitle(e.newValue));
-        window.addEventListener(ChangePointEvent.class, e -> {
-            if (e.isSystem)
-                return;
-            setSize(window.width.calcInt(), window.height.calcInt());
-        });
-        window.addEventListener(RepaintEvent.class, e -> repaint());
-        window.addEventListener(CenterWindowEvent.class, event -> setLocationRelativeTo(null));
         window.addDirectEventListener(VisibleEvent.class, e -> {
             if (isVisible() != e.value)
                 setVisible(e.value);
         });
+        return new EventListener[] {
+                window.addEventListener(ChangePointEvent.class, e -> {
+                    if (e.isSystem)
+                        return;
+                    setSize(window.width.calcInt(), window.height.calcInt());
+                }),
+                window.addEventListener(RepaintEvent.class, e -> repaint()),
+                window.addEventListener(CenterWindowEvent.class, event -> setLocationRelativeTo(null))
+        };
     }
 
     @Override
