@@ -1,48 +1,59 @@
 package illa4257.i4Framework.base.components;
 
+import illa4257.i4Framework.base.FileChooserFilter;
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.IFileChooser;
 import illa4257.i4Framework.base.events.components.ActionEvent;
+import illa4257.i4Framework.base.events.components.VisibleEvent;
 import illa4257.i4Framework.base.math.Unit;
 import illa4257.i4Framework.base.points.PPointAdd;
 import illa4257.i4Framework.base.points.PPointSubtract;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.styling.StyleSetting;
+import illa4257.i4Utils.runnables.Consumer2;
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
-import java.util.function.Consumer;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class FileChooser extends Window implements IFileChooser {
+public class FileChooser implements IFileChooser {
     private static final int ITEM_HEIGHT = 24;
-
-    private volatile Consumer<Boolean> onResult = null;
-
-    private final Point offset = new NumberPointMultiplier(densityMultiplier, 8);
+    private static final FileSystemView fsv = FileSystemView.getFileSystemView();
 
     public final Framework framework;
     public final FrameworkWindow frameworkWindow;
+    public final Window window = new Window();
 
-    private File current = null;
-
-    public final Button confirm = new Button();
-    public final ScrollPane pane = new ScrollPane();
-    public final Container container = new Panel();
-
-    private final Button back = new Button();
-
+    private final Point offset = new NumberPointMultiplier(window.densityMultiplier, 8);
+    private final Button back = new Button(), confirm = new Button();
     private final TextField path = new TextField();
+    private final ScrollPane pane = new ScrollPane();
+    private final Container container = new Panel();
+
+    private volatile boolean open = true, multiSelection = false;
+    private volatile Consumer2<IFileChooser, Boolean> listener = null;
+    private volatile List<File> files = Collections.emptyList();
+
+    private volatile File current = null;
 
     public FileChooser(final Framework framework) {
         this.framework = framework;
-        frameworkWindow = framework.newWindow(this);
-        setSize(600, 440);
-        //setSize(600, 640);
-        center();
+        frameworkWindow = framework.newWindow(window);
+        window.setSize(600, 440);
+        window.center();
 
-        tag.set("Window");
+        window.addEventListener(VisibleEvent.class, e -> {
+            if (e.value)
+                return;
+            final Consumer2<IFileChooser, Boolean> l = listener;
+            if (l != null)
+                l.accept(this, !files.isEmpty());
+        });
 
         back.setText("^");
         back.setStartX(offset);
@@ -55,42 +66,53 @@ public class FileChooser extends Window implements IFileChooser {
             setCurrentDir(current.getAbsoluteFile().getParentFile());
             forceRefresh();
         });
-        add(back);
+        window.add(back);
 
         path.setStartX(new PPointAdd(back.endX, offset));
         path.setStartY(offset);
-        path.setEndX(new PPointSubtract(width, offset));
+        path.setEndX(new PPointSubtract(window.width, offset));
         path.setEndY(back.endY);
-        add(path);
+        window.add(path);
 
         container.classes.add("list");
         container.setEndX(pane.viewableWidth);
 
         pane.setY(48, Unit.DP);
-        pane.setEndX(width);
-        pane.setEndY(new PPointSubtract(height, new NumberPointMultiplier(densityMultiplier, 64)));
+        pane.setEndX(window.width);
+        pane.setEndY(new PPointSubtract(window.height, new NumberPointMultiplier(window.densityMultiplier, 64)));
         pane.setContent(container);
-        add(pane);
+        window.add(pane);
 
         confirm.setText("Open");
         confirm.addEventListener(ActionEvent.class, e -> {
             if (current == null)
                 return;
+            files = Collections.singletonList(current);
             frameworkWindow.dispose();
         });
-        confirm.setStartX(new PPointSubtract(confirm.endX, new NumberPointMultiplier(densityMultiplier, 64)));
+        confirm.setStartX(new PPointSubtract(confirm.endX, new NumberPointMultiplier(window.densityMultiplier, 64)));
         confirm.setStartY(new PPointAdd(pane.endY, offset));
-        confirm.setEndX(new PPointSubtract(width, offset));
-        confirm.setEndY(new PPointSubtract(height, offset));
-        add(confirm);
+        confirm.setEndX(new PPointSubtract(window.width, offset));
+        confirm.setEndY(new PPointSubtract(window.height, offset));
+        window.add(confirm);
     }
 
-    private static final FileSystemView fsv = FileSystemView.getFileSystemView();
+    @Override public void setOpen(final boolean open) { this.open = open; }
+    @Override public void setMultiSelectionEnabled(final boolean allow) { this.multiSelection = true; }
+    @Override public void setTitle(final String title) { window.setTitle(title); }
 
+    @Override public void setFilter(final ConcurrentLinkedQueue<FileChooserFilter> filters) {}
+
+    @Override
+    public void setInitialDir(final File dir) {
+        current = dir;
+        path.setText(dir != null ? dir.getAbsolutePath() : "This PC");
+        path.repaint();
+    }
+
+    @Override
     public void setCurrentDir(final File dir) {
-        synchronized (locker) {
-            current = dir;
-        }
+        current = dir;
         path.setText(dir != null ? dir.getAbsolutePath() : "This PC");
         path.repaint();
     }
@@ -102,6 +124,7 @@ public class FileChooser extends Window implements IFileChooser {
             final Button btn = new Button();
             btn.addEventListener(ActionEvent.class, event -> {
                 if (f.isFile()) {
+                    files = Collections.singletonList(f);
                     frameworkWindow.dispose();
                     return;
                 }
@@ -156,13 +179,14 @@ public class FileChooser extends Window implements IFileChooser {
         pane.repaint();
     }
 
-    @Override
-    public void setOnFinish(final Consumer<Boolean> listener) {
-        onResult = listener;
-    }
+    @Override public void setOnFinish(final Consumer2<IFileChooser, Boolean> listener) { this.listener = listener; }
 
     public void start() {
-        setVisible(true);
+        if (window.isVisible())
+            return;
+        window.setVisible(true);
         forceRefresh();
     }
+
+    @Override public Iterator<File> iterator() { return files.iterator(); }
 }
