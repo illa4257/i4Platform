@@ -1,53 +1,58 @@
 package illa4257.i4Framework.base;
 
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class FileChooserFilter {
     public final ConcurrentLinkedQueue<FileChooserFilter> filters;
     public final String description;
-    public final Iterable<String> patterns;
+    public final ConcurrentLinkedQueue<String> patterns = new ConcurrentLinkedQueue<>();
 
-    public FileChooserFilter(final String description) {
-        filters = new ConcurrentLinkedQueue<>();
-        this.description = description;
-        patterns = new ConcurrentLinkedQueue<>();
-        filters.add(this);
-    }
+    public FileChooserFilter(final String description, final String... patterns) { this(null, description, patterns); }
+    public FileChooserFilter(final String description, final Iterator<String> patterns) { this(null, description, patterns); }
+    public FileChooserFilter(final String description, final Iterable<String> patterns) { this(null, description, patterns); }
 
-    public FileChooserFilter(final String description, final Iterable<String> patterns) {
-        filters = new ConcurrentLinkedQueue<>();
+    public FileChooserFilter(final FileChooserFilter base, final String description, final String... patterns) {
+        this.filters = base != null ? base.filters : new ConcurrentLinkedQueue<>();
         this.description = description;
-        this.patterns = patterns != null ? patterns : new ConcurrentLinkedQueue<>();
-        filters.add(this);
-    }
-
-    public FileChooserFilter(final ConcurrentLinkedQueue<FileChooserFilter> filters, final String description) {
-        this.filters = filters != null ? filters : new ConcurrentLinkedQueue<>();
-        this.description = description;
-        patterns = new ConcurrentLinkedQueue<>();
+        if (patterns != null && patterns.length > 0)
+            this.patterns.addAll(Arrays.asList(patterns));
         this.filters.add(this);
     }
 
-    public FileChooserFilter(final ConcurrentLinkedQueue<FileChooserFilter> filters, final String description, final Iterable<String> patterns) {
-        this.filters = filters != null ? filters : new ConcurrentLinkedQueue<>();
+    public FileChooserFilter(final FileChooserFilter base, final String description, final Iterator<String> patterns) {
+        this.filters = base != null ? base.filters : new ConcurrentLinkedQueue<>();
         this.description = description;
-        this.patterns = patterns != null ? patterns : new ConcurrentLinkedQueue<>();
+        if (patterns != null)
+            while (patterns.hasNext())
+                this.patterns.add(patterns.next());
         this.filters.add(this);
     }
 
-    public FileChooserFilter addPattern(final String... pattern) {
-        if (patterns instanceof Collection)
-            ((Collection<String>) patterns).addAll(Arrays.asList(pattern));
+    public FileChooserFilter(final FileChooserFilter base, final String description, final Iterable<String> patterns) {
+        this(base, description, patterns != null ? patterns.iterator() : null);
+    }
+
+    public FileChooserFilter addPatterns(final String... patterns) {
+        if (patterns != null && patterns.length > 0)
+            this.patterns.addAll(Arrays.asList(patterns));
         return this;
     }
 
-    public FileChooserFilter next(final String description) {
-        return new FileChooserFilter(filters, description);
+    public FileChooserFilter addPatterns(final Iterator<String> patterns) {
+        if (patterns != null)
+            while (patterns.hasNext())
+                this.patterns.add(patterns.next());
+        return this;
     }
 
-    public FileChooserFilter next(final String description, final Iterable<String> patterns) {
-        return new FileChooserFilter(filters, description, patterns);
+    public FileChooserFilter addPatterns(final Iterable<String> patterns) {
+        return patterns != null ? addPatterns(patterns.iterator()) : this;
     }
+
+    public FileChooserFilter next(final String description) { return new FileChooserFilter(this, description); }
+    public FileChooserFilter next(final String description, final String... patterns) { return new FileChooserFilter(this, description, patterns); }
+    public FileChooserFilter next(final String description, final Iterator<String> patterns) { return new FileChooserFilter(this, description, patterns); }
+    public FileChooserFilter next(final String description, final Iterable<String> patterns) { return new FileChooserFilter(this, description, patterns); }
 }
