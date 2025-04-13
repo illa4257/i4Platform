@@ -48,6 +48,17 @@ public class Str {
 
     public static String repeat(final String str, final int n) { return repeat(new StringBuilder(), str, n).toString(); }
 
+    public static <T> StringBuilder join(final StringBuilder builder, final String delimiter, final Iterator<T> iter, Function<T, String> func) {
+        if (iter == null)
+            return builder;
+        if (!iter.hasNext())
+            return builder;
+        builder.append(func.apply(iter.next()));
+        while (iter.hasNext())
+            builder.append(delimiter).append(func.apply(iter.next()));
+        return builder;
+    }
+
     public static <T> StringBuilder join(final StringBuilder builder, final String delimiter, final Iterable<T> items, Function<T, String> func) {
         if (items == null)
             return builder;
