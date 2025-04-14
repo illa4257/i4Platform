@@ -3,9 +3,11 @@ package illa4257.i4Framework.base;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class FileChooserFilter {
     public final ConcurrentLinkedQueue<FileChooserFilter> filters;
+    public final AtomicInteger selected;
     public final String description;
     public final ConcurrentLinkedQueue<String> patterns = new ConcurrentLinkedQueue<>();
 
@@ -15,6 +17,7 @@ public class FileChooserFilter {
 
     public FileChooserFilter(final FileChooserFilter base, final String description, final String... patterns) {
         this.filters = base != null ? base.filters : new ConcurrentLinkedQueue<>();
+        this.selected = base != null ? base.selected : new AtomicInteger(0);
         this.description = description;
         if (patterns != null && patterns.length > 0)
             this.patterns.addAll(Arrays.asList(patterns));
@@ -23,6 +26,7 @@ public class FileChooserFilter {
 
     public FileChooserFilter(final FileChooserFilter base, final String description, final Iterator<String> patterns) {
         this.filters = base != null ? base.filters : new ConcurrentLinkedQueue<>();
+        this.selected = base != null ? base.selected : new AtomicInteger(0);
         this.description = description;
         if (patterns != null)
             while (patterns.hasNext())
@@ -32,6 +36,23 @@ public class FileChooserFilter {
 
     public FileChooserFilter(final FileChooserFilter base, final String description, final Iterable<String> patterns) {
         this(base, description, patterns != null ? patterns.iterator() : null);
+    }
+
+    public FileChooserFilter select(final int index) {
+        selected.set(index);
+        return this;
+    }
+
+    public FileChooserFilter select() {
+        int i = 0;
+        for (final FileChooserFilter f : filters) {
+            if (this == f) {
+                selected.set(i);
+                return this;
+            }
+            i++;
+        }
+        return this;
     }
 
     public FileChooserFilter addPatterns(final String... patterns) {
