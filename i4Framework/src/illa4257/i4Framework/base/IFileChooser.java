@@ -4,7 +4,6 @@ import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Utils.runnables.Consumer2;
 
 import java.io.File;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
 public interface IFileChooser extends Iterable<File> {
@@ -15,8 +14,8 @@ public interface IFileChooser extends Iterable<File> {
     void setMultiSelectionEnabled(final boolean allow);
 
     void setTitle(final String title);
-    void setFilter(final ConcurrentLinkedQueue<FileChooserFilter> filters);
-    default void setFilter(final FileChooserFilter filters) { setFilter(filters.filters); }
+    void setDefaultExt(final String extension);
+    void setFilter(final FileChooserFilter filters);
 
     default void setParent(final Window parent) {}
     void setInitialDir(final File dir);

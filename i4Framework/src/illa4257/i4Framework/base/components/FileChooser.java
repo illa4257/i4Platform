@@ -19,7 +19,6 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class FileChooser implements IFileChooser {
     private static final int ITEM_HEIGHT = 24;
@@ -30,15 +29,15 @@ public class FileChooser implements IFileChooser {
     public final Window window = new Window();
 
     private final Point offset = new NumberPointMultiplier(window.densityMultiplier, 8);
-    private final Button back = new Button(), confirm = new Button();
+    private final Button confirm = new Button();
     private final TextField path = new TextField();
     private final ScrollPane pane = new ScrollPane();
     private final Container container = new Panel();
 
     private volatile boolean open = true, multiSelection = false;
+    private volatile String defaultExtension = null;
     private volatile Consumer2<IFileChooser, Boolean> listener = null;
     private volatile List<File> files = Collections.emptyList();
-
     private volatile File current = null;
 
     public FileChooser(final Framework framework) {
@@ -55,7 +54,7 @@ public class FileChooser implements IFileChooser {
                 l.accept(this, !files.isEmpty());
         });
 
-        back.setText("^");
+        final Button back = new Button("^");
         back.setStartX(offset);
         back.setStartY(offset);
         back.setWidth(32, Unit.DP);
@@ -100,8 +99,8 @@ public class FileChooser implements IFileChooser {
     @Override public void setOpen(final boolean open) { this.open = open; }
     @Override public void setMultiSelectionEnabled(final boolean allow) { this.multiSelection = true; }
     @Override public void setTitle(final String title) { window.setTitle(title); }
-
-    @Override public void setFilter(final ConcurrentLinkedQueue<FileChooserFilter> filters) {}
+    @Override public void setDefaultExt(final String extension) { this.defaultExtension = extension; }
+    @Override public void setFilter(final FileChooserFilter filters) {}
 
     @Override
     public void setInitialDir(final File dir) {
