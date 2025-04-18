@@ -45,7 +45,7 @@ TextField {
 }
 
 TextArea {
-    --gutter-background-color: #ccc;
+    --gutter-background-color: #101019;
     --gutter-color: #EEE;
     --gutter-padding: 8dp;
 }
