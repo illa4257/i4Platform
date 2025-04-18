@@ -239,9 +239,9 @@ public class Component extends Destructor {
         synchronized (locker) {
             if (isFocusable == newValue)
                 return;
-            if (newValue) {
+            if (newValue)
                 focusListeners.add(addEventListener(MouseDownEvent.class, e -> requestFocus()));
-            } else {
+            else {
                 removeEventListeners(focusListeners);
                 focusListeners.clear();
             }
@@ -391,18 +391,12 @@ public class Component extends Destructor {
         return addEventListenerInternal(eventType, listener, directEventListeners);
     }
 
-    public <T extends IEvent> boolean removeEventListener(final EventListener<T> listener) {
-        for (final Map.Entry<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
-            if (e.getValue().remove(listener))
-                return true;
-        return false;
+    public <T extends IEvent> void removeEventListener(final EventListener<T> listener) {
+        eventListeners.forEach((k, v) -> v.remove(listener));
     }
 
-    public boolean removeEventListeners(final Collection<EventListener<? extends IEvent>> listeners) {
-        for (final Map.Entry<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
-            if (e.getValue().removeAll(listeners))
-                return true;
-        return false;
+    public void removeEventListeners(final Collection<EventListener<? extends IEvent>> listeners) {
+        eventListeners.forEach((k, v) -> v.removeAll(listeners));
     }
 
     public <T extends IEvent> boolean removeDirectEventListener(final EventListener<T> listener) {
