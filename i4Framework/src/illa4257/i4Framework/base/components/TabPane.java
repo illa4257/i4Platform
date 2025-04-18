@@ -63,6 +63,7 @@ public class TabPane extends Container {
 
     public void addTab(final Tab tab) {
         tabs.add(tab);
+        repaint();
     }
 
     public void selectTab(final Tab tab) {
@@ -80,6 +81,7 @@ public class TabPane extends Container {
                 remove(old.component);
             }
             add(tab.component);
+            repaint();
         }
     }
 
