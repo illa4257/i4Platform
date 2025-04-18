@@ -3,8 +3,13 @@ package illa4257.i4Framework.base;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.FileChooser;
 import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Framework.base.styling.StyleSelector;
+import illa4257.i4Framework.base.styling.StyleSetting;
 import illa4257.i4Utils.logger.i4Logger;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
@@ -22,6 +27,9 @@ public abstract class Framework {
         return false;
     }
 
+    /// Global stylesheet
+    public final ConcurrentLinkedQueue<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> stylesheet = new ConcurrentLinkedQueue<>();
+
     protected final Object updateNotifier = new Object();
     protected boolean isUpdated;
 
@@ -30,9 +38,7 @@ public abstract class Framework {
 
     private final ConcurrentLinkedQueue<Consumer<String>> themeListeners = new ConcurrentLinkedQueue<>();
 
-    public boolean isSystemTheme() {
-        return isSystemTheme;
-    }
+    public boolean isSystemTheme() { return isSystemTheme; }
 
     /**
      * Expected values are typically {@code light} or {@code dark}.<br>
@@ -42,9 +48,7 @@ public abstract class Framework {
      * If {@link #isSystemTheme()} is true, returns the system-defined theme.<br>
      * Otherwise, returns the manually set custom theme.
      */
-    public String getTheme() {
-        return isSystemTheme ? systemTheme : customTheme;
-    }
+    public String getTheme() { return isSystemTheme ? systemTheme : customTheme; }
 
     protected void onSystemThemeChange(final String theme) {
         systemTheme = theme;
@@ -67,13 +71,10 @@ public abstract class Framework {
             }
     }
 
-    public boolean addThemeListener(final Consumer<String> listener) {
-        return themeListeners.add(listener);
-    }
+    public abstract void fireAllWindows(final Event event);
 
-    public boolean removeThemeListener(final Consumer<String> listener) {
-        return themeListeners.remove(listener);
-    }
+    public boolean addThemeListener(final Consumer<String> listener) { return themeListeners.add(listener); }
+    public boolean removeThemeListener(final Consumer<String> listener) { return themeListeners.remove(listener); }
 
     public void updated() {
         synchronized (updateNotifier) {

@@ -10,6 +10,7 @@ import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.components.ChangePointEvent;
+import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
 import illa4257.i4Framework.base.events.components.VisibleEvent;
 import illa4257.i4Framework.base.events.mouse.*;
 import illa4257.i4Framework.base.events.touchscreen.TouchDownEvent;
@@ -108,6 +109,7 @@ public class AndroidWindow implements FrameworkWindow {
                                 //noinspection deprecation
                                 a.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
                             }
+                            window.fire(new StyleUpdateEvent());
                         });
                     } catch (final Exception ex) {
                         i4Logger.INSTANCE.log(ex);

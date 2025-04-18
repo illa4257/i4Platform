@@ -4,6 +4,7 @@ import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.base.events.Event;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 
@@ -138,8 +139,21 @@ public class LWJGL3Framework extends Framework {
     }
 
     @Override
+    public void fireAllWindows(final Event event) {
+        synchronized (locker) {
+            for (final LWJGL3Window window : windows)
+                window.window.fire(event);
+        }
+    }
+
+    @Override
     public boolean isUIThread(Component component) {
         return Thread.currentThread() == thread;
+    }
+
+    @Override
+    public void invokeLater(Runnable runnable) {
+
     }
 
     @Override

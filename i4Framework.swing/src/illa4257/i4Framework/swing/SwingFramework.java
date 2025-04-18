@@ -4,6 +4,8 @@ import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
 import illa4257.i4Framework.desktop.DesktopFramework;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.logger.i4Logger;
@@ -100,8 +102,10 @@ public class SwingFramework extends DesktopFramework {
             return;
         synchronized (frames) {
             final boolean isEmpty = frames.isEmpty();
-            if (frames.add(frame) && isEmpty)
+            if (frames.add(frame) && isEmpty) {
                 timer.computeIfAbsentP(Instance::new);
+                frame.window.fire(new StyleUpdateEvent());
+            }
         }
     }
 
@@ -121,10 +125,12 @@ public class SwingFramework extends DesktopFramework {
     }
 
     @Override public boolean isUIThread(final Component component) { return SwingUtilities.isEventDispatchThread(); }
+    @Override public void invokeLater(final Runnable runnable) { SwingUtilities.invokeLater(runnable); }
 
     @Override
-    public void invokeLater(final Runnable runnable) {
-        SwingUtilities.invokeLater(runnable);
+    public void fireAllWindows(final Event event) {
+        for (final SwingWindow w : frames)
+            w.window.fire(event);
     }
 
     @Override public FrameworkWindow newWindow(final Window window) { return new SwingWindow(this, window); }

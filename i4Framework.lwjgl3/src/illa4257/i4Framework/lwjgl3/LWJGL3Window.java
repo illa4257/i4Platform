@@ -15,8 +15,8 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class LWJGL3Window implements FrameworkWindow {
-    private final LWJGL3Framework framework;
-    private final Window window;
+    public final LWJGL3Framework framework;
+    public final Window window;
     final long windowID;
     GLCapabilities capabilities = null;
 

@@ -73,7 +73,11 @@ public class Component extends Destructor {
             synchronized (cache) {
                 cache.clear();
                 cache.add(new AbstractMap.SimpleImmutableEntry<>(null, styles));
-                cacheStyles(this, new ArrayList<>());
+                final ArrayList<StyleSelector> selectors = new ArrayList<>();
+                cacheStyles(this, selectors);
+                final Framework framework = getFramework();
+                if (framework != null)
+                    cacheStyles(framework.stylesheet, selectors);
             }
             repaint();
         });
@@ -119,9 +123,11 @@ public class Component extends Destructor {
         return null;
     }
 
-    private void cacheStyles(final Component c, final ArrayList<StyleSelector> selectors) {
+    protected void cacheStyles(
+            final Queue<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> stylesheet,
+            final ArrayList<StyleSelector> selectors) {
         int l = selectors.size();
-        for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> e : c.stylesheet)
+        for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> e : stylesheet)
             if (e.getKey().check(this)) {
                 int i = 0;
                 for (; i < l; i++) {
@@ -134,6 +140,10 @@ public class Component extends Destructor {
                 selectors.add(i, e.getKey());
                 l++;
             }
+    }
+
+    protected void cacheStyles(final Component c, final ArrayList<StyleSelector> selectors) {
+        cacheStyles(c.stylesheet, selectors);
         final Container p = c.getParent();
         if (p != null)
             cacheStyles(p, selectors);
