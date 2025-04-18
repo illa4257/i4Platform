@@ -1,6 +1,9 @@
 package illa4257.i4Framework.base.utils;
 
 public class Geom {
+    /// Half PI
+    public static final double hPI = Math.PI / 2d;
+
     public static int pxArcLength(double radius, double radians) {
         if (radians < 0)
             radians = -radians;
