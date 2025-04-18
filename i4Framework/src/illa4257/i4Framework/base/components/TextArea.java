@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/// WIP
 public class TextArea extends Container {
     public final ScrollBar vBar = new ScrollBar(Orientation.VERTICAL), hBar = new ScrollBar(Orientation.HORIZONTAL);
     private final SyncVar<Context> lastContext = new SyncVar<>();
@@ -40,10 +41,6 @@ public class TextArea extends Container {
         hBar.setEndY(height);
         add(hBar);
 
-        addLine("test uifnej n".toCharArray());
-        addLine("iiiiiii".toCharArray());
-        for (int i = 0; i < 100; i++)
-            addLine("Hello, world! idsn fonf idoj ifon fonf ownfon on woenf on foe f njw enfo sasa fjiueu ihure ojfio jrio jrieoj|fioj ifoerj d".toCharArray());
         addEventListener(ReCalc.class, e -> reCalc());
         addEventListener(RecalculateEvent.class, e -> fire(new ReCalc()));
         vBar.addEventListener(ScrollBar.ScrollEvent.class, e -> {
@@ -110,7 +107,7 @@ public class TextArea extends Container {
         }
     }
 
-    private void addLine(final char[] chars) {
+    public void addLine(final char[] chars) {
         final MutableCharArray arr = new MutableCharArray();
         arr.addDirect(chars);
         synchronized (lines) {
