@@ -1,7 +1,7 @@
 package illa4257.i4Framework.base.points;
 
 public class PPointAdd extends Point {
-    private Point point1 = null, point2 = null;
+    private volatile Point point1 = null, point2 = null;
 
     public PPointAdd(final Point point1, final Point point2) {
         setPoint1(point1);
@@ -10,7 +10,8 @@ public class PPointAdd extends Point {
 
     @Override
     protected float calc() {
-        return (point1 != null ? point1.calcFloat() : 0) + (point2 != null ? point2.calcFloat() : 0);
+        final Point p1 = point1, p2 = point2;
+        return (p1 != null ? p1.calcFloat() : 0) + (p2 != null ? p2.calcFloat() : 0);
     }
 
     public void setPoint1(final Point newPoint) {
