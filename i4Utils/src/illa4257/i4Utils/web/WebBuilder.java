@@ -72,7 +72,7 @@ public class WebBuilder {
 
         final WebStream s = new WebStream(socket);
 
-        s.write(method + ' ' + (uri.path == null ? '/' : Str.encodeURI(uri.path, false)) + " HTTP/1.1\r\n");
+        s.write(method + ' ' + (uri.fullPath == null ? '/' : Str.encodeURI(uri.fullPath, false)) + " HTTP/1.1\r\n");
 
         boolean host = true, contentLength = true, connection = true;
 
