@@ -98,7 +98,6 @@ public class WebSocket extends WebStream {
             }
             return;
         }
-        i4Logger.INSTANCE.log(WARN, "Unknown transfer method");
         inputStreamDecoded = is = new WebInputStream.LongPolling(inputStream, 0);
     }
 
