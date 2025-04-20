@@ -10,7 +10,9 @@ import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Utils.web.i4URI;
 
+import java.io.InputStream;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class AndroidFramework extends Framework {
@@ -117,4 +119,12 @@ public class AndroidFramework extends Framework {
 
     @Override public void invokeLater(final Runnable runnable) { uiHandler.post(runnable); }
     @Override public FrameworkWindow newWindow(final Window window) { return new AndroidWindow(this, window); }
+
+    @Override
+    public InputStream openResource(final i4URI uri) {
+        try {
+            return context.getAssets().open(uri.fullPath);
+        } catch (final Exception ignored) {}
+        return super.openResource(uri);
+    }
 }

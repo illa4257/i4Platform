@@ -7,13 +7,16 @@ import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.styling.StyleSelector;
 import illa4257.i4Framework.base.styling.StyleSetting;
 import illa4257.i4Utils.logger.i4Logger;
+import illa4257.i4Utils.res.ResourceProvider;
+import illa4257.i4Utils.web.i4URI;
 
+import java.io.InputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
-public abstract class Framework {
+public abstract class Framework implements ResourceProvider {
     private static final ConcurrentLinkedQueue<Framework> frameworks = new ConcurrentLinkedQueue<>();
 
     public static void registerFramework(final Framework framework) {
@@ -86,8 +89,14 @@ public abstract class Framework {
     }
 
     public abstract boolean isUIThread(final Component component);
-
     public abstract void invokeLater(final Runnable runnable);
+
+    @Override
+    public InputStream openResource(final i4URI uri) {
+        return ClassLoader.getSystemClassLoader()
+                .getResourceAsStream(uri.fullPath != null && uri.fullPath.startsWith("/") ?
+                        uri.fullPath.substring(1) : uri.fullPath);
+    }
 
     public abstract FrameworkWindow newWindow(final Window window);
     public IFileChooser newFileChooser() { return new FileChooser(this); }
