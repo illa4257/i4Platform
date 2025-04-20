@@ -2,7 +2,6 @@ package illa4257.i4Framework.base;
 
 import illa4257.i4Framework.base.components.*;
 import illa4257.i4Framework.base.events.components.ActionEvent;
-import illa4257.i4Framework.base.events.components.FocusEvent;
 import illa4257.i4Framework.base.math.Unit;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.layout.PointByContent;

@@ -15,7 +15,6 @@ import illa4257.i4Framework.base.points.PointAttach;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.event.FocusEvent;
 
 public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWindow {
     public final Window window;
