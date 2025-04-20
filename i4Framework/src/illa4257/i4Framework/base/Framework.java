@@ -94,8 +94,7 @@ public abstract class Framework implements ResourceProvider {
 
     @Override
     public InputStream openResource(final i4URI uri) {
-        return ClassLoader.getSystemClassLoader()
-                .getResourceAsStream(uri.fullPath != null && uri.fullPath.startsWith("/") ?
+        return ClassLoader.getSystemResourceAsStream(uri.fullPath != null && uri.fullPath.startsWith("/") ?
                         uri.fullPath.substring(1) : uri.fullPath);
     }
 
