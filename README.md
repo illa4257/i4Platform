@@ -40,16 +40,25 @@ import java.io.InputStreamReader;
 
 public class Test {
     public static void main(final String[] args) {
+        final Framework framework = SwingFramework.INSTANCE;
+        /*
+        final FrameworkWindow frameworkWindow = framework.newWindow(null);
+        final Window window = frameworkWindow.getWindow();
+        
+        OR
+         */
+        
         final Window window = new Window();
+        final FrameworkWindow frameworkWindow = framework.newWindow(window);
 
         // Add styles
-        try (final InputStream is = ClassLoader.getSystemResourceAsStream("illa4257/i4Framework/light.css")) {
+        try (final InputStream is = framework.openResource("assets:///illa4257/i4Framework/light.css")) {
             if (is != null)
+                // Parse and apply the CSS stylesheet to the window
                 CSSParser.parse(window.stylesheet, new BufferedReader(new InputStreamReader(is)));
+                // Or you can load directly into Framework's stylesheet
+                // CSSParser.parse(framework.stylesheet, new BufferedReader(new InputStreamReader(is)));
         }
-
-        // Refresh style cache
-        window.fire(new StyleUpdateEvent());
 
         window.setSize(720, 480);
 
@@ -63,8 +72,6 @@ public class Test {
         btn.setHeight(32, Unit.DP);
         btn.addEventListener(ActionEvent.class, e -> System.out.println("Hello, world!"));
         window.add(btn);
-
-        final FrameworkWindow frameworkWindow = SwingFramework.INSTANCE.newWindow(window);
 
         window.center();
         window.setVisible(true);
