@@ -3,10 +3,13 @@ package illa4257.i4Utils.web;
 import illa4257.i4Utils.lists.MutableCharArray;
 import illa4257.i4Utils.Str;
 import illa4257.i4Utils.SyncVar;
+import illa4257.i4Utils.res.ResourceManager;
+import illa4257.i4Utils.res.ResourceProvider;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Arrays;
@@ -16,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class WebBuilder {
+public class WebBuilder implements ResourceProvider {
     public static final List<String> PROTOCOLS = Arrays.asList("http", "https");
     private static boolean isEmpty(final String str) { return str == null || str.isEmpty(); }
 
@@ -119,5 +122,20 @@ public class WebBuilder {
             return sock;
         }
         return new WebSocket(s, false);
+    }
+
+    @Override
+    public InputStream openResource(final i4URI uri) {
+        try {
+            //noinspection resource
+            return open("GET", uri).getInputStream();
+        } catch (final Exception ignored) {}
+        return null;
+    }
+
+    @Override
+    public void addTo(final ResourceManager mgr) {
+        mgr.add("http", this);
+        mgr.add("https", this);
     }
 }
