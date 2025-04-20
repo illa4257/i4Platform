@@ -8,6 +8,8 @@ public interface FrameworkWindow {
     Framework getFramework();
     Window getWindow();
 
+    default void asContextMenu() {}
+
     default Point getDensityMultiplier() { return NumberPointConstant.ONE; }
     default Point safeStartX() { return NumberPointConstant.ZERO; }
     default Point safeStartY() { return NumberPointConstant.ZERO; }

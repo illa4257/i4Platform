@@ -1,5 +1,6 @@
 package illa4257.i4Framework.swing;
 
+import illa4257.i4Framework.base.events.components.FocusEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyPressEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyUpEvent;
@@ -112,7 +113,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
                     setSize(component.width.calcInt(), component.height.calcInt());
                 }),
                 component.addEventListener(RepaintEvent.class, e -> repaint()),
-                component.addEventListener(illa4257.i4Framework.base.events.components.FocusEvent.class, e -> {
+                component.addEventListener(FocusEvent.class, e -> {
                     if (e.value)
                         requestFocus();
                 })

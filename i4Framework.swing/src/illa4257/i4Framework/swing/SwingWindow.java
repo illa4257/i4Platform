@@ -15,6 +15,7 @@ import illa4257.i4Framework.base.points.PointAttach;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.event.FocusEvent;
 
 public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWindow {
     public final Window window;
@@ -130,6 +131,18 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
                 window.addEventListener(RepaintEvent.class, e -> repaint()),
                 window.addEventListener(CenterWindowEvent.class, event -> setLocationRelativeTo(null))
         };
+    }
+
+    @Override
+    public void asContextMenu() {
+        setUndecorated(true);
+        setLocation(MouseInfo.getPointerInfo().getLocation());
+        addWindowFocusListener(new WindowAdapter() {
+            @Override
+            public void windowLostFocus(final WindowEvent windowEvent) {
+                dispose();
+            }
+        });
     }
 
     @Override

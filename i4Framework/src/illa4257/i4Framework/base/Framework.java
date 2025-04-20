@@ -106,6 +106,7 @@ public abstract class Framework implements ResourceProvider {
 
     public abstract FrameworkWindow newWindow(final Window window);
     public IFileChooser newFileChooser() { return new FileChooser(this); }
+    public ContextMenuBuilder newContextMenu() { return new ContextMenuBuilder(this); }
 
     public void dispose() {}
 }

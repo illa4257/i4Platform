@@ -3,6 +3,7 @@
     --scrollbar-width: 16dp;
 }
 
+.context-menu > *,
 .list > Button {
     border-width: 0;
     border-radius: 0;
