@@ -117,7 +117,7 @@ public class i4URI {
         int colon = uri.indexOf(':'), splash = uri.indexOf('/'), atSymbol, query, min, i;
 
         // Scheme
-        if (colon > -1 && (colon == splash - 1 || splash == -1)) {
+        if (colon > -1 && (colon < splash || splash == -1)) {
             scheme = colon == 0 ? defaultScheme : uri.substring(0, colon);
             uri = uri.substring(colon + 1);
         } else
@@ -129,57 +129,63 @@ public class i4URI {
         for (i = 0; i < ul; i++)
             if (uri.charAt(i) != '/')
                 break;
-        if (i > 0)
+        if (i > 0) {
             uri = uri.substring(i);
 
-        // User Info
-        atSymbol = uri.indexOf('@');
-        splash = uri.indexOf('/');
-        query = uri.indexOf('?');
-        if (splash != -1 && query != -1)
-            min = Math.min(splash, query);
-        else if (query == -1)
-            min = splash;
-        else
-            min = query;
-        if (atSymbol > -1 && (atSymbol < min || min == -1)) {
-            userInfo = parseUserInfo(uri.substring(0, atSymbol));
-            uri = uri.substring(atSymbol + 1);
-            if (splash != -1)
-                splash = uri.indexOf('/');
-            if (query != -1)
-                query = uri.indexOf('?');
+            // User Info
+            atSymbol = uri.indexOf('@');
+            splash = uri.indexOf('/');
+            query = uri.indexOf('?');
             if (splash != -1 && query != -1)
                 min = Math.min(splash, query);
             else if (query == -1)
                 min = splash;
             else
                 min = query;
-        } else
-            userInfo = new char[0][];
-        colon = uri.indexOf(':');
+            if (atSymbol > -1 && (atSymbol < min || min == -1)) {
+                userInfo = parseUserInfo(uri.substring(0, atSymbol));
+                uri = uri.substring(atSymbol + 1);
+                if (splash != -1)
+                    splash = uri.indexOf('/');
+                if (query != -1)
+                    query = uri.indexOf('?');
+                if (splash != -1 && query != -1)
+                    min = Math.min(splash, query);
+                else if (query == -1)
+                    min = splash;
+                else
+                    min = query;
+            } else
+                userInfo = new char[0][];
+            colon = uri.indexOf(':');
 
-        // Domain
-        if (colon == -1 && min == -1) {
-            domain = uri;
-            port = -1;
-            fullPath = path = null;
-            queries = null;
-            return;
-        }
-        if (colon > -1 && (colon < min || min == -1)) {
-            domain = uri.substring(0, colon);
-            colon++;
-            if (min == -1) {
-                port = Integer.parseInt(uri.substring(colon));
+            // Domain
+            if (colon == -1 && min == -1) {
+                domain = uri;
+                port = -1;
                 fullPath = path = null;
                 queries = null;
                 return;
             }
-            port = Integer.parseInt(uri.substring(colon, min));
+            if (colon > -1 && (colon < min || min == -1)) {
+                domain = uri.substring(0, colon);
+                colon++;
+                if (min == -1) {
+                    port = Integer.parseInt(uri.substring(colon));
+                    fullPath = path = null;
+                    queries = null;
+                    return;
+                }
+                port = Integer.parseInt(uri.substring(colon, min));
+            } else {
+                domain = uri.substring(0, min);
+                port = -1;
+            }
         } else {
-            domain = uri.substring(0, min);
+            splash = min = 0;
             port = -1;
+            domain = "";
+            userInfo = new char[0][];
         }
         fullPath = splash == min ? uri.substring(splash) : '/' + uri.substring(min);
         queries = new HashMap<>();
