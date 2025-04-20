@@ -17,7 +17,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class WebBuilder {
-    public static final List<String> METHODS = Arrays.asList("GET", "POST", "DELETE", "PUT");
     public static final List<String> PROTOCOLS = Arrays.asList("http", "https");
     private static boolean isEmpty(final String str) { return str == null || str.isEmpty(); }
 
@@ -44,8 +43,6 @@ public class WebBuilder {
         if (isEmpty(method))
             throw new IllegalArgumentException("Method cannot be null or empty");
         method = method.toUpperCase();
-        if (!METHODS.contains(method))
-            throw new IllegalArgumentException("Unknown method");
         if (uri == null)
             throw new IllegalArgumentException("URI cannot be null");
         if (!PROTOCOLS.contains(uri.scheme))
