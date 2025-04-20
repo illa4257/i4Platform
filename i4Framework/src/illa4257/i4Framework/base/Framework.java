@@ -7,6 +7,7 @@ import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.styling.StyleSelector;
 import illa4257.i4Framework.base.styling.StyleSetting;
 import illa4257.i4Utils.logger.i4Logger;
+import illa4257.i4Utils.res.ResourceManager;
 import illa4257.i4Utils.res.ResourceProvider;
 import illa4257.i4Utils.web.i4URI;
 
@@ -96,6 +97,12 @@ public abstract class Framework implements ResourceProvider {
         return ClassLoader.getSystemClassLoader()
                 .getResourceAsStream(uri.fullPath != null && uri.fullPath.startsWith("/") ?
                         uri.fullPath.substring(1) : uri.fullPath);
+    }
+
+    @Override
+    public void addTo(final ResourceManager mgr) {
+        mgr.add("assets", this);
+        mgr.add("res", this);
     }
 
     public abstract FrameworkWindow newWindow(final Window window);
