@@ -549,15 +549,19 @@ public class Component extends Destructor {
         fire(new ChangePointEvent());
     }
 
-    @SuppressWarnings("AssignmentUsedAsCondition")
     public void setSize(final float width, final float height) {
+        setSize(width, height, false);
+    }
+
+    @SuppressWarnings("AssignmentUsedAsCondition")
+    public void setSize(final float width, final float height, final boolean isSystem) {
         final boolean x, y;
         if (x = aSet(endX, width, startX))
             endX.set(new PointAttach(width, startX));
         if (y = aSet(endY, height, startY))
             endY.set(new PointAttach(height, startY));
         if (x || y)
-            fire(new ChangePointEvent());
+            fire(new ChangePointEvent(isSystem));
     }
 
     public void paint(final Context context) {

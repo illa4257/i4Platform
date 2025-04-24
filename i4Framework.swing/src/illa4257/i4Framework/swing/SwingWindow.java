@@ -10,7 +10,6 @@ import illa4257.i4Framework.base.events.mouse.MouseButton;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.events.window.CenterWindowEvent;
-import illa4257.i4Framework.base.points.PointAttach;
 
 import javax.swing.*;
 import java.awt.*;
@@ -44,12 +43,7 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
         root.setBackground(Color.BLACK);
         root.addComponentListener(new ComponentAdapter() {
             public void componentResized(ComponentEvent e) {
-                if (!isVisible())
-                    return;
-                SwingWindow.this.window.endX.set(new PointAttach(root.getWidth(), null));
-                SwingWindow.this.window.endY.set(new PointAttach(root.getHeight(), null));
-                SwingWindow.this.window.fire(new ChangePointEvent(true));
-                SwingWindow.this.window.repaint();
+                SwingWindow.this.window.setSize(root.getWidth(), root.getHeight(), true);
             }
         });
         addMouseListener(new MouseAdapter() {
