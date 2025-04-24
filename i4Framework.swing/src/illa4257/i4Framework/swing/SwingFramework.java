@@ -79,8 +79,6 @@ public class SwingFramework extends DesktopFramework {
     }
 
     static {
-        Framework.registerFramework(INSTANCE);
-
         final HashMap<RenderingHints.Key, Object> m = new HashMap<>();
 
         m.put(KEY_ANTIALIASING, VALUE_ANTIALIAS_ON);
@@ -93,6 +91,8 @@ public class SwingFramework extends DesktopFramework {
         current = RECOMMENDED;
 
         font = new Font(Font.DIALOG, Font.PLAIN, 16);
+
+        Framework.registerFramework(INSTANCE);
     }
 
     private final ConcurrentLinkedQueue<SwingWindow> frames = new ConcurrentLinkedQueue<>();
