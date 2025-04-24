@@ -32,7 +32,7 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
-            public void windowClosed(WindowEvent windowEvent) {
+            public void windowClosed(final WindowEvent windowEvent) {
                 if (!SwingWindow.this.window.frameworkWindow.setIfEquals(null, SwingWindow.this))
                     return;
                 SwingWindow.this.window.unlink();
@@ -40,20 +40,20 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
                 setVisible(false);
             }
         });
-        root.setBackground(Color.BLACK);
+        setBackground(Color.BLACK);
         root.addComponentListener(new ComponentAdapter() {
-            public void componentResized(ComponentEvent e) {
+            public void componentResized(final ComponentEvent e) {
                 SwingWindow.this.window.setSize(root.getWidth(), root.getHeight(), true);
             }
         });
         addMouseListener(new MouseAdapter() {
             @Override
-            public void mousePressed(MouseEvent mouseEvent) {
+            public void mousePressed(final MouseEvent mouseEvent) {
                 SwingWindow.this.window.fire(new MouseDownEvent(mouseEvent.getX(), mouseEvent.getY(), MouseButton.fromCode(mouseEvent.getButton() - 1)));
             }
 
             @Override
-            public void mouseReleased(MouseEvent mouseEvent) {
+            public void mouseReleased(final MouseEvent mouseEvent) {
                 SwingWindow.this.window.fire(new MouseUpEvent(mouseEvent.getX(), mouseEvent.getY(), MouseButton.fromCode(mouseEvent.getButton() - 1)));
             }
         });
@@ -96,16 +96,12 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
     }
 
     @Override
-    public void setSize(int i, int i1) {
-        if (window.width.calcInt() != i || window.height.calcInt() != i1)
-            window.setSize(i, i1);
+    public void setSize(final int i, final int i1) {
         if (root.getWidth() == i && root.getHeight() == i1)
             return;
         root.setPreferredSize(new Dimension(i, i1));
         final Insets insets = getInsets();
         super.setSize(i + insets.left + insets.right, i1 + insets.top + insets.bottom);
-        revalidate();
-        repaint();
     }
 
     @SuppressWarnings("rawtypes")
@@ -115,12 +111,12 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
             if (isVisible() != e.value)
                 setVisible(e.value);
         });
+        window.addDirectEventListener(ChangePointEvent.class, e -> {
+            if (e.isSystem)
+                return;
+            setSize(window.width.calcInt(), window.height.calcInt());
+        });
         return new EventListener[] {
-                window.addEventListener(ChangePointEvent.class, e -> {
-                    if (e.isSystem)
-                        return;
-                    setSize(window.width.calcInt(), window.height.calcInt());
-                }),
                 window.addEventListener(RepaintEvent.class, e -> repaint()),
                 window.addEventListener(CenterWindowEvent.class, event -> setLocationRelativeTo(null))
         };
