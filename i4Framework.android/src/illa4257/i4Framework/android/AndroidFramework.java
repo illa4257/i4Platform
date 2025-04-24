@@ -10,6 +10,7 @@ import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.web.i4URI;
 
 import java.io.InputStream;
@@ -122,9 +123,14 @@ public class AndroidFramework extends Framework {
 
     @Override
     public InputStream openResource(final i4URI uri) {
-        try {
-            return context.getAssets().open(uri.fullPath);
-        } catch (final Exception ignored) {}
+        if (uri.fullPath != null)
+            try {
+                return context.getAssets().open(
+                        (uri.fullPath.startsWith("/") ? uri.fullPath.substring(1) :
+                        uri.fullPath).replaceAll("/", "\\\\"));
+            } catch (final Exception ex) {
+                i4Logger.INSTANCE.log(ex);
+            }
         return super.openResource(uri);
     }
 }
