@@ -30,8 +30,8 @@ Button,
 TextArea,
 TextField {
     background-color: #191920;
-    border-width: 1px;
-    border-radius: 8px;
+    border-width: 1dp;
+    border-radius: 8dp;
     border-color: #446;
 }
 
