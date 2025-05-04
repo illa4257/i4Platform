@@ -10,21 +10,13 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class i4Logger implements LogHandler {
+    /// @deprecated
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-    private static final Object locker = new Object();
-    private static i4Logger parent = null;
+    public static volatile i4Logger PARENT = null;
 
-    public static boolean setParent(final i4Logger newParent) {
-        synchronized (locker) {
-            parent = newParent;
-        }
-        return newParent != null;
-    }
-
-    public static i4Logger getParent() {
-        synchronized (locker) {
-            return parent;
-        }
+    /// @deprecated
+    public static void setParent(final i4Logger newParent) {
+        PARENT = newParent;
     }
 
     private static class i4LoggerP extends i4Logger {
@@ -45,7 +37,7 @@ public class i4Logger implements LogHandler {
 
         @Override
         public void log(final Level level, final String prefix, final String message) {
-            final i4Logger l = getParent();
+            final i4Logger l = PARENT;
             if (l == null)
                 return;
             l.log(level, prefix, message);
@@ -53,7 +45,7 @@ public class i4Logger implements LogHandler {
 
         @Override
         public void log(final Level level, final String prefix, final String message, final StackTraceElement[] stackTraceElements) {
-            final i4Logger l = getParent();
+            final i4Logger l = PARENT;
             if (l == null)
                 return;
             l.log(level, prefix, message, stackTraceElements);
@@ -61,7 +53,7 @@ public class i4Logger implements LogHandler {
 
         @Override
         public void log(final Level level, final String message) {
-            final i4Logger l = getParent();
+            final i4Logger l = PARENT;
             if (l == null)
                 return;
             l.log(level, message);
@@ -69,7 +61,7 @@ public class i4Logger implements LogHandler {
 
         @Override
         public void log(final Level level, final String message, final StackTraceElement[] stackTraceElements) {
-            final i4Logger l = getParent();
+            final i4Logger l = PARENT;
             if (l == null)
                 return;
             l.log(level, message, stackTraceElements);
@@ -77,7 +69,7 @@ public class i4Logger implements LogHandler {
 
         @Override
         public void log(final Level level, final Throwable throwable) {
-            final i4Logger l = getParent();
+            final i4Logger l = PARENT;
             if (l == null)
                 return;
             l.log(level, throwable);
@@ -85,7 +77,7 @@ public class i4Logger implements LogHandler {
 
         @Override
         public void log(final Throwable throwable) {
-            final i4Logger l = getParent();
+            final i4Logger l = PARENT;
             if (l == null)
                 return;
             l.log(throwable);
@@ -93,7 +85,7 @@ public class i4Logger implements LogHandler {
 
         @Override
         public void log(final Level level, final Object... objects) {
-            final i4Logger l = getParent();
+            final i4Logger l = PARENT;
             if (l == null)
                 return;
             l.log(level, objects);
@@ -101,7 +93,7 @@ public class i4Logger implements LogHandler {
 
         @Override
         public void log(final Level level, final Object object) {
-            final i4Logger l = getParent();
+            final i4Logger l = PARENT;
             if (l == null)
                 return;
             l.log(level, object);
