@@ -22,13 +22,40 @@ import java.util.List;
 
 public class FileChooser implements IFileChooser {
     private static final int ITEM_HEIGHT = 24;
-    private static final FileSystemView fsv = FileSystemView.getFileSystemView();
+    private static final Object fileSystemView;
+    static {
+        Object o = null;
+        try {
+            o = FileSystemView.getFileSystemView();
+        } catch (final NoClassDefFoundError ignored) {}
+        fileSystemView = o;
+    }
+
+    public static File[] listFiles(final File dir) {
+        final File[] l = fileSystemView != null ? ((FileSystemView) fileSystemView).getFiles(dir, true) : dir.listFiles();
+        return l != null ? l : new File[0];
+    }
+
+    public static String getSystemDisplayName(final File file) {
+        return fileSystemView != null ?
+                ((FileSystemView) fileSystemView).getSystemDisplayName(file) : file.getName();
+    }
+
 
     public final Framework framework;
     public final FrameworkWindow frameworkWindow;
     public final Window window = new Window();
 
-    private final Point offset = new NumberPointMultiplier(window.densityMultiplier, 8);
+    private final Point
+            offset = new NumberPointMultiplier(window.densityMultiplier, 8),
+            offsetX = new PPointAdd(
+                window.safeStartX,
+                offset
+            ),
+            offsetY = new PPointAdd(
+                    window.safeStartY,
+                    offset
+            );
     private final Button confirm = new Button();
     private final TextField path = new TextField();
     private final ScrollPane pane = new ScrollPane();
@@ -55,8 +82,8 @@ public class FileChooser implements IFileChooser {
         });
 
         final Button back = new Button("^");
-        back.setStartX(offset);
-        back.setStartY(offset);
+        back.setStartX(offsetX);
+        back.setStartY(offsetY);
         back.setWidth(32, Unit.DP);
         back.setHeight(32, Unit.DP);
         back.addEventListener(ActionEvent.class, e -> {
@@ -68,17 +95,20 @@ public class FileChooser implements IFileChooser {
         window.add(back);
 
         path.setStartX(new PPointAdd(back.endX, offset));
-        path.setStartY(offset);
-        path.setEndX(new PPointSubtract(window.width, offset));
+        path.setStartY(offsetY);
+        path.setEndX(new PPointSubtract(window.safeEndX, offset));
         path.setEndY(back.endY);
         window.add(path);
 
         container.classes.add("list");
         container.setEndX(pane.viewableWidth);
 
-        pane.setY(48, Unit.DP);
-        pane.setEndX(window.width);
-        pane.setEndY(new PPointSubtract(window.height, new NumberPointMultiplier(window.densityMultiplier, 64)));
+        pane.setStartY(new PPointAdd(
+                back.endY,
+                new NumberPointMultiplier(window.densityMultiplier, 8)
+        ));
+        pane.setEndX(window.safeEndX);
+        pane.setEndY(new PPointSubtract(window.safeEndY, new NumberPointMultiplier(window.densityMultiplier, 64)));
         pane.setContent(container);
         window.add(pane);
 
@@ -91,8 +121,8 @@ public class FileChooser implements IFileChooser {
         });
         confirm.setStartX(new PPointSubtract(confirm.endX, new NumberPointMultiplier(window.densityMultiplier, 64)));
         confirm.setStartY(new PPointAdd(pane.endY, offset));
-        confirm.setEndX(new PPointSubtract(window.width, offset));
-        confirm.setEndY(new PPointSubtract(window.height, offset));
+        confirm.setEndX(new PPointSubtract(window.safeEndX, offset));
+        confirm.setEndY(new PPointSubtract(window.safeEndY, offset));
         window.add(confirm);
     }
 
@@ -158,7 +188,7 @@ public class FileChooser implements IFileChooser {
                     forceRefresh();
                 });
                 btn.styles.put("text-align", new StyleSetting("left"));
-                btn.setText(fsv.getSystemDisplayName(f) + " (" + f.getFreeSpace() + '/' + f.getTotalSpace() + ')');
+                btn.setText(getSystemDisplayName(f) + " (" + f.getFreeSpace() + '/' + f.getTotalSpace() + ')');
                 btn.setY(y, Unit.DP);
                 btn.setEndX(container.width);
                 btn.setHeight(ITEM_HEIGHT * 2, Unit.DP);
@@ -168,7 +198,7 @@ public class FileChooser implements IFileChooser {
             resize();
             return;
         }
-        addItems(fsv.getFiles(current, true));
+        addItems(listFiles(current));
     }
 
     private void resize() {
