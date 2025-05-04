@@ -13,63 +13,71 @@ public class Arch {
         REAL = detectRealArch();
     }
 
+    public static String wmicGet(final String group, final String property) {
+        try {
+            final Process p = new ProcessBuilder("wmic", group, "get", property).redirectErrorStream(true).start();
+            try (final Scanner s = new Scanner(p.getInputStream())) {
+                if (property.equalsIgnoreCase(s.nextLine().trim())) {
+                    s.nextLine();
+                    return s.nextLine().trim();
+                }
+            } finally {
+                p.destroyForcibly();
+            }
+        } catch (final Exception ex) {
+            i4Logger.INSTANCE.log(ex);
+        }
+        return null;
+    }
+
     private static Arch detectRealArch() {
-        if (JVM.IS_32BIT)
-            if (JVM.IS_WINDOWS)
-                try {
-                    final Process p = new ProcessBuilder("wmic", "cpu", "get", "Architecture").start();
-                    try (final Scanner s = new Scanner(p.getInputStream())) {
-                        if ("Architecture".equalsIgnoreCase(s.nextLine().trim())) {
-                            String a = s.nextLine().trim();
-                            switch (a) {
-                                case "0":
-                                    a = "x86";
-                                    break;
-                                case "5":
-                                    final Process p2 = new ProcessBuilder("wmic", "OS", "get", "OSArchitecture").start();
-                                    try (final Scanner s2 = new Scanner(p2.getInputStream())) {
-                                        if ("OSArchitecture".equalsIgnoreCase(s2.nextLine().trim())) {
-                                            a = s2.nextLine().trim();
-                                            if ("64-bit".equalsIgnoreCase(a)) {
-                                                a = "aarch64";
-                                                break;
-                                            } else if ("32-bit".equalsIgnoreCase(a)) {
-                                                a = "arm";
-                                                break;
-                                            } else {
-                                                i4Logger.INSTANCE.log(Level.WARN, "Unknown bit number for ARM processor in Windows: " + a);
-                                            }
-                                        }
-                                    } finally {
-                                        p2.destroyForcibly();
-                                    }
-                                    return JVM;
-                                case "9":
-                                    a = "amd64";
-                                    break;
-                                default:
-                                    i4Logger.INSTANCE.log(Level.WARN, "Unknown Windows architecture code: " + a);
-                                    return JVM;
+        if (JVM.IS_WINDOWS) {
+            String ver = JVM.osVersion;
+            if (ver.indexOf('.') == ver.lastIndexOf('.') && ver.indexOf('.') != -1) {
+                final String buildNumber = wmicGet("OS", "BuildNumber");
+                if (buildNumber != null)
+                    ver += '+' + buildNumber;
+            }
+            if (JVM.IS_32BIT) {
+                String a = wmicGet("cpu", "Architecture");
+                if (a != null)
+                    switch (a) {
+                        case "0":
+                            a = "x86";
+                            break;
+                        case "5":
+                            a = wmicGet("OS", "OSArchitecture");
+                            if ("64-bit".equalsIgnoreCase(a)) {
+                                a = "aarch64";
+                                break;
+                            } else if ("32-bit".equalsIgnoreCase(a)) {
+                                a = "arm";
+                                break;
+                            } else {
+                                i4Logger.INSTANCE.log(Level.WARN, "Unknown bit number for ARM processor in Windows: " + a);
                             }
-                            return new Arch(JVM.osName, JVM.osVersion, a, JVM.vendor);
-                        }
-                    } finally {
-                        p.destroyForcibly();
+                            return new Arch(JVM.osName, ver, JVM.arch, JVM.vendor);
+                        case "9":
+                            a = "amd64";
+                            break;
+                        default:
+                            i4Logger.INSTANCE.log(Level.WARN, "Unknown Windows architecture code: " + a);
+                            return new Arch(JVM.osName, ver, JVM.arch, JVM.vendor);
                     }
-                } catch (final Exception ex) {
-                    i4Logger.INSTANCE.log(ex);
+                return new Arch(JVM.osName, ver, a, JVM.vendor);
+            }
+            return new Arch(JVM.osName, ver, JVM.arch, JVM.vendor);
+        } else
+            try {
+                final Process p = Runtime.getRuntime().exec(new String[] { "uname", "-m" });
+                try (final Scanner s = new Scanner(p.getInputStream())) {
+                    return new Arch(JVM.osName, JVM.osVersion, s.nextLine(), JVM.vendor);
+                } finally {
+                    p.destroyForcibly();
                 }
-            else
-                try {
-                    final Process p = Runtime.getRuntime().exec(new String[] { "uname", "-m" });
-                    try (final Scanner s = new Scanner(p.getInputStream())) {
-                        return new Arch(JVM.osName, JVM.osVersion, s.nextLine(), JVM.vendor);
-                    } finally {
-                        p.destroyForcibly();
-                    }
-                } catch (final Exception ex) {
-                    i4Logger.INSTANCE.log(ex);
-                }
+            } catch (final Exception ex) {
+                i4Logger.INSTANCE.log(ex);
+            }
         return JVM;
     }
 
@@ -85,7 +93,9 @@ public class Arch {
 
             IS_ARM,
             IS_ARM32,
-            IS_ARM64;
+            IS_ARM64,
+
+            IS_CHEERPJ;
 
     /** CPU bits */
     public final boolean
@@ -102,7 +112,8 @@ public class Arch {
     /** Platform */
     public final boolean
             IS_DESKTOP,
-            IS_MOBILE;
+            IS_MOBILE,
+            IS_WEB;
 
     @SuppressWarnings("AssignmentUsedAsCondition")
     public Arch(String osName, final String osVersion, String arch, final String vendor) {
@@ -123,8 +134,10 @@ public class Arch {
             IS_ARM64 = arch.equals("arm64") || arch.equals("aarch64");
             IS_ARM32 = arch.equals("arm") || arch.equals("armv7l");
             IS_ARM = IS_ARM64 || IS_ARM32;
+
+            IS_CHEERPJ = arch.equalsIgnoreCase("cheerpj");
         } else
-            IS_ARM = IS_ARM64 = IS_ARM32 = IS_X86 = IS_X86_64 = IS_X86_32 = false;
+            IS_CHEERPJ = IS_ARM = IS_ARM64 = IS_ARM32 = IS_X86 = IS_X86_64 = IS_X86_32 = false;
 
         // Bits
         IS_64BIT = IS_X86_64 || IS_ARM64;
@@ -147,5 +160,6 @@ public class Arch {
         // Platforms
         IS_MOBILE = IS_ANDROID;
         IS_DESKTOP = !IS_MOBILE && (IS_WINDOWS || IS_LINUX || IS_MACOS);
+        IS_WEB = IS_CHEERPJ;
     }
 }

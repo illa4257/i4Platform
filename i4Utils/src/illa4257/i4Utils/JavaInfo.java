@@ -11,11 +11,18 @@ public class JavaInfo {
     public static final JavaInfo CURRENT;
 
     static {
-        CURRENT = new JavaInfo(Integer.parseInt(System.getProperty("java.specification.version")), Arch.JVM,
+        CURRENT = new JavaInfo(
+                getMajor(System.getProperty("java.specification.version")),
+                Arch.JVM,
                 File.pathSeparator,
                 new File(System.getProperty("java.home"), "bin/" + (Arch.JVM.IS_WINDOWS ? "java.exe" : "java")),
-                getDistribution(System.getProperty("java.vendor"), System.getProperty("java.vendor.version"),
-                        System.getProperty("java.runtime.name")));
+                getDistribution(
+                        System.getProperty("java.vendor"),
+                        System.getProperty("java.vendor.version"),
+                        System.getProperty("java.runtime.name"),
+                        Arch.JVM
+                )
+        );
     }
 
     public final int majorVersion;
@@ -29,6 +36,9 @@ public class JavaInfo {
         OPEN_JDK("OpenJDK"),
         /** AdoptOpenJDK */
         ADOPT_OPEN_JDK("AdoptOpenJDK"),
+
+        /** CheerpJ */
+        CHEERPJ("CheerpJ"),
 
         /** GraalVM */
         GRAALVM("GraalVM"),
@@ -53,9 +63,11 @@ public class JavaInfo {
         this.distribution = distribution;
     }
 
-    public static Distribution getDistribution(String vendor, String vendorVersion, String runtimeName) {
+    public static Distribution getDistribution(String vendor, String vendorVersion, String runtimeName, final Arch arch) {
         if (vendor == null)
             vendor = "null";
+        if (arch != null && arch.IS_CHEERPJ)
+            return Distribution.CHEERPJ;
         if (vendor.equalsIgnoreCase("AdoptOpenJDK"))
             return Distribution.ADOPT_OPEN_JDK;
         runtimeName = runtimeName != null ? runtimeName.toLowerCase() : "null";
@@ -73,6 +85,12 @@ public class JavaInfo {
             return Distribution.OPEN_JDK;
         i4Logger.INSTANCE.log(Level.WARN, "Unknown java distribution: " + vendor + " / " + vendorVersion + " / " + runtimeName);
         return Distribution.UNKNOWN;
+    }
+
+    public static int getMajor(String version) {
+        if (version.startsWith("1."))
+            version = version.substring(2);
+        return Integer.parseInt(version);
     }
 
     public static JavaInfo check(final File java) throws Exception {
@@ -130,9 +148,25 @@ public class JavaInfo {
         if (variables.get("java.specification.version").startsWith("1."))
             variables.put("java.specification.version", variables.get("java.specification.version").substring(2));
 
-        return new JavaInfo(Integer.parseInt(variables.get("java.specification.version")),
-                new Arch(variables.get("os.name"), variables.get("os.version"), variables.get("os.arch"), variables.get("java.vendor")),
-                variables.get("path.separator"), e, getDistribution(variables.get("java.vendor"), variables.get("java.vendor.version"), variables.get("java.runtime.name")));
+        final Arch arch = new Arch(
+                variables.get("os.name"),
+                variables.get("os.version"),
+                variables.get("os.arch"),
+                variables.get("java.vendor")
+        );
+
+        return new JavaInfo(
+                getMajor(variables.get("java.specification.version")),
+                arch,
+                variables.get("path.separator"),
+                e,
+                getDistribution(
+                        variables.get("java.vendor"),
+                        variables.get("java.vendor.version"),
+                        variables.get("java.runtime.name"),
+                        arch
+                )
+        );
     }
 
     private static void scan(final ConcurrentHashMap<String, String> vars, final Scanner s) {
