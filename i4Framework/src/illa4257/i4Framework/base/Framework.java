@@ -4,18 +4,19 @@ import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.FileChooser;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Framework.base.styling.StyleSelector;
 import illa4257.i4Framework.base.styling.StyleSetting;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.res.ResourceManager;
 import illa4257.i4Utils.res.ResourceProvider;
+import illa4257.i4Utils.runnables.Consumer2;
 import illa4257.i4Utils.web.i4URI;
 
 import java.io.InputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Consumer;
 
 public abstract class Framework implements ResourceProvider {
     private static final ConcurrentLinkedQueue<Framework> frameworks = new ConcurrentLinkedQueue<>();
@@ -39,8 +40,10 @@ public abstract class Framework implements ResourceProvider {
 
     protected volatile boolean isSystemTheme = true;
     protected volatile String systemTheme = "light", customTheme = "light";
+    protected volatile BaseTheme systemBaseTheme = BaseTheme.LIGHT, customBaseTheme = BaseTheme.LIGHT;
 
-    private final ConcurrentLinkedQueue<Consumer<String>> themeListeners = new ConcurrentLinkedQueue<>();
+    private final Object systemThemeLocker = new Object();
+    private final ConcurrentLinkedQueue<Consumer2<String, BaseTheme>> themeListeners = new ConcurrentLinkedQueue<>();
 
     public boolean isSystemTheme() { return isSystemTheme; }
 
@@ -54,22 +57,32 @@ public abstract class Framework implements ResourceProvider {
      */
     public String getTheme() { return isSystemTheme ? systemTheme : customTheme; }
 
-    protected void onSystemThemeChange(final String theme) {
-        systemTheme = theme;
-        if (isSystemTheme)
-            try {
-                themeListeners.forEach(l -> l.accept(theme));
-            } catch (final Throwable ex) {
-                i4Logger.INSTANCE.log(ex);
-            }
+    public BaseTheme getBaseTheme() { return isSystemTheme ? systemBaseTheme : customBaseTheme; }
+
+    protected void onSystemThemeChange(final String theme, final BaseTheme baseTheme) {
+        if (theme == null)
+            return;
+        synchronized (systemThemeLocker) {
+            if (theme.equals(systemTheme))
+                return;
+            systemTheme = theme;
+            systemBaseTheme = baseTheme != null ? baseTheme : BaseTheme.LIGHT;
+            if (isSystemTheme)
+                try {
+                    themeListeners.forEach(l -> l.accept(theme, baseTheme != null ? baseTheme : BaseTheme.LIGHT));
+                } catch (final Throwable ex) {
+                    i4Logger.INSTANCE.log(ex);
+                }
+        }
     }
 
-    public void setTheme(final String theme, final boolean followSystem) {
-        customTheme = theme;
+    public void setTheme(final String theme, final BaseTheme baseTheme, final boolean followSystem) {
         isSystemTheme = followSystem;
+        customTheme = theme;
+        customBaseTheme = baseTheme;
         if (!isSystemTheme)
             try {
-                themeListeners.forEach(l -> l.accept(theme));
+                themeListeners.forEach(l -> l.accept(theme, baseTheme));
             } catch (final Throwable ex) {
                 i4Logger.INSTANCE.log(ex);
             }
@@ -77,8 +90,8 @@ public abstract class Framework implements ResourceProvider {
 
     public abstract void fireAllWindows(final Event event);
 
-    public boolean addThemeListener(final Consumer<String> listener) { return themeListeners.add(listener); }
-    public boolean removeThemeListener(final Consumer<String> listener) { return themeListeners.remove(listener); }
+    public boolean addThemeListener(final Consumer2<String, BaseTheme> listener) { return themeListeners.add(listener); }
+    public boolean removeThemeListener(final Consumer2<String, BaseTheme> listener) { return themeListeners.remove(listener); }
 
     public void updated() {
         synchronized (updateNotifier) {
@@ -106,6 +119,11 @@ public abstract class Framework implements ResourceProvider {
 
     public abstract FrameworkWindow newWindow(final Window window);
     public IFileChooser newFileChooser() { return new FileChooser(this); }
+    public IFileChooser newFileChooser(final Window parent) {
+        final IFileChooser fc = newFileChooser();
+        fc.setParent(parent);
+        return fc;
+    }
     public ContextMenuBuilder newContextMenu() { return new ContextMenuBuilder(this); }
 
     public void dispose() {}
