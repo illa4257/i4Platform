@@ -6,12 +6,16 @@ import illa4257.i4Utils.logger.i4Logger;
 import java.util.Scanner;
 
 public class Arch {
-    public static final Arch JVM = new Arch(System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"), System.getProperty("java.vendor")),
+    public static final Arch
+            JVM = new Arch(
+                    System.getProperty("os.name"),
+                    System.getProperty("os.version"),
+                    System.getProperty("os.arch"),
+                    System.getProperty("java.vendor")
+            ),
             REAL;
 
-    static {
-        REAL = detectRealArch();
-    }
+    static { REAL = detectRealArch(); }
 
     public static String wmicGet(final String group, final String property) {
         try {
