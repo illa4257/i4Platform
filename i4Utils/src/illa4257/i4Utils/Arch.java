@@ -71,7 +71,8 @@ public class Arch {
             try {
                 final Process p = Runtime.getRuntime().exec(new String[] { "uname", "-m" });
                 try (final Scanner s = new Scanner(p.getInputStream())) {
-                    return new Arch(JVM.osName, JVM.osVersion, s.nextLine(), JVM.vendor);
+                    if (s.hasNextLine())
+                        return new Arch(JVM.osName, JVM.osVersion, s.nextLine(), JVM.vendor);
                 } finally {
                     p.destroyForcibly();
                 }
