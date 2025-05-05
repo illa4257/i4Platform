@@ -67,7 +67,7 @@ public class Arch {
                 return new Arch(JVM.osName, ver, a, JVM.vendor);
             }
             return new Arch(JVM.osName, ver, JVM.arch, JVM.vendor);
-        } else
+        } else if (Arch.JVM.IS_32BIT)
             try {
                 final Process p = Runtime.getRuntime().exec(new String[] { "uname", "-m" });
                 try (final Scanner s = new Scanner(p.getInputStream())) {
