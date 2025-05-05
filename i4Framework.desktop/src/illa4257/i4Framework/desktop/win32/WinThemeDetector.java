@@ -1,6 +1,8 @@
-package illa4257.i4Framework.desktop;
+package illa4257.i4Framework.desktop.win32;
 
 import com.sun.jna.platform.win32.*;
+import illa4257.i4Framework.base.styling.BaseTheme;
+import illa4257.i4Framework.desktop.DesktopFramework;
 
 public class WinThemeDetector extends Thread {
     public final DesktopFramework framework;
@@ -19,7 +21,7 @@ public class WinThemeDetector extends Thread {
 
         //noinspection AssignmentUsedAsCondition
         if (lastValue = isDark())
-            framework.onSystemThemeChange("dark");
+            framework.onSystemThemeChange("dark", BaseTheme.DARK);
     }
 
     public boolean isDark() {
@@ -42,7 +44,7 @@ public class WinThemeDetector extends Thread {
             final boolean currentDetection = isDark();
             if (currentDetection != lastValue) {
                 lastValue = currentDetection;
-                framework.onSystemThemeChange(currentDetection ? "dark" : "light");
+                framework.onSystemThemeChange(currentDetection ? "dark" : "light", BaseTheme.DARK);
             }
         }
         Advapi32Util.registryCloseKey(hKey.getValue());

@@ -6,6 +6,7 @@ import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
+import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Framework.desktop.DesktopFramework;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.logger.i4Logger;
@@ -97,6 +98,14 @@ public class SwingFramework extends DesktopFramework {
 
     private final ConcurrentLinkedQueue<SwingWindow> frames = new ConcurrentLinkedQueue<>();
 
+    public SwingFramework() {
+        addThemeListener((theme, baseTheme) -> {
+            final boolean isDark = baseTheme == BaseTheme.DARK;
+            for (final SwingWindow w : frames)
+                setDarkMode(w.window, isDark);
+        });
+    }
+
     public void add(final SwingWindow frame) {
         if (frame == null)
             return;
@@ -104,6 +113,7 @@ public class SwingFramework extends DesktopFramework {
             final boolean isEmpty = frames.isEmpty();
             if (frames.add(frame) && isEmpty) {
                 timer.computeIfAbsentP(Instance::new);
+                setDarkMode(frame.window, getBaseTheme() == BaseTheme.DARK);
                 frame.window.fire(new StyleUpdateEvent());
             }
         }
