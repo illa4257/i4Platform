@@ -41,10 +41,10 @@ public class WinThemeDetector extends Thread {
             if (err != W32Errors.ERROR_SUCCESS)
                 throw new Win32Exception(err);
 
-            final boolean currentDetection = isDark();
-            if (currentDetection != lastValue) {
-                lastValue = currentDetection;
-                framework.onSystemThemeChange(currentDetection ? "dark" : "light", BaseTheme.DARK);
+            final boolean v = isDark();
+            if (v != lastValue) {
+                lastValue = v;
+                framework.onSystemThemeChange(v ? "dark" : "light", v ? BaseTheme.DARK : BaseTheme.LIGHT);
             }
         }
         Advapi32Util.registryCloseKey(hKey.getValue());
