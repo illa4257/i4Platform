@@ -20,6 +20,7 @@ import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.PointAttach;
 import illa4257.i4Framework.base.points.numbers.NumberPoint;
 import illa4257.i4Framework.base.points.numbers.NumberPointConstant;
+import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.logger.i4Logger;
 
@@ -56,9 +57,45 @@ public class AndroidWindow implements FrameworkWindow {
         window.safeEndY.set(new NumberPointConstant(root.getHeight() - rect.bottom));
     }
 
+    private volatile boolean isDark = false;
+
+    protected void onThemeUpdate(final String theme, final BaseTheme baseTheme) {
+        final Activity a = activity.get();
+        if (a == null)
+            return;
+        final View d = a.getWindow().getDecorView();
+        d.post(() -> {
+            isDark = baseTheme == BaseTheme.DARK;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                final WindowInsetsController controller = a.getWindow().getInsetsController();
+                if (controller != null) {
+                    controller.setSystemBarsAppearance(
+                            isDark ? 0 : WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS |
+                                    WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS |
+                                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+
+                            WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS |
+                                    WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS |
+                                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                    );
+                }
+            } else {
+                //noinspection deprecation
+                a.getWindow().getDecorView().setSystemUiVisibility(
+                        isDark ? 0 : View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                );
+            }
+        });
+    }
+
     private void init() {
         root.setOnApplyWindowInsetsListener((view, insets) -> {
             updateSafeZone(insets);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH)
+                view.requestApplyInsets();
+            else
+                //noinspection deprecation
+                view.requestFitSystemWindows();
             return WindowInsets.CONSUMED;
         });
         root.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
@@ -90,13 +127,8 @@ public class AndroidWindow implements FrameworkWindow {
                                     //noinspection deprecation
                                     a.getWindow().setDecorFitsSystemWindows(false);
                                 final WindowInsetsController controller = a.getWindow().getInsetsController();
-                                if (controller != null) {
+                                if (controller != null)
                                     controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-                                    controller.setSystemBarsAppearance(
-                                            WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS | WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
-                                            WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS | WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                                    );
-                                }
                             } else {
                                 //noinspection deprecation
                                 a.getWindow().getDecorView().setSystemUiVisibility(
@@ -106,9 +138,9 @@ public class AndroidWindow implements FrameworkWindow {
                                 a.getWindow().setStatusBarColor(Color.TRANSPARENT);
                                 //noinspection deprecation
                                 a.getWindow().setNavigationBarColor(Color.TRANSPARENT);
-                                //noinspection deprecation
-                                a.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
                             }
+                            framework.addThemeListener(this::onThemeUpdate);
+                            onThemeUpdate(framework.getTheme(), framework.getBaseTheme());
                             window.fire(new StyleUpdateEvent());
                         });
                     } catch (final Exception ex) {
@@ -196,7 +228,8 @@ public class AndroidWindow implements FrameworkWindow {
         final Activity a = activity.getAndSet(null);
         if (a == null)
             return;
+        framework.removeThemeListener(this::onThemeUpdate);
         framework.windows.remove(this);
-        a.finish();
+        a.finishAndRemoveTask();
     }
 }

@@ -2,8 +2,10 @@ package illa4257.i4Framework.android;
 
 import android.app.Activity;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.MotionEvent;
+import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Utils.SyncVar;
 
 public class AndroidActivity extends Activity {
@@ -19,8 +21,14 @@ public class AndroidActivity extends Activity {
     @Override
     public void onConfigurationChanged(final Configuration newConfig) {
         final AndroidWindow w = frameworkWindow.get();
-        if (w != null)
+        if (w != null) {
             w.densityMultiplier.set(newConfig.densityDpi / 160.0f);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                w.framework.onSystemThemeChange(
+                        newConfig.isNightModeActive() ? "dark" : "light",
+                        newConfig.isNightModeActive() ? BaseTheme.LIGHT : BaseTheme.DARK
+                );
+        }
         super.onConfigurationChanged(newConfig);
     }
 

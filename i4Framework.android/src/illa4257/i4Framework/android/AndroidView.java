@@ -9,6 +9,7 @@ import illa4257.i4Framework.base.components.Container;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.components.AddComponentEvent;
 import illa4257.i4Framework.base.events.components.RecalculateEvent;
+import illa4257.i4Framework.base.events.components.RepaintEvent;
 
 public class AndroidView extends ViewGroup {
     public final Component component;
@@ -33,7 +34,8 @@ public class AndroidView extends ViewGroup {
             layout(component.startX.calcInt(), component.startY.calcInt(), component.endX.calcInt(), component.endY.calcInt());
             listeners = new EventListener[] {
                     component.addEventListener(RecalculateEvent.class, e ->
-                            layout(component.startX.calcInt(), component.startY.calcInt(), component.endX.calcInt(), component.endY.calcInt()))
+                            layout(component.startX.calcInt(), component.startY.calcInt(), component.endX.calcInt(), component.endY.calcInt())),
+                    component.addEventListener(RepaintEvent.class, e -> invalidate())
             };
         } else
             listeners = new EventListener[0];

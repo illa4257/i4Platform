@@ -10,6 +10,7 @@ import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.web.i4URI;
 
@@ -59,11 +60,17 @@ public class AndroidFramework extends Framework {
                 window.window.invokeAll();
             uiHandler.postDelayed(callback, 16);
         };
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            final boolean isDark = context.getResources().getConfiguration().isNightModeActive();
+            onSystemThemeChange(isDark ? "dark" : "light", isDark ? BaseTheme.DARK : BaseTheme.LIGHT);
+        }
     }
 
     public static void pass(final AndroidActivity activity) {
         activities.add(activity);
         synchronized (activities) {
+            if (processing > 0)
+                processing--;
             activities.notify();
         }
     }
@@ -95,6 +102,8 @@ public class AndroidFramework extends Framework {
                 : Thread.currentThread() == context.getMainLooper().getThread();
     }
 
+    @Override protected void onSystemThemeChange(final String theme, final BaseTheme baseTheme) { super.onSystemThemeChange(theme, baseTheme); }
+
     void onEnable() {
         isNotEnabled = false;
         uiHandler.postDelayed(callback, 16);
@@ -120,6 +129,12 @@ public class AndroidFramework extends Framework {
 
     @Override public void invokeLater(final Runnable runnable) { uiHandler.post(runnable); }
     @Override public FrameworkWindow newWindow(final Window window) { return new AndroidWindow(this, window); }
+
+    /* Not finished
+    @Override
+    public IFileChooser newFileChooser() {
+        return new AndroidFileChooser(this);
+    }*/
 
     @Override
     public InputStream openResource(final i4URI uri) {

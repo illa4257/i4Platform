@@ -13,7 +13,7 @@
         <activity
                 android:name=".AndroidLauncher"
                 android:exported="true"
-                android:configChanges="keyboardHidden|orientation|screenSize|density|fontScale|screenLayout|smallestScreenSize">
+                android:configChanges="keyboardHidden|orientation|screenSize|density|fontScale|screenLayout|smallestScreenSize|uiMode">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -22,7 +22,7 @@
         <activity
                 android:name="illa4257.i4Framework.android.AndroidActivity"
                 android:exported="true"
-                android:configChanges="keyboardHidden|orientation|screenSize|density|fontScale|screenLayout|smallestScreenSize">
+                android:configChanges="keyboardHidden|orientation|screenSize|density|fontScale|screenLayout|smallestScreenSize|uiMode">
         </activity>
     </application>
 </manifest>
