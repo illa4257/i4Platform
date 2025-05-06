@@ -52,8 +52,7 @@ public class MultiSocketFactory implements Closeable {
     }
 
     private static void log(final Throwable ex) {
-        final i4Logger l = i4Logger.INSTANCE;
-        l.log(Level.ERROR, l.prefix(Level.ERROR, "MultiSocket"), ex);
+        i4Logger.INSTANCE.log(Level.ERROR, "MultiSocket", ex);
     }
 
     private final ConcurrentHashMap<String, Socket> servers = new ConcurrentHashMap<>();
