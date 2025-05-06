@@ -2,8 +2,7 @@ package illa4257.i4Utils.logger;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class ErrorCollector implements LogHandler {
-    private static final String ln = System.lineSeparator();
+public class ErrorCollector extends LogHandler {
     private static final ConcurrentLinkedQueue<String> errors = new ConcurrentLinkedQueue<>();
 
     @Override
@@ -14,24 +13,13 @@ public class ErrorCollector implements LogHandler {
     }
 
     @Override
-    public void log(Level level, final String prefix, String message, StackTraceElement[] stackTraceElements) {
+    public void log(Level level, String prefix, String message, StackTraceElement[] stackTraceElements) {
         if (level != Level.ERROR)
             return;
-        final StringBuilder b = new StringBuilder(prefix).append(": ").append(message);
-        for (final StackTraceElement e : stackTraceElements)
-            b.append(ln).append("\tat ").append(e);
-        errors.add(b.toString());
+        super.log(level, prefix, message, stackTraceElements);
     }
 
-    public boolean isEmpty() {
-        return errors.isEmpty();
-    }
-
-    public String[] getErrors() {
-        return errors.toArray(new String[0]);
-    }
-
-    public void clear() {
-        errors.clear();
-    }
+    public boolean isEmpty() { return errors.isEmpty(); }
+    public String[] getErrors() { return errors.toArray(new String[0]); }
+    public void clear() { errors.clear(); }
 }

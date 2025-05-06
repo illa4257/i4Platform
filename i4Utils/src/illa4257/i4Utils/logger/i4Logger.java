@@ -2,113 +2,20 @@ package illa4257.i4Utils.logger;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.reflect.InvocationTargetException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class i4Logger implements LogHandler {
-    /// @deprecated
-    public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-    public static volatile i4Logger PARENT = null;
+public class i4Logger extends LogHandler {
+    public static final i4Logger INSTANCE;
 
-    /// @deprecated
-    public static void setParent(final i4Logger newParent) {
-        PARENT = newParent;
+    static {
+        final String vendor = System.getProperty("java.vendor");
+        INSTANCE = new i4Logger("i4Utils")
+                .registerHandler(vendor != null && vendor.toLowerCase().contains("android") ?
+                        new AndroidLogger() : new PrintStreamLogHandler(System.out));
     }
-
-    private static class i4LoggerP extends i4Logger {
-        @Override
-        public boolean registerHandler(final LogHandler handler) {
-            return super.registerHandler(handler);
-        }
-
-        @Override
-        public boolean unregisterHandler(final LogHandler handler) {
-            return super.unregisterHandler(handler);
-        }
-
-        @Override
-        public i4Logger sub(final String name) {
-            return super.sub(name);
-        }
-
-        @Override
-        public void log(final Level level, final String prefix, final String message) {
-            final i4Logger l = PARENT;
-            if (l == null)
-                return;
-            l.log(level, prefix, message);
-        }
-
-        @Override
-        public void log(final Level level, final String prefix, final String message, final StackTraceElement[] stackTraceElements) {
-            final i4Logger l = PARENT;
-            if (l == null)
-                return;
-            l.log(level, prefix, message, stackTraceElements);
-        }
-
-        @Override
-        public void log(final Level level, final String message) {
-            final i4Logger l = PARENT;
-            if (l == null)
-                return;
-            l.log(level, message);
-        }
-
-        @Override
-        public void log(final Level level, final String message, final StackTraceElement[] stackTraceElements) {
-            final i4Logger l = PARENT;
-            if (l == null)
-                return;
-            l.log(level, message, stackTraceElements);
-        }
-
-        @Override
-        public void log(final Level level, final Throwable throwable) {
-            final i4Logger l = PARENT;
-            if (l == null)
-                return;
-            l.log(level, throwable);
-        }
-
-        @Override
-        public void log(final Throwable throwable) {
-            final i4Logger l = PARENT;
-            if (l == null)
-                return;
-            l.log(throwable);
-        }
-
-        @Override
-        public void log(final Level level, final Object... objects) {
-            final i4Logger l = PARENT;
-            if (l == null)
-                return;
-            l.log(level, objects);
-        }
-
-        @Override
-        public void log(final Level level, final Object object) {
-            final i4Logger l = PARENT;
-            if (l == null)
-                return;
-            l.log(level, object);
-        }
-
-        @Override
-        public OutputStream newOutputStream(final Level level) {
-            return super.newOutputStream(level);
-        }
-    }
-
-    public static final i4Logger INSTANCE = new i4LoggerP();
 
     public final String name;
-    private final ConcurrentLinkedQueue<LogHandler> handlers = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<ILogHandler> handlers = new ConcurrentLinkedQueue<>();
 
     public i4Logger() { this.name = null; }
     public i4Logger(final String name) { this.name = name; }
@@ -130,29 +37,26 @@ public class i4Logger implements LogHandler {
 
     public PrintStream newPrintStream(final Level level) {
         return new PrintStream(newOutputStream(level)) {
-            @Override
-            public void println(final String x) {
-                log(level, x);
-            }
-
-            @Override
-            public void println(Object obj) {
-                log(level, obj);
-            }
+            @Override public void println(final String x) { log(level, x); }
+            @Override public void println(final Object obj) { log(level, obj); }
         };
     }
 
-    public boolean registerHandler(final LogHandler handler) {
+    public i4Logger registerHandler(final ILogHandler handler) {
         if (handler == null)
-            return false;
-        return handlers.add(handler);
+            return this;
+        handlers.add(handler);
+        return this;
     }
 
-    public boolean unregisterHandler(final LogHandler handler) {
+    public i4Logger unregisterHandler(final ILogHandler handler) {
         if (handler == null)
-            return false;
-        return handlers.remove(handler);
+            return this;
+        handlers.remove(handler);
+        return this;
     }
+
+    public i4Logger unregisterAllHandlers() { handlers.clear(); return this; }
 
     public i4Logger sub(final String name) {
         if (name == null)
@@ -162,69 +66,22 @@ public class i4Logger implements LogHandler {
         return r;
     }
 
-    public String prefix(final Level level, final String name) {
-        return "[" + LocalDateTime.now().format(TIME_FORMATTER) + "][" + level + "]" + (name == null ? this.name == null ? "" : "[" + this.name + "]" : "[" + name + "]");
-    }
-
-    public String prefix(final Level level) {
-        return prefix(level, null);
-    }
-
     @Override
     public void log(final Level level, final String prefix, final String message) {
-        if (level == null)
-            return;
-        for (final LogHandler handler : handlers)
+        for (final ILogHandler handler : handlers)
             handler.log(level, prefix, message);
     }
+
     @Override
     public void log(final Level level, final String prefix, final String message, final StackTraceElement[] stackTraceElements) {
-        if (level == null)
-            return;
-        for (final LogHandler handler : handlers)
+        for (final ILogHandler handler : handlers)
             handler.log(level, prefix, message, stackTraceElements);
     }
 
-    public void log(final Level level, final String message) {
-        if (level == null)
-            return;
-        log(level, prefix(level), message);
-    }
-
-    public void log(final Level level, final String message, final StackTraceElement[] stackTraceElements) {
-        if (level == null)
-            return;
-        log(level, prefix(level), message, stackTraceElements);
-    }
-
-    public void log(final Level level, final String prefix, Throwable throwable) {
-        if (level == null)
-            return;
-        log(level, prefix, throwable.toString(), throwable.getStackTrace());
-    }
-
-    public void log(final Level level, Throwable throwable) {
-        if (level == null)
-            return;
-        log(level, prefix(level), throwable.toString(), throwable.getStackTrace());
-    }
-
-    public void log(final Throwable throwable) {
-        log(Level.ERROR, prefix(Level.ERROR), throwable.toString(), throwable.getStackTrace());
-        if (throwable instanceof InvocationTargetException)
-            log(((InvocationTargetException) throwable).getTargetException());
-    }
-
-    public void log(final Level level, final Object... objects) {
-        if (level == null)
-            return;
-        log(level, prefix(level), objects == null ? "null" : Arrays.hashCode(objects) + Arrays.toString(objects));
-    }
-
-    public void log(final Level level, final Object object) {
-        if (level == null)
-            return;
-        log(level, prefix(level), object instanceof Object[] ?
-                Arrays.hashCode((Object[]) object) + Arrays.toString((Object[]) object) : Objects.toString(object));
-    }
+    public void log(final Level level, final String message) { log(level, name, message); }
+    public void log(final Level level, final String message, final StackTraceElement[] stackTraceElements) { log(level, name, message, stackTraceElements); }
+    public void log(final Level level, final Throwable throwable) { log(level, name, throwable); }
+    public void log(final Throwable throwable) { log(Level.ERROR, name, throwable); }
+    public void log(final Level level, final Object... objects) { log(level, name, objects); }
+    public void log(final Level level, final Object object) { log(level, name, object); }
 }
