@@ -205,10 +205,8 @@ public class WebClientFactory implements IWebClientFactory {
                     if (r.bodyOutput != null) {
                         if (!r.clientHeaders.containsKey("Content-Length"))
                             os.write(("Content-Length: " + r.bodyOutput.length + "\r\n").getBytes(CHARSET));
-                    } else if (!r.clientHeaders.containsKey("Transfer-Encoding")) {
-                        System.out.println("HEADER CHUNKED");
+                    } else if (!r.clientHeaders.containsKey("Transfer-Encoding"))
                         os.write(("Transfer-Encoding: chunked\r\n").getBytes(CHARSET));
-                    }
                 } else if (!r.clientHeaders.containsKey("Content-Length"))
                     os.write(("Content-Length: 0\r\n").getBytes(CHARSET));
                 if (r.clientHeaders.containsKey("Connection"))
