@@ -1,6 +1,6 @@
 package illa4257.i4Utils.lists;
 
-import illa4257.i4Utils.IO;
+import illa4257.i4Utils.io.IO;
 
 import java.nio.charset.Charset;
 import java.util.Arrays;

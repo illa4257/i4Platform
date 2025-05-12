@@ -1,4 +1,4 @@
-package illa4257.i4Utils.crypto;
+package illa4257.i4Utils.io;
 
 import java.io.IOException;
 import java.io.OutputStream;

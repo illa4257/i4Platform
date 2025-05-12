@@ -1,132 +1,153 @@
 package illa4257.i4Utils.web;
 
+import illa4257.i4Utils.io.IO;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class WebInputStream extends InputStream {
-    protected final InputStream inputStream;
+    public final InputStream inputStream;
+    private final AtomicBoolean end = new AtomicBoolean(true);
+    private final Runnable onEnd;
 
-    public WebInputStream(final InputStream inputStream) {
-        if (inputStream == null)
-            throw new IllegalArgumentException("InputStream cannot be null");
-        this.inputStream = inputStream;
+    public WebInputStream(final InputStream is, final Runnable onEnd) {
+        inputStream = is;
+        this.onEnd = onEnd;
     }
 
     @Override
-    public int read() throws IOException {
-        return inputStream.read();
+    public int available() throws IOException {
+        return inputStream.available();
     }
 
-    @Override
-    public int read(final byte[] bytes, final int i, final int i1) throws IOException {
-        return inputStream.read(bytes, i, i1);
-    }
-
-    @Override
-    public void close() throws IOException {
-        inputStream.close();
-        super.close();
+    protected void end() {
+        if (end.getAndSet(false) && onEnd != null)
+            onEnd.run();
     }
 
     public static class Chunked extends WebInputStream {
-        private boolean finished = false, first = false;
-        private Character prev = null;
-        private int chunkSize = 0;
+        private boolean isFinished = false;
+        private long remaining = 0;
+        private int oldByte = '\n';
+        private final StringBuilder b = new StringBuilder();
 
-        private static final char[] allowed = {
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                'a', 'b', 'c', 'd', 'e', 'f',
-                'A', 'B', 'C', 'D', 'E', 'F'
-        };
+        public Chunked(final InputStream is, final Runnable onEnd) { super(is, onEnd); }
 
-        public Chunked(final InputStream inputStream) { super(inputStream); }
-
-        private char readChar() throws IOException {
-            if (prev != null) {
-                final char r = prev;
-                prev = null;
+        private int readCh() throws IOException {
+            if (oldByte != -1) {
+                final int r = oldByte;
+                oldByte = -1;
                 return r;
             }
-            final int r = inputStream.read();
-            if (r == -1)
-                throw new IOException("End");
-            return (char) r;
+            return IO.readByteI(inputStream);
         }
 
-        private void readChunkSize() throws IOException {
-            if (first) {
-                char n = readChar();
-                if (n == '\r')
-                    n = readChar();
-                if (n != '\n')
-                    prev = n;
-            }
-            final StringBuilder b = new StringBuilder();
+        private void nextChunk() throws IOException {
+            b.setLength(0);
+
+            int ch = readCh();
+            if (ch == '\r') {
+                ch = readCh();
+                if (ch != '\n')
+                    oldByte = ch;
+            } else if (ch != '\n')
+                oldByte = ch;
+
             boolean r = false;
-            m:
-            for (int i = 0; i < 7; i++) {
-                final char ch = readChar();
+            while (true) {
+                ch = readCh();
+                if (ch == '\n')
+                    break;
                 if (ch == '\r') {
                     r = true;
                     continue;
                 }
-                if (r || ch == '\n') {
-                    if (r && ch != '\n')
-                        prev = ch;
-                    first = true;
-                    if (b.length() == 0)
-                        finished = true;
-                    else {
-                        final int re = Integer.parseInt(b.toString(), 16);
-                        if (re <= 0)
-                            finished = true;
-                        else
-                            chunkSize = re;
-                    }
-                    return;
+                if (r) {
+                    oldByte = ch;
+                    break;
                 }
-                for (final char c : allowed)
-                    if (c == ch) {
-                        b.append(ch);
-                        continue m;
-                    }
-                throw new IOException("Unknown character for chunk size: " + ch);
+                b.append((char) ch);
             }
+            if (b.length() == 0) {
+                isFinished = true;
+                return;
+            }
+            remaining = Long.parseLong(b.toString(), 16);
+            if (remaining == 0)
+                isFinished = true;
         }
 
         @Override
         public int read() throws IOException {
-            if (finished)
+            if (isFinished)
                 return -1;
-            while (chunkSize <= 0) {
-                readChunkSize();
-                if (finished)
+            if (remaining == 0) {
+                nextChunk();
+                if (isFinished)
                     return -1;
             }
-            chunkSize--;
+            if (oldByte != -1) {
+                final int r = oldByte;
+                oldByte = -1;
+                remaining--;
+                return r;
+            }
+            remaining--;
             return inputStream.read();
         }
 
         @Override
-        public int read(final byte[] bytes, final int i, final int i1) throws IOException {
-            if (finished)
+        public int read(final byte[] b, int off, int len) throws IOException {
+            if (isFinished)
                 return -1;
-            while (chunkSize <= 0) {
-                readChunkSize();
-                if (finished)
+            if (remaining == 0) {
+                nextChunk();
+                if (isFinished)
                     return -1;
             }
-            final int r = inputStream.read(bytes, i, Math.min(i1, chunkSize));
-            chunkSize -= r;
-            return r;
+            if (oldByte != -1) {
+                b[off] = (byte) oldByte;
+                oldByte = -1;
+                if (len == 1) {
+                    remaining--;
+                    return 1;
+                }
+                off++;
+                len--;
+            }
+            final int l = inputStream.read(b, off, (int) Math.min(len, remaining));
+            if (l == -1)
+                return -1;
+            remaining -= l;
+            return l;
+        }
+
+        @Override
+        public void close() throws IOException {
+            while (!isFinished) {
+                if (remaining == 0)
+                    nextChunk();
+                final long s = inputStream.skip(remaining);
+                if (s == 0) {
+                    isFinished = true;
+                    break;
+                }
+                remaining -= s;
+            }
+            super.close();
+            if (isFinished)
+                inputStream.close();
+            else
+                end();
         }
     }
 
     public static class LongPolling extends WebInputStream {
-        private int remaining;
+        private long remaining;
 
-        public LongPolling(final InputStream inputStream, final int length) {
-            super(inputStream);
+        public LongPolling(final InputStream inputStream, final Runnable onEnd, final long length) {
+            super(inputStream, onEnd);
             remaining = length;
         }
 
@@ -139,12 +160,22 @@ public abstract class WebInputStream extends InputStream {
         }
 
         @Override
-        public int read(byte[] bytes, final int i, final int i1) throws IOException {
+        public int read(final byte[] bytes, final int i, final int i1) throws IOException {
             if (remaining <= 0)
                 return -1;
-            final int r = inputStream.read(bytes, i, Math.min(remaining, i1));
+            final int r = inputStream.read(bytes, i, (int) Math.min(remaining, i1));
             remaining -= r;
             return r;
+        }
+
+        @Override
+        public void close() throws IOException {
+            remaining -= inputStream.skip(remaining);
+            super.close();
+            if (remaining == 0)
+                end();
+            else
+                inputStream.close();
         }
     }
 }

@@ -1,5 +1,7 @@
-package illa4257.i4Utils;
+package illa4257.i4Utils.io;
 
+import illa4257.i4Utils.CloseableSyncVar;
+import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.logger.Level;
 import illa4257.i4Utils.logger.i4Logger;
 
@@ -150,7 +152,7 @@ public class MultiSocketFactory implements Closeable {
                                                 if (clients.putIfAbsent(b, s) != null)
                                                     continue;
                                                 osm.write(0);
-                                                IO.writeBEInteger(osm, b);
+                                                illa4257.i4Utils.io.IO.writeBEInteger(osm, b);
                                                 osm.flush();
                                                 break;
                                             }
@@ -158,7 +160,7 @@ public class MultiSocketFactory implements Closeable {
                                         ac.preventClosing.set(true);
                                         return;
                                     } else if (a == ACCEPT) {
-                                        try (final Socket client = clients.remove(IO.readBEInteger(is))) {
+                                        try (final Socket client = clients.remove(illa4257.i4Utils.io.IO.readBEInteger(is))) {
                                             if (client == null)
                                                 return;
                                             final InputStream clientIS = client.getInputStream();
@@ -227,14 +229,14 @@ public class MultiSocketFactory implements Closeable {
             int r, cs;
             byte[] d = new byte[32];
             while (true) {
-                final byte o = IO.readByte(from);
+                final byte o = illa4257.i4Utils.io.IO.readByte(from);
                 switch (o) {
                     case SINGLE_BYTE:
-                        to.write(IO.readByte(from));
+                        to.write(illa4257.i4Utils.io.IO.readByte(from));
                         to.flush();
                         break;
                     case RAW:
-                        int length = IO.readBEInteger(from);
+                        int length = illa4257.i4Utils.io.IO.readBEInteger(from);
                         if (length == 0)
                             break;
                         if (autoSize) {
@@ -260,7 +262,7 @@ public class MultiSocketFactory implements Closeable {
                         to.flush();
                         break;
                     case SET_BUFFER_SIZE_MODE:
-                        autoSize = IO.readByte(from) > 0;
+                        autoSize = illa4257.i4Utils.io.IO.readByte(from) > 0;
                         break;
                     case SET_BUFFER_SIZE:
                         autoSize = false;

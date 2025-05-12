@@ -1,4 +1,4 @@
-package illa4257.i4Utils;
+package illa4257.i4Utils.io;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;

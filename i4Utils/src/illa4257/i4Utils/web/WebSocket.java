@@ -42,7 +42,7 @@ public class WebSocket extends WebStream {
         }
     };
 
-    private WebInputStream is;
+    private WebInputStreamOld is;
     private InputStream inputStreamDecoded;
 
     public WebSocket(final Socket socket, final boolean isServer) throws IOException {
@@ -80,10 +80,10 @@ public class WebSocket extends WebStream {
 
         boolean handled = false;
         if (headers.containsKey("content-length")) {
-            is = new WebInputStream.LongPolling(inputStream, Integer.parseInt(headers.get("content-length")));
+            is = new WebInputStreamOld.LongPolling(inputStream, Integer.parseInt(headers.get("content-length")));
             handled = true;
         } else if ("chunked".equalsIgnoreCase(headers.get("transfer-encoding"))) {
-            is = new WebInputStream.Chunked(inputStream);
+            is = new WebInputStreamOld.Chunked(inputStream);
             handled = true;
         }
         inputStreamDecoded = is;
@@ -98,7 +98,7 @@ public class WebSocket extends WebStream {
             }
             return;
         }
-        inputStreamDecoded = is = new WebInputStream.LongPolling(inputStream, 0);
+        inputStreamDecoded = is = new WebInputStreamOld.LongPolling(inputStream, 0);
     }
 
     public WebSocket(final WebStream stream, final boolean isServer) throws IOException { this(stream.socket, isServer); }

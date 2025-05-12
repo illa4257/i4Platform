@@ -1,6 +1,6 @@
 package illa4257.i4Utils.web;
 
-import illa4257.i4Utils.IO;
+import illa4257.i4Utils.io.IO;
 import illa4257.i4Utils.SyncVar;
 
 import java.io.IOException;
@@ -9,7 +9,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 public class WebStream implements AutoCloseable {
     private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
