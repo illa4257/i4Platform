@@ -3,6 +3,7 @@ package illa4257.i4Utils.web;
 import java.io.IOException;
 import java.io.InputStream;
 
+/// @deprecated
 public abstract class WebInputStreamOld extends InputStream {
     protected final InputStream inputStream;
 
@@ -28,6 +29,7 @@ public abstract class WebInputStreamOld extends InputStream {
         super.close();
     }
 
+    /// @deprecated
     public static class Chunked extends WebInputStreamOld {
         private boolean finished = false, first = false;
         private Character prev = null;
@@ -122,6 +124,7 @@ public abstract class WebInputStreamOld extends InputStream {
         }
     }
 
+    /// @deprecated
     public static class LongPolling extends WebInputStreamOld {
         private int remaining;
 

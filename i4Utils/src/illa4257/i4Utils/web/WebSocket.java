@@ -14,6 +14,7 @@ import java.util.zip.InflaterInputStream;
 
 import static illa4257.i4Utils.logger.Level.WARN;
 
+/// @deprecated
 public class WebSocket extends WebStream {
     public static final ConcurrentHashMap<String, FuncIOEx<InputStream, InputStream>> compressors = new ConcurrentHashMap<>();
 

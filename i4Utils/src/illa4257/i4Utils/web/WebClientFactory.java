@@ -43,7 +43,7 @@ public class WebClientFactory implements IWebClientFactory {
 
     public WebClientFactory() {}
 
-    private void reduce() {
+    public void reduce() {
         connections.values().removeIf(q -> {
             q.removeIf(Socket::isClosed);
             return q.isEmpty();

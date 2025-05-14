@@ -10,6 +10,7 @@ import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+/// @deprecated
 public class WebStream implements AutoCloseable {
     private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 

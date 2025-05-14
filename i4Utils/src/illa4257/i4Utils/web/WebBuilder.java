@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/// @deprecated
 public class WebBuilder implements ResourceProvider {
     public static final List<String> PROTOCOLS = Arrays.asList("http", "https");
     private static boolean isEmpty(final String str) { return str == null || str.isEmpty(); }
