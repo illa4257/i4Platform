@@ -25,5 +25,10 @@ public class WebClient {
                 .setRunner(factory::open);
     }
 
+    public WebRequest newBuilder(final String method, final String uri) {
+        return new WebRequest(method, new i4URI(uri), this)
+                .setRunner(factory::open);
+    }
+
     public CompletableFuture<WebRequest> open(final WebRequest builder) { return factory.open(builder); }
 }
