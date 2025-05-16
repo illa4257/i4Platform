@@ -17,6 +17,9 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.zip.GZIPInputStream;
@@ -28,12 +31,21 @@ public class WebClientFactory implements IWebClientFactory {
     public static final ConcurrentHashMap<String, FuncIOEx<InputStream, InputStream>> DECOMPRESSORS = new ConcurrentHashMap<>();
     public static volatile String DECOMPRESSORS_VALUE;
     public static final Charset CHARSET = StandardCharsets.US_ASCII;
+    private static final MessageDigest SHA1;
 
     static {
         DECOMPRESSORS.put("gzip", GZIPInputStream::new);
         DECOMPRESSORS.put("deflate", InflaterInputStream::new);
         
         DECOMPRESSORS_VALUE = String.join(", ", DECOMPRESSORS.keySet());
+
+        MessageDigest digest = null;
+        try {
+            digest = MessageDigest.getInstance("SHA-1");
+        } catch (final Exception ex) {
+            i4Logger.INSTANCE.log(ex);
+        }
+        SHA1 = digest;
     }
 
     public volatile SocketFactory sslFactory = SSLSocketFactory.getDefault();
@@ -179,7 +191,7 @@ public class WebClientFactory implements IWebClientFactory {
     @Override
     public CompletableFuture<WebRequest> open(final WebRequest r) {
         return CompletableFuture.supplyAsync(() -> {
-            final boolean isSecure = r.uri.scheme.equalsIgnoreCase("https");
+            final boolean isSecure = r.uri.scheme.equalsIgnoreCase("https") || r.uri.scheme.equalsIgnoreCase("wss");
             final int port = r.uri.port >= 0 ? r.uri.port : isSecure ? 443 : 80;
             try (final CloseableSyncVar<Socket> v = new CloseableSyncVar<>(newCon0(isSecure, r.uri.domain, port, r.timeout))) {
                 oldByte.set(-1);
@@ -188,38 +200,59 @@ public class WebClientFactory implements IWebClientFactory {
                 s.setKeepAlive(true);
                 final OutputStream os = s.getOutputStream();
 
-                final String connectionHeader = r.clientHeaders.get("Connection");
+                final String connectionHeader = r.clientHeaders.get("connection"), upgradeHeader = r.clientHeaders.get("upgrade");
                 os.write((r.method + ' ' + (r.uri.fullPath == null ? '/' : Str.encodeURI(r.uri.fullPath, false)) + ' ' + r.protocol + "\r\n").getBytes(CHARSET));
 
-                if (!r.clientHeaders.containsKey("Host"))
-                    os.write(("Host: " + r.uri.domain + (
+                if (!r.clientHeaders.containsKey("host"))
+                    os.write(("host: " + r.uri.domain + (
                             (isSecure && port == 443) ||
                                     (!isSecure && port == 80) ? "" : ":" + port) + "\r\n").getBytes(CHARSET));
                 writeHeaders(os, r.clientHeaders);
-                final boolean keepAlive = connectionHeader != null ? "keep-alive".equalsIgnoreCase(connectionHeader) : r.keepAlive;
-
+                String upgrade = upgradeHeader == null && (
+                                r.uri.scheme.equalsIgnoreCase("ws") ||
+                                r.uri.scheme.equalsIgnoreCase("wss")
+                        ) ? "websocket" : upgradeHeader, key = null;
+                final boolean keepAlive = connectionHeader != null ? "keep-alive".equalsIgnoreCase(connectionHeader) : r.keepAlive,
+                            isWebSocketClient = "websocket".equalsIgnoreCase(upgrade);
                 final String dec = DECOMPRESSORS_VALUE;
-                if (!r.clientHeaders.containsKey("Accept-Encoding") && dec != null && !dec.isEmpty())
-                    os.write(("Accept-Encoding: " + dec + "\r\n").getBytes(CHARSET));
+                if (!r.clientHeaders.containsKey("accept-encoding") && dec != null && !dec.isEmpty())
+                    os.write(("accept-encoding: " + dec + "\r\n").getBytes(CHARSET));
                 if (r.hasContent) {
                     if (r.bodyOutput != null) {
-                        if (!r.clientHeaders.containsKey("Content-Length"))
-                            os.write(("Content-Length: " + r.bodyOutput.length + "\r\n").getBytes(CHARSET));
-                    } else if (!r.clientHeaders.containsKey("Transfer-Encoding"))
-                        os.write(("Transfer-Encoding: chunked\r\n").getBytes(CHARSET));
-                } else if (!r.clientHeaders.containsKey("Content-Length"))
-                    os.write(("Content-Length: 0\r\n").getBytes(CHARSET));
-                if (r.clientHeaders.containsKey("Connection"))
-                    os.write(("Connection: " + (keepAlive ? "keep-alive" : "closed") + "\r\n").getBytes(CHARSET));
+                        if (!r.clientHeaders.containsKey("content-length"))
+                            os.write(("content-length: " + r.bodyOutput.length + "\r\n").getBytes(CHARSET));
+                    } else if (!r.clientHeaders.containsKey("transfer-encoding"))
+                        os.write(("transfer-encoding: chunked\r\n").getBytes(CHARSET));
+                } else if (!r.clientHeaders.containsKey("content-length"))
+                    os.write(("content-length: 0\r\n").getBytes(CHARSET));
+                if (upgradeHeader == null && upgrade != null)
+                    os.write(("upgrade: " + upgrade + "\r\n").getBytes(CHARSET));
+                if (!r.clientHeaders.containsKey("connection"))
+                    os.write(("connection: " + (upgrade != null ? "upgrade" : keepAlive ? "keep-alive" : "closed") + "\r\n").getBytes(CHARSET));
+                if (isWebSocketClient) {
+                    if (!r.clientHeaders.containsKey("sec-websocket-version"))
+                        os.write("sec-websocket-version: 13\r\n".getBytes(CHARSET));
+                    if (r.clientHeaders.containsKey("sec-websocket-key"))
+                        r.reserved = r.clientHeaders.get("sec-websocket-key");
+                    else
+                        os.write(("sec-websocket-key: " + (
+                                r.reserved = Base64.getEncoder().encodeToString(Str.random(
+                                        new SecureRandom(), 16, Str.STR_NUMS + Str.STR_EN_LOW + Str.STR_EN_UP
+                                ).getBytes(CHARSET))
+                        ) + "\r\n").getBytes(CHARSET));
+                }
                 os.write("\r\n".getBytes(CHARSET));
-                if (!r.hasContent || r.bodyOutput == null)
-                    r.outputStream = new WebOutputStream.Chunked(os);
+                if (isWebSocketClient)
+                    r.outputStream = new WSOutputStreamImpl(os);
                 else {
-                    os.write(r.bodyOutput);
-                    r.outputStream = new NullOutputStream();
+                    if (!r.hasContent || r.bodyOutput == null)
+                        r.outputStream = new WebOutputStream.Chunked(os);
+                    else {
+                        os.write(r.bodyOutput);
+                        r.outputStream = new NullOutputStream();
+                    }
                 }
                 os.flush();
-
                 v.preventClosing.set(true);
                 r.setRunner(ignored -> processRead(s, r, port, isSecure));
                 return r;
@@ -241,27 +274,51 @@ public class WebClientFactory implements IWebClientFactory {
                 final Runnable end = () -> {
                     if (s.isClosed())
                         return;
-                    if ("keep-alive".equalsIgnoreCase(r.serverHeaders.get("Connection")))
+                    if ("keep-alive".equalsIgnoreCase(r.serverHeaders.get("connection")))
                         pass(isSecure, r.uri.domain, port, s);
+                    else
+                        try {
+                            s.close();
+                        } catch (final IOException ex) {
+                            i4Logger.INSTANCE.log(ex);
+                        }
                 };
 
                 r.inputStream = null;
-                final String contentLength = r.serverHeaders.get("Content-Length");
+                final String contentLength = r.serverHeaders.get("content-length");
                 if (contentLength != null)
                     try {
                         r.inputStream = new WebInputStream.LongPolling(is, end, Long.parseLong(contentLength));
                     } catch (final Exception ex) {
                         i4Logger.INSTANCE.log(ex);
                     }
-                else if ("chunked".equalsIgnoreCase(r.serverHeaders.get("Transfer-Encoding")))
+                else if ("chunked".equalsIgnoreCase(r.serverHeaders.get("transfer-encoding")))
                     r.inputStream = new WebInputStream.Chunked(is, end);
+                else if (r.responseCode == 101 && "upgrade".equalsIgnoreCase(r.serverHeaders.get("connection"))) {
+                    final String upgrade = r.serverHeaders.get("upgrade");
+                    if (upgrade != null) {
+                        if ("websocket".equalsIgnoreCase(upgrade)) {
+                            if (r.reserved instanceof String) {
+                                if (!Base64.getEncoder()
+                                        .encodeToString(SHA1.digest((r.reserved + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
+                                                .getBytes(StandardCharsets.US_ASCII)))
+                                        .equals(r.serverHeaders.get("sec-websocket-accept"))) {
+                                    r.reserved = null;
+                                    throw new IOException("Failed validating");
+                                }
+                                r.reserved = null;
+                            }
+                            r.inputStream = is;
+                        }
+                    }
+                }
 
                 if (r.inputStream == null) {
                     r.inputStream = new NullInputStream();
                     return r;
                 }
 
-                final String contentEncoding = r.serverHeaders.get("Content-Encoding");
+                final String contentEncoding = r.serverHeaders.get("content-encoding");
                 if (contentEncoding != null) {
                     final FuncIOEx<InputStream, InputStream> decompressor = DECOMPRESSORS.get(contentEncoding);
                     if (decompressor != null)

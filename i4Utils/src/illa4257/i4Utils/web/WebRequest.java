@@ -1,5 +1,7 @@
 package illa4257.i4Utils.web;
 
+import illa4257.i4Utils.KeyMap;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
@@ -13,7 +15,10 @@ public class WebRequest {
     public int responseCode = -1, timeout = 15000;
     public String protocol = "HTTP/1.1", responseStatus = null, method;
     public i4URI uri;
-    public final HashMap<String, String> clientHeaders, serverHeaders = new HashMap<>();
+    public final Map<String, String> clientHeaders, serverHeaders = new KeyMap<>(
+            new HashMap<>(), String::toLowerCase,
+            k -> k instanceof String ? ((String) k).toLowerCase() : k
+    );
     public byte[] bodyOutput = null;
     public OutputStream outputStream = null;
     public InputStream inputStream = null;
@@ -22,13 +27,19 @@ public class WebRequest {
     public WebRequest(final String method, final i4URI uri) {
         this.method = method != null ? method : "GET";
         this.uri = uri;
-        clientHeaders = new HashMap<>();
+        clientHeaders = new KeyMap<>(
+                new HashMap<>(), String::toLowerCase,
+                k -> k instanceof String ? ((String) k).toLowerCase() : k
+        );
     }
 
     public WebRequest(final String method, final i4URI uri, final Map<String, String> headers) {
         this.method = method != null ? method : "GET";
         this.uri = uri;
-        this.clientHeaders = new HashMap<>(headers);
+        this.clientHeaders = new KeyMap<>(
+                new HashMap<>(), headers, String::toLowerCase,
+                k -> k instanceof String ? ((String) k).toLowerCase() : k
+        );
     }
 
     public WebRequest(final String method, final i4URI uri, final WebClient client) {
@@ -36,7 +47,10 @@ public class WebRequest {
         this.timeout = client.timeout;
         this.method = method != null ? method : "GET";
         this.uri = uri;
-        this.clientHeaders = new HashMap<>(client.headers);
+        this.clientHeaders = new KeyMap<>(
+                new HashMap<>(client.headers), String::toLowerCase,
+                k -> k instanceof String ? ((String) k).toLowerCase() : k
+        );
     }
 
     public WebRequest setMethod(final String method) {

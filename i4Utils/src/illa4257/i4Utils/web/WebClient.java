@@ -1,13 +1,18 @@
 package illa4257.i4Utils.web;
 
 import illa4257.i4Utils.Arch;
+import illa4257.i4Utils.KeyMap;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class WebClient {
     private final IWebClientFactory factory;
-    public final ConcurrentHashMap<String, String> headers = new ConcurrentHashMap<>();
+    public final Map<String, String> headers = new KeyMap<>(
+            new ConcurrentHashMap<>(), String::toLowerCase,
+            k -> k instanceof String ? ((String) k).toLowerCase() : k
+    );
 
     public volatile boolean keepAlive = true;
     public volatile int timeout = 15000;
@@ -20,7 +25,5 @@ public class WebClient {
                 .setRunner(factory::open);
     }
 
-    public CompletableFuture<WebRequest> open(final WebRequest builder) {
-        return factory.open(builder);
-    }
+    public CompletableFuture<WebRequest> open(final WebRequest builder) { return factory.open(builder); }
 }
