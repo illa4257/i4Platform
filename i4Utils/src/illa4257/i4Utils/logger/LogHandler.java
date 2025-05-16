@@ -3,6 +3,7 @@ package illa4257.i4Utils.logger;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.CompletionException;
 
 public abstract class LogHandler implements ILogHandler {
     public final ThreadLocal<StringBuilder> stringBuilder = ThreadLocal.withInitial(StringBuilder::new);
@@ -22,6 +23,11 @@ public abstract class LogHandler implements ILogHandler {
         log(level, prefix, throwable.toString(), throwable.getStackTrace());
         if (throwable instanceof InvocationTargetException)
             log(level, prefix, ((InvocationTargetException) throwable).getTargetException());
+        if (throwable instanceof CompletionException) {
+            final Throwable cause = throwable.getCause();
+            if (cause != null)
+                log(level, prefix, cause);
+        }
     }
 
     @Override
