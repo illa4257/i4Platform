@@ -210,6 +210,24 @@ public class IO {
      *
      * <pre>
      * {@code
+     * stream.write(number >> 8);
+     * stream.write(number);
+     * }
+     * </pre>
+     *
+     * @param stream OutputStream
+     * @param number Short
+     */
+    public static void writeBEShort(final OutputStream stream, int number) throws IOException {
+        stream.write(number >> 8);
+        stream.write(number);
+    }
+
+    /**
+     * Writes in big-endian order.
+     *
+     * <pre>
+     * {@code
      * stream.write(number >> 24);
      * stream.write(number >> 16);
      * stream.write(number >> 8);
@@ -225,5 +243,35 @@ public class IO {
         stream.write(number >> 16);
         stream.write(number >> 8);
         stream.write(number);
+    }
+
+    /**
+     * Writes in big-endian order.
+     *
+     * <pre>
+     * {@code
+     * stream.write((int) (number >> 56));
+     * stream.write((int) (number >> 48));
+     * stream.write((int) (number >> 40));
+     * stream.write((int) (number >> 32));
+     * stream.write((int) (number >> 24));
+     * stream.write((int) (number >> 16));
+     * stream.write((int) (number >> 8));
+     * stream.write((int) number);
+     * }
+     * </pre>
+     *
+     * @param stream OutputStream
+     * @param number Long
+     */
+    public static void writeBELong(final OutputStream stream, long number) throws IOException {
+        stream.write((int) (number >> 56));
+        stream.write((int) (number >> 48));
+        stream.write((int) (number >> 40));
+        stream.write((int) (number >> 32));
+        stream.write((int) (number >> 24));
+        stream.write((int) (number >> 16));
+        stream.write((int) (number >> 8));
+        stream.write((int) number);
     }
 }
