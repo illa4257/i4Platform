@@ -191,6 +191,36 @@ public class IO {
     }
 
     /**
+     * Reads short in big endian order.
+     *
+     * <pre>
+     * {@code (readByte(stream) << 8) + readByte(stream) }
+     * </pre>
+     *
+     * @param stream InputStream
+     * @return Integer
+     * @throws IOException if any input stream throws IOException, or if it reaches the end.
+     */
+    public static int readBEShortI(final InputStream stream) throws IOException {
+        return (readByteI(stream) << 8) + readByteI(stream);
+    }
+
+    /**
+     * Reads short in big endian order.
+     *
+     * <pre>
+     * {@code (readByte(stream) << 8) + readByte(stream) }
+     * </pre>
+     *
+     * @param stream InputStream
+     * @return Integer
+     * @throws IOException if any input stream throws IOException, or if it reaches the end.
+     */
+    public static short readBEShort(final InputStream stream) throws IOException {
+        return (short) ((readByteI(stream) << 8) + readByteI(stream));
+    }
+
+    /**
      * Reads integer in big endian order.
      *
      * <pre>
@@ -203,6 +233,37 @@ public class IO {
      */
     public static int readBEInteger(final InputStream stream) throws IOException {
         return (readByteI(stream) << 24) + (readByteI(stream) << 16) + (readByteI(stream) << 8) + readByteI(stream);
+    }
+
+    /**
+     * Reads long in big endian order.
+     *
+     * <pre>
+     * {@code
+     * ((long) readByte(stream) << 56) +
+     * ((long) readByte(stream) << 48) +
+     * ((long) readByte(stream) << 40) +
+     * ((long) readByte(stream) << 32) +
+     * ((long) readByte(stream) << 24) +
+     * ((long) readByte(stream) << 16) +
+     * ((long) readByte(stream) <<  8) +
+     *  (long) readByte(stream)
+     * }
+     * </pre>
+     *
+     * @param stream InputStream
+     * @return Integer
+     * @throws IOException if any input stream throws IOException, or if it reaches the end.
+     */
+    public static long readBELong(final InputStream stream) throws IOException {
+        return ((long) readByteI(stream) << 56) +
+               ((long) readByteI(stream) << 48) +
+               ((long) readByteI(stream) << 40) +
+               ((long) readByteI(stream) << 32) +
+               ((long) readByteI(stream) << 24) +
+               ((long) readByteI(stream) << 16) +
+               ((long) readByteI(stream) <<  8) +
+                (long) readByteI(stream);
     }
 
     /**
