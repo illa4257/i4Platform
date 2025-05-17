@@ -1,4 +1,4 @@
-package illa4257.i4Utils.web;
+package illa4257.i4Utils.web.base;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

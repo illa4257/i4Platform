@@ -1,4 +1,4 @@
-package illa4257.i4Utils.web;
+package illa4257.i4Utils.web.base;
 
 import illa4257.i4Utils.CloseableSyncVar;
 import illa4257.i4Utils.io.IO;
@@ -7,6 +7,8 @@ import illa4257.i4Utils.Str;
 import illa4257.i4Utils.io.NullOutputStream;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.runnables.FuncIOEx;
+import illa4257.i4Utils.web.IWebClientFactory;
+import illa4257.i4Utils.web.WebRequest;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
@@ -308,7 +310,14 @@ public class WebClientFactory implements IWebClientFactory {
                                 }
                                 r.reserved = null;
                             }
-                            r.inputStream = is;
+                            final OutputStream os = r.outputStream;
+                            r.inputStream = new WSInputStreamImpl(is, os instanceof WSOutputStreamImpl ? (arr) -> {
+                                try {
+                                    ((WSOutputStreamImpl) os).pong(arr);
+                                } catch (final Exception ex) {
+                                    i4Logger.INSTANCE.log(ex);
+                                }
+                            } : null);
                         }
                     }
                 }

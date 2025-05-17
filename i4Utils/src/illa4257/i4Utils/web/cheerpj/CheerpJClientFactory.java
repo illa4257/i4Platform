@@ -1,4 +1,7 @@
-package illa4257.i4Utils.web;
+package illa4257.i4Utils.web.cheerpj;
+
+import illa4257.i4Utils.web.IWebClientFactory;
+import illa4257.i4Utils.web.WebRequest;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;

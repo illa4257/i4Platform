@@ -1,4 +1,4 @@
-async function Java_illa4257_i4Utils_web_CheerpJClientFactory_fetch0(
+async function Java_illa4257_i4Utils_web_cheerpj_CheerpJClientFactory_fetch0(
     lib, req
 ) {
     let cfg = {
@@ -36,7 +36,7 @@ async function Java_illa4257_i4Utils_web_CheerpJClientFactory_fetch0(
     return cfg;
 }
 
-async function Java_illa4257_i4Utils_web_CheerpJClientFactory_fetch1(
+async function Java_illa4257_i4Utils_web_cheerpj_CheerpJClientFactory_fetch1(
     lib, req, cfg
 ) {
     let f = await fetch(await req.uri.toString(), cfg);
@@ -71,8 +71,8 @@ async function Java_illa4257_i4Utils_integration_CheerpJControllerReader_close(l
 }
 
 export default {
-    Java_illa4257_i4Utils_web_CheerpJClientFactory_fetch0,
-    Java_illa4257_i4Utils_web_CheerpJClientFactory_fetch1,
+    Java_illa4257_i4Utils_web_cheerpj_CheerpJClientFactory_fetch0,
+    Java_illa4257_i4Utils_web_cheerpj_CheerpJClientFactory_fetch1,
     Java_illa4257_i4Utils_integration_CheerpJBYOBReader_read,
     Java_illa4257_i4Utils_integration_CheerpJBYOBReader_close,
     Java_illa4257_i4Utils_integration_CheerpJControllerReader_writeByte,

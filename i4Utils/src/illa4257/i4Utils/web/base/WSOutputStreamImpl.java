@@ -1,6 +1,7 @@
-package illa4257.i4Utils.web;
+package illa4257.i4Utils.web.base;
 
 import illa4257.i4Utils.io.IO;
+import illa4257.i4Utils.web.WSOutputStream;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -8,9 +9,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 
 public class WSOutputStreamImpl extends WSOutputStream {
-    private static final SecureRandom RND = new SecureRandom();
+    public static final SecureRandom RND = new SecureRandom();
 
-    private final OutputStream outputStream;
+    public final OutputStream outputStream;
     public volatile boolean masking = true;
     private final byte[] mask = new byte[4];
 
@@ -48,7 +49,7 @@ public class WSOutputStreamImpl extends WSOutputStream {
     }
 
     @Override
-    public void write(final int b) throws IOException {
+    public synchronized void write(final int b) throws IOException {
         writeType(true, 0x02);
         final boolean masking = this.masking;
         writeLength(masking, 1);
@@ -61,7 +62,7 @@ public class WSOutputStreamImpl extends WSOutputStream {
     }
 
     @Override
-    public void write(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int len) throws IOException {
+    public synchronized void write(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int len) throws IOException {
         writeType(true, 0x02);
         final boolean masking = this.masking;
         writeLength(masking, len);
@@ -74,7 +75,7 @@ public class WSOutputStreamImpl extends WSOutputStream {
     }
 
     @Override
-    public void write(final byte[] b) throws IOException {
+    public synchronized void write(final byte[] b) throws IOException {
         writeType(true, 0x02);
         final boolean masking = this.masking;
         writeLength(masking, b.length);
@@ -87,7 +88,7 @@ public class WSOutputStreamImpl extends WSOutputStream {
     }
 
     @Override
-    public void write(final String str) throws IOException {
+    public synchronized void write(final String str) throws IOException {
         writeType(true, 0x01);
         final boolean masking = this.masking;
         final byte[] arr = str.getBytes(StandardCharsets.UTF_8);
@@ -101,7 +102,7 @@ public class WSOutputStreamImpl extends WSOutputStream {
     }
 
     /// Server-Side
-    public void ping(final byte[] payload) throws IOException {
+    public synchronized void ping(final byte[] payload) throws IOException {
         writeType(true, 0x09);
         final boolean masking = this.masking;
         writeLength(masking, payload.length);
@@ -114,7 +115,7 @@ public class WSOutputStreamImpl extends WSOutputStream {
     }
 
     /// Client-Side, payload should the same as the ping payload.
-    public void pong(final byte[] payload) throws IOException {
+    public synchronized void pong(final byte[] payload) throws IOException {
         writeType(true, 0x0A);
         final boolean masking = this.masking;
         writeLength(masking, payload.length);
@@ -126,10 +127,10 @@ public class WSOutputStreamImpl extends WSOutputStream {
         outputStream.write(payload);
     }
 
-    @Override public void flush() throws IOException { outputStream.flush(); }
+    @Override public synchronized void flush() throws IOException { outputStream.flush(); }
 
     @Override
-    public void close(final int code, final String reason) throws IOException {
+    public synchronized void close(final int code, final String reason) throws IOException {
         writeType(true, 0x08);
         final boolean masking = this.masking;
         final byte[] c = new byte[] { (byte) (code >> 8), (byte) code };
