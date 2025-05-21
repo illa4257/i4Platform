@@ -30,11 +30,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 @SuppressWarnings("UnusedReturnValue")
 public class Component extends Destructor {
     protected final Object locker = new Object();
-    volatile boolean isFocused = false, isFocusable = false, isHovered = false, visible = true;
+    volatile boolean isFocusable = false, visible = true;
     private final Runnable[] listeners;
 
     protected final SyncVar<Container> parent = new SyncVar<>();
@@ -55,10 +56,29 @@ public class Component extends Destructor {
 
     public final SyncVar<String> id = new SyncVar<>(), tag = new SyncVar<>();
     public final ConcurrentLinkedQueue<String> classes = new ConcurrentLinkedQueue<>(), pseudoClasses = new ConcurrentLinkedQueue<>();
-    public final ConcurrentHashMap<String, StyleSetting> styles = new ConcurrentHashMap<>();
+    public final ConcurrentHashMap<String, StyleSetting> styles = new ConcurrentHashMap<String, StyleSetting>() {
+        @SuppressWarnings("NullableProblems")
+        @Override
+        public StyleSetting put(final String key, final StyleSetting value) {
+            if (key == null || key.isEmpty() || value == null)
+                return null;
+            final Consumer<StyleSetting> c = subscribers.get(key);
+            if (c != null)
+                value.subscribed.offer(c);
+            final StyleSetting old = super.put(key, value);
+            if (old != null && c != null)
+                old.subscribed.remove(c);
+            if (c != null && old == getStyle(key))
+                c.accept(value);
+            return old;
+        }
+    };
     public final ConcurrentLinkedQueue<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> stylesheet = new ConcurrentLinkedQueue<>();
 
     private final ArrayList<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> cache = new ArrayList<>();
+
+    private final ConcurrentHashMap<String, ConcurrentLinkedQueue<Consumer<StyleSetting>>> subscribedProperties = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Consumer<StyleSetting>> subscribers = new ConcurrentHashMap<>();
 
     public Component() {
         Class<?> c = getClass();
@@ -71,6 +91,13 @@ public class Component extends Destructor {
         addEventListener(ChangeParentEvent.class, e -> fire(new StyleUpdateEvent()));
         addEventListener(StyleUpdateEvent.class, e -> {
             synchronized (cache) {
+                for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> entry : cache)
+                    for (final Map.Entry<String, StyleSetting> entry2 : entry.getValue().entrySet()) {
+                        final Consumer<StyleSetting> cons = subscribers.get(entry2.getKey());
+                        if (cons == null)
+                            continue;
+                        entry2.getValue().subscribed.remove(cons);
+                    }
                 cache.clear();
                 cache.add(new AbstractMap.SimpleImmutableEntry<>(null, styles));
                 final ArrayList<StyleSelector> selectors = new ArrayList<>();
@@ -78,40 +105,25 @@ public class Component extends Destructor {
                 final Framework framework = getFramework();
                 if (framework != null)
                     cacheStyles(framework.stylesheet, selectors);
+                for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> entry : cache)
+                    for (final Map.Entry<String, StyleSetting> entry2 : entry.getValue().entrySet()) {
+                        final Consumer<StyleSetting> cons = subscribers.get(entry2.getKey());
+                        if (cons == null)
+                            continue;
+                        entry2.getValue().subscribed.offer(cons);
+                    }
             }
             repaint();
         });
-        addEventListener(HoverEvent.class, e -> {
-            synchronized (locker) {
-                if (isHovered == e.value)
-                    return;
-                isHovered = e.value;
-            }
-            if (e.value)
-                pseudoClasses.add("hover");
-            else
-                pseudoClasses.remove("hover");
-            repaint();
-        });
-        addEventListener(FocusEvent.class, e -> {
-            synchronized (locker) {
-                if (isFocused == e.value)
-                    return;
-                isFocused = e.value;
-            }
-            if (e.value)
-                pseudoClasses.add("focus");
-            else
-                pseudoClasses.remove("focus");
-            repaint();
-        });
+        addEventListener(HoverEvent.class, e -> setPseudoClass("hover", e.value));
+        addEventListener(FocusEvent.class, e -> setPseudoClass("focus", e.value));
         addEventListener(MouseEnterEvent.class, e -> fire(new HoverEvent(true)));
         addEventListener(MouseLeaveEvent.class, e -> fire(new HoverEvent(false)));
     }
 
     public boolean isVisible() { return visible; }
     public boolean isFocusable() { return isFocusable; }
-    public boolean isFocused() { return isFocused; }
+    public boolean isFocused() { return pseudoClasses.contains("focus"); }
     public boolean isRepeated() { return isRepeated.get(); }
     public Component find(final float x, final float y, final float[] localPos) {
         if (startX.calcFloat() < x && endX.calcFloat() > x &&
@@ -168,6 +180,24 @@ public class Component extends Destructor {
         return true;
     }
 
+    public void setPseudoClass(final String pseudoClass, final boolean en) {
+        if (pseudoClass == null || pseudoClass.isEmpty() || pseudoClasses.contains(pseudoClass) == en)
+            return;
+        final HashMap<String, StyleSetting> old = new HashMap<>();
+        for (final String k : subscribers.keySet())
+            old.put(k, getStyle(k));
+        if (en)
+            pseudoClasses.add(pseudoClass);
+        else
+            pseudoClasses.remove(pseudoClass);
+        for (final Map.Entry<String, Consumer<StyleSetting>> e : subscribers.entrySet()) {
+            final StyleSetting s = getStyle(e.getKey());
+            if (old.get(e.getKey()) != s)
+                e.getValue().accept(s);
+        }
+        repaint();
+    }
+
     public StyleSetting getStyle(final String name) {
         synchronized (cache) {
             for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> e : cache) {
@@ -180,6 +210,30 @@ public class Component extends Destructor {
             }
             return null;
         }
+    }
+
+    public void subscribe(final String name, final Consumer<StyleSetting> listener) {
+        if (name == null || name.isEmpty() || listener == null)
+            return;
+        final ConcurrentLinkedQueue<Consumer<StyleSetting>> l =
+                subscribedProperties.computeIfAbsent(name, ignored -> new ConcurrentLinkedQueue<>());
+        if (!l.offer(listener))
+            return;
+        subscribers.computeIfAbsent(name, k -> {
+            final Consumer<StyleSetting> cons = s -> {
+                if (getStyle(k) == s)
+                    l.forEach(c -> c.accept(s));
+            };
+            synchronized (cache) {
+                for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> entry : cache) {
+                    final StyleSetting s = entry.getValue().get(name);
+                    if (s == null)
+                        continue;
+                    s.subscribed.offer(cons);
+                }
+            }
+            return cons;
+        });
     }
 
     public String getString(final String name, final String defaultValue) {

@@ -142,7 +142,7 @@ public class Container extends Component implements Iterable<Component> {
                 }
             }
             if (focused instanceof Container && ((Container) focused).focusNextElement()) {
-                if (focused.isFocused)
+                if (focused.pseudoClasses.contains("focus"))
                     focused.fire(new FocusEvent(false));
                 return true;
             }
@@ -200,6 +200,8 @@ public class Container extends Component implements Iterable<Component> {
             c.dispose();
         }
     }
+
+    public int getComponentCount() { return components.size(); }
 
     @SuppressWarnings("NullableProblems")
     @Override public Iterator<Component> iterator() { return components.iterator(); }

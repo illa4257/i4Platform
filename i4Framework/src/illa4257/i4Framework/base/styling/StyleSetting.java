@@ -8,16 +8,21 @@ import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.runnables.Provider;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 @SuppressWarnings("unchecked")
 public class StyleSetting {
     public final ConcurrentHashMap<Class<?>, Object> values = new ConcurrentHashMap<>();
 
+    public final ConcurrentLinkedQueue<Consumer<StyleSetting>> subscribed = new ConcurrentLinkedQueue<>();
+
     public StyleSetting() {}
     public StyleSetting(final int value) { values.put(Integer.class, value); }
     public StyleSetting(final String value) { values.put(String.class, value); }
     public StyleSetting(final Color value) { values.put(Color.class, value); }
+    public StyleSetting(final Cursor value) { values.put(Cursor.class, value); }
 
     public <T> T get(final Class<T> type) { return (T) values.get(type); }
 
@@ -39,6 +44,12 @@ public class StyleSetting {
     public <T> StyleSetting set(final Class<T> type, final T newValue) {
         values.clear();
         values.put(type, newValue);
+        for (final Consumer<StyleSetting> r : subscribed)
+            try {
+                r.accept(this);
+            } catch (final Throwable ex) {
+                i4Logger.INSTANCE.log(ex);
+            }
         return this;
     }
 
@@ -67,6 +78,7 @@ public class StyleSetting {
     public StyleSetting set(final int value) { return set(Integer.class, value); }
     public StyleSetting set(final String value) { return set(String.class, value); }
     public StyleSetting set(final Color value) { return set(Color.class, value); }
+    public StyleSetting set(final Cursor value) { return set(Cursor.class, value); }
 
     public Color color() { return computeIfAbsentF(Color.class, Color::styleSettingParser); }
 
@@ -105,8 +117,5 @@ public class StyleSetting {
         }, defaultValue);
     }
 
-    @Override
-    public String toString() {
-        return "StyleSetting" + values;
-    }
+    @Override public String toString() { return "StyleSetting" + values; }
 }
