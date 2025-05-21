@@ -1,5 +1,6 @@
 package illa4257.i4Framework.swing;
 
+import illa4257.i4Framework.base.events.components.*;
 import illa4257.i4Framework.base.events.components.FocusEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyPressEvent;
@@ -9,9 +10,8 @@ import illa4257.i4Framework.base.styling.Cursor;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Container;
-import illa4257.i4Framework.base.events.components.RecalculateEvent;
-import illa4257.i4Framework.base.events.components.RepaintEvent;
 import illa4257.i4Framework.base.events.mouse.*;
+import illa4257.i4Framework.base.styling.StyleSetting;
 
 import javax.swing.*;
 import java.awt.*;
@@ -27,12 +27,29 @@ public class SwingComponent extends JComponent implements ISwingComponent {
     public final EventListener[] listeners;
     public EventListener[] directListeners = null;
 
+    private JFrame getFrame() {
+        java.awt.Container c = getParent();
+        JFrame f = null;
+        while (c != null) {
+            if (c instanceof JFrame)
+                f = (JFrame) c;
+            c = c.getParent();
+        }
+        return f;
+    }
+
     private int getGlobalX(final MouseEvent event) {
-        return getX() + event.getX();
+        final JFrame f = getFrame();
+        if (f != null)
+            return event.getXOnScreen() - f.getX() - f.getInsets().left;
+        return event.getXOnScreen();
     }
 
     private int getGlobalY(final MouseEvent event) {
-        return getY() + event.getY();
+        final JFrame f = getFrame();
+        if (f != null)
+            return event.getYOnScreen() - f.getY() - f.getInsets().top;
+        return event.getYOnScreen();
     }
 
     public SwingComponent(final Component component) {
@@ -61,11 +78,6 @@ public class SwingComponent extends JComponent implements ISwingComponent {
             @Override
             public void mouseExited(final MouseEvent event) {
                 component.fire(new MouseLeaveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY()));
-            }
-
-            @Override
-            public void mouseMoved(final MouseEvent event) {
-                component.fire(new MouseMoveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY()));
             }
         });
         addMouseMotionListener(new MouseAdapter() {
@@ -116,20 +128,55 @@ public class SwingComponent extends JComponent implements ISwingComponent {
                 component.addEventListener(FocusEvent.class, e -> {
                     if (e.value)
                         requestFocus();
-                })
+                }),
+                component.addEventListener(ChangeZ.class, e -> {
+                    final java.awt.Container p = getParent();
+                    if (p == null)
+                        return;
+                    p.setComponentZOrder(this, e.z);
+                }),
+                component.addEventListener(VisibleEvent.class, e -> setVisible(e.value))
         };
 
         if (component instanceof Container) {
            directListeners = ISwingComponent.registerContainer(this, (Container) component);
            for (final Component co : (Container) component) {
                final SwingComponent c = new SwingComponent(co);
-               add(c);
+               add(c, 0);
                c.repaint();
            }
         }
 
+        setVisible(component.isVisible());
         setLocation(component.startX.calcInt(), component.startY.calcInt());
         setSize(component.width.calcInt(), component.height.calcInt());
+
+        component.subscribe("cursor", this::onCursorChange);
+
+        StyleSetting s = component.getStyle("cursor");
+        if (s != null)
+            onCursorChange(s);
+        else
+            setCursor(getPredefinedCursor(DEFAULT_CURSOR));
+    }
+
+    private void onCursorChange(final StyleSetting s) {
+        final Cursor c = s.cursor();
+        final int cursor =
+                c == Cursor.TEXT ? TEXT_CURSOR :
+                c == Cursor.N_RESIZE ? N_RESIZE_CURSOR :
+                c == Cursor.SE_RESIZE ? SE_RESIZE_CURSOR :
+                c == Cursor.E_RESIZE ? E_RESIZE_CURSOR :
+                c == Cursor.EW_RESIZE ? E_RESIZE_CURSOR : // Not defined
+                c == Cursor.NE_RESIZE ? NE_RESIZE_CURSOR :
+                c == Cursor.NS_RESIZE ? N_RESIZE_CURSOR : // Not defined
+                c == Cursor.NW_RESIZE ? NW_RESIZE_CURSOR :
+                c == Cursor.NWSE_RESIZE ? MOVE_CURSOR :
+                c == Cursor.S_RESIZE ? S_RESIZE_CURSOR :
+                c == Cursor.SW_RESIZE ? SW_RESIZE_CURSOR :
+                c == Cursor.W_RESIZE ? W_RESIZE_CURSOR :
+                DEFAULT_CURSOR;
+        setCursor(getPredefinedCursor(cursor));
     }
 
     @Override
@@ -144,10 +191,6 @@ public class SwingComponent extends JComponent implements ISwingComponent {
 
     @Override
     protected void paintComponent(final Graphics graphics) {
-        final Cursor c = component.getCursor("cursor");
-        final int cursor = c == Cursor.TEXT ? TEXT_CURSOR : DEFAULT_CURSOR;
-        if (getCursor().getType() != cursor)
-            setCursor(getPredefinedCursor(cursor));
         final Graphics2D g = (Graphics2D) graphics;
         g.setRenderingHints(SwingFramework.RECOMMENDED);
         component.paint(new SwingContext(g));
