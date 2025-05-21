@@ -1,16 +1,13 @@
 package illa4257.i4Framework.base.points;
 
 import illa4257.i4Utils.Destructor;
-import illa4257.i4Utils.IDestructor;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class Point extends Destructor {
-    private float cacheFloat;
-    private int cacheInt;
-
-    private boolean cf = false, ci = false;
+    private volatile float cacheFloat;
+    private volatile int cacheInt;
+    private volatile boolean cf = false, ci = false;
 
     private final ConcurrentLinkedQueue<Runnable> subscribed = new ConcurrentLinkedQueue<>();
 
@@ -63,8 +60,5 @@ public abstract class Point extends Destructor {
         return cacheInt;
     }
 
-    @Override
-    public void onConstruct() {
-        reset();
-    }
+    @Override public void onConstruct() { reset(); }
 }
