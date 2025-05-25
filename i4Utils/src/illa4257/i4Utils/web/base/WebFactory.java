@@ -9,6 +9,7 @@ import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.runnables.FuncIOEx;
 import illa4257.i4Utils.web.IWebClientFactory;
 import illa4257.i4Utils.web.WebRequest;
+import illa4257.i4Utils.web.i4URI;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
@@ -29,11 +30,13 @@ import java.util.zip.InflaterInputStream;
 
 import static illa4257.i4Utils.logger.Level.WARN;
 
-public class WebClientFactory implements IWebClientFactory {
+public class WebFactory implements IWebClientFactory {
     public static final ConcurrentHashMap<String, FuncIOEx<InputStream, InputStream>> DECOMPRESSORS = new ConcurrentHashMap<>();
     public static volatile String DECOMPRESSORS_VALUE;
     public static final Charset CHARSET = StandardCharsets.US_ASCII;
     private static final MessageDigest SHA1;
+
+    public static final WebFactory INSTANCE = new WebFactory();
 
     static {
         DECOMPRESSORS.put("gzip", GZIPInputStream::new);
@@ -55,7 +58,7 @@ public class WebClientFactory implements IWebClientFactory {
     private static final ThreadLocal<Integer> oldByte = ThreadLocal.withInitial(() -> -1);
     private static final ThreadLocal<StringBuilder> strReadBuff = ThreadLocal.withInitial(StringBuilder::new);
 
-    public WebClientFactory() {}
+    public WebFactory() {}
 
     public void reduce() {
         connections.values().removeIf(q -> {
@@ -173,6 +176,46 @@ public class WebClientFactory implements IWebClientFactory {
             b.append(ch);
         }
         throw new IOException("Reached the maximum number of characters.");
+    }
+
+    public static WebRequest accept(final InputStream is, final String ip, final String scheme, final Runnable end) throws IOException {
+        oldByte.set(-1);
+        final WebRequest r = new WebRequest()
+                .setMethod(readStr(is, ' ', 8))
+                .setURI(new i4URI(
+                        scheme,
+                        ip,
+                        readStr(is, ' ', 256)
+                ))
+                .setProtocol(readStrLn(is, 16));
+        readHeaders(is, r.clientHeaders);
+
+        r.inputStream = null;
+
+        final String contentLength = r.clientHeaders.get("content-length");
+        if (contentLength != null)
+            try {
+                r.inputStream = new WebInputStream.LongPolling(is, end, Long.parseLong(contentLength));
+            } catch (final Exception ex) {
+                i4Logger.INSTANCE.log(ex);
+            }
+        else if ("chunked".equalsIgnoreCase(r.clientHeaders.get("transfer-encoding")))
+            r.inputStream = new WebInputStream.Chunked(is, end);
+
+        if (r.inputStream == null) {
+            r.inputStream = new NullInputStream();
+            return r;
+        }
+
+        final String contentEncoding = r.clientHeaders.get("content-encoding");
+        if (contentEncoding != null) {
+            final FuncIOEx<InputStream, InputStream> decompressor = DECOMPRESSORS.get(contentEncoding);
+            if (decompressor != null)
+                r.inputStream = decompressor.accept(r.inputStream);
+            else
+                i4Logger.INSTANCE.log(WARN, "Unknown content encoding method: " + contentEncoding);
+        }
+        return r;
     }
 
     public static void writeHeaders(final OutputStream os, final Map<String, String> headers) throws IOException {

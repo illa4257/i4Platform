@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import static illa4257.i4Utils.web.base.WebFactory.CHARSET;
+
 public abstract class WebOutputStream extends OutputStream {
     public static class Chunked extends WebOutputStream {
         private boolean isClosed = false;
@@ -31,9 +33,9 @@ public abstract class WebOutputStream extends OutputStream {
             final int s = buffer.size();
             if (isClosed || s == 0)
                 return;
-            outputStream.write((Integer.toString(s, 16) + "\r\n").getBytes(WebClientFactory.CHARSET));
+            outputStream.write((Integer.toString(s, 16) + "\r\n").getBytes(CHARSET));
             buffer.writeTo(outputStream);
-            outputStream.write("\r\n".getBytes(WebClientFactory.CHARSET));
+            outputStream.write("\r\n".getBytes(CHARSET));
             outputStream.flush();
             buffer.reset();
         }
@@ -44,7 +46,7 @@ public abstract class WebOutputStream extends OutputStream {
                 return;
             flush();
             isClosed = true;
-            outputStream.write("0\r\n\r\n".getBytes(WebClientFactory.CHARSET));
+            outputStream.write("0\r\n\r\n".getBytes(CHARSET));
             outputStream.flush();
         }
     }

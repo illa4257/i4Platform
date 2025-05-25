@@ -2,7 +2,7 @@ package illa4257.i4Utils.web;
 
 import illa4257.i4Utils.Arch;
 import illa4257.i4Utils.KeyMap;
-import illa4257.i4Utils.web.base.WebClientFactory;
+import illa4257.i4Utils.web.base.WebFactory;
 import illa4257.i4Utils.web.cheerpj.CheerpJClientFactory;
 
 import java.util.Map;
@@ -20,7 +20,7 @@ public class WebClient {
     public volatile int timeout = 15000;
 
     public WebClient(final IWebClientFactory factory) { this.factory = factory; }
-    public WebClient() { this(Arch.REAL.IS_CHEERPJ ? new CheerpJClientFactory() : new WebClientFactory()); }
+    public WebClient() { this(Arch.REAL.IS_CHEERPJ ? new CheerpJClientFactory() : WebFactory.INSTANCE); }
 
     public WebRequest newBuilder(final String method, final i4URI uri) {
         return new WebRequest(method, uri, this)

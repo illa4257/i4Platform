@@ -24,6 +24,11 @@ public class WebRequest {
     public InputStream inputStream = null;
     public Function<WebRequest, CompletableFuture<WebRequest>> runner = null;
 
+    public WebRequest() {
+        clientHeaders = new KeyMap<>(new HashMap<>(), String::toLowerCase,
+            k -> k instanceof String ? ((String) k).toLowerCase() : k);
+    }
+
     public WebRequest(final String method, final i4URI uri) {
         this.method = method != null ? method : "GET";
         this.uri = uri;
@@ -55,6 +60,11 @@ public class WebRequest {
 
     public WebRequest setMethod(final String method) {
         this.method = method != null ? method : "GET";
+        return this;
+    }
+
+    public WebRequest setProtocol(final String protocol) {
+        this.protocol = protocol;
         return this;
     }
 
