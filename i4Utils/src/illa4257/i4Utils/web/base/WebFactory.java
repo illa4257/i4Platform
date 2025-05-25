@@ -256,7 +256,7 @@ public class WebFactory implements IWebClientFactory {
                 String upgrade = upgradeHeader == null && (
                                 r.uri.scheme.equalsIgnoreCase("ws") ||
                                 r.uri.scheme.equalsIgnoreCase("wss")
-                        ) ? "websocket" : upgradeHeader, key = null;
+                        ) ? "websocket" : upgradeHeader;
                 final boolean keepAlive = connectionHeader != null ? "keep-alive".equalsIgnoreCase(connectionHeader) : r.keepAlive,
                             isWebSocketClient = "websocket".equalsIgnoreCase(upgrade);
                 final String dec = DECOMPRESSORS_VALUE;
