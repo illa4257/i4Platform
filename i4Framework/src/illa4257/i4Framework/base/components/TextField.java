@@ -11,7 +11,6 @@ import illa4257.i4Framework.base.events.mouse.MouseButton;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseMoveEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
-import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.lists.MutableCharArray;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,7 +20,7 @@ public class TextField extends Component {
     public final AtomicBoolean hideCharacters = new AtomicBoolean(false);
     public final AtomicInteger index = new AtomicInteger(0), selectionIndex = new AtomicInteger(-1), position = new AtomicInteger(0);
     public final MutableCharArray text = new MutableCharArray();
-    private final SyncVar<Context> lastContext = new SyncVar<>();
+    private volatile Context lastContext = null;
 
     private final AtomicBoolean md = new AtomicBoolean();
 
@@ -162,7 +161,7 @@ public class TextField extends Component {
                     return;
                 }
                 index.set(++i);
-                final Context c = lastContext.get();
+                final Context c = lastContext;
                 if (c != null) {
                     float w = width.calcFloat() - areaSize, cw;
                     final char[] arr = new char[1];
@@ -218,7 +217,7 @@ public class TextField extends Component {
                 text.add(e.keyChar);
             } else
                 text.add(e.keyChar, i);
-            final Context c = lastContext.get();
+            final Context c = lastContext;
             if (c != null) {
                 float w = width.calcFloat() - areaSize, cw;
                 final char[] arr = new char[1];
@@ -242,7 +241,7 @@ public class TextField extends Component {
     }
 
     private int getIndex(final float localX) {
-        final Context context = lastContext.get();
+        final Context context = lastContext;
         if (context == null)
             return 0;
 
@@ -304,7 +303,7 @@ public class TextField extends Component {
     @Override
     public void paint(final Context context) {
         super.paint(context);
-        lastContext.set(context);
+        lastContext = context;
 
         final Color textColor = getColor("color");
         if (textColor.alpha <= 0)
