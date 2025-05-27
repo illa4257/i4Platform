@@ -15,14 +15,14 @@ import static illa4257.i4Framework.base.styling.Cursor.*;
 
 public class WindowFrame extends Container {
     public final Label titleBar = new Label();
-    public final Window window;
+    public final Component window;
 
     public boolean notHolding = true, floating = true, holding = false, ls = false, rs = false, ts = false, bs = false;
     public float mx, my, cx, cy, holdX1, holdY1, holdX2, holdY2, holdX3, holdY3;
 
     public final StyleSetting cursor = new StyleSetting(Cursor.DEFAULT);
 
-    public WindowFrame(final Window window) {
+    public WindowFrame(final Component window) {
         this.window = window;
         styles.put("cursor", cursor);
         add(window);
@@ -33,7 +33,7 @@ public class WindowFrame extends Container {
         });
         titleBar.setX(2, Unit.DP);
         titleBar.setY(2, Unit.DP);
-        titleBar.setText(window.getTitle());
+        //titleBar.setText(window.getTitle());
         titleBar.setWidth(window.width);
         titleBar.setHeight(32, Unit.DP);
         window.setStartX(titleBar.startX);
