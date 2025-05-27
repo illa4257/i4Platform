@@ -7,6 +7,7 @@ import illa4257.i4Framework.base.events.mouse.MouseMoveEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.math.Unit;
 import illa4257.i4Framework.base.points.PPointAdd;
+import illa4257.i4Framework.base.points.PPointSubtract;
 import illa4257.i4Framework.base.styling.Cursor;
 import illa4257.i4Framework.base.styling.StyleSetting;
 
@@ -15,16 +16,14 @@ import static illa4257.i4Framework.base.styling.Cursor.*;
 public class WindowFrame extends Container {
     public final Label titleBar = new Label();
     public final Window window;
-    public final Container root;
 
     public boolean notHolding = true, floating = true, holding = false, ls = false, rs = false, ts = false, bs = false;
     public float mx, my, cx, cy, holdX1, holdY1, holdX2, holdY2, holdX3, holdY3;
 
     public final StyleSetting cursor = new StyleSetting(Cursor.DEFAULT);
 
-    public WindowFrame(final Window window, final Container root) {
+    public WindowFrame(final Window window) {
         this.window = window;
-        this.root = root;
         styles.put("cursor", cursor);
         add(window);
         add(titleBar);
@@ -57,19 +56,24 @@ public class WindowFrame extends Container {
             bs = e.y() >= window.endY.calcFloat();
         });
         addEventListener(MouseMoveEvent.class, e -> {
+            final Container p = getParent();
             if (holding) {
-                if (ls)
+                if (ls && !(startX.get() instanceof PPointSubtract))
                     setX(Math.max(e.globalX() - holdX1 + holdX3, 0));
-                if (ts)
+                if (ts && !(startY.get() instanceof PPointSubtract))
                     setY(Math.max(e.globalY() - holdY1 + holdY3, 0));
 
-                if (rs)
+                if (rs) {
                     window.setWidth(Math.max(e.globalX() - holdX1 + holdX2, 16));
-                else if (ls)
+                    if (endX.calcFloat() >= p.width.calcFloat())
+                        setStartX(new PPointSubtract(p.width, window.endX));
+                } else if (ls)
                     window.setWidth(Math.max(holdX1 - e.globalX() + holdX2, 16));
-                if (bs)
+                if (bs) {
                     window.setHeight(Math.max(e.globalY() - holdY1 + holdY2, 16));
-                else if (ts)
+                    if (endY.calcFloat() >= p.height.calcFloat())
+                        setStartY(new PPointSubtract(p.height, window.endY));
+                } else if (ts)
                     window.setHeight(Math.max(holdY1 - e.globalY() + holdY2, 16));
                 return;
             }
@@ -87,7 +91,7 @@ public class WindowFrame extends Container {
                           ty ? N_RESIZE :
                           rx ? E_RESIZE :
                           by ? S_RESIZE :
-                            DEFAULT;
+                            NWSE_RESIZE;
             if (cursor.cursor() != r)
                 cursor.set(r);
         });
@@ -107,9 +111,10 @@ public class WindowFrame extends Container {
                 return;
             if (!floating)
                 floating = true;
+            final Container p = getParent();
             setLocation(
-                    Math.min(Math.max(cx + e.globalX() - mx, 0), root.width.calcFloat() - width.calcFloat()),
-                    Math.min(Math.max(cy + e.globalY() - my, 0), root.height.calcFloat() - height.calcFloat())
+                    Math.min(Math.max(cx + e.globalX() - mx, 0), p.width.calcFloat() - width.calcFloat()),
+                    Math.min(Math.max(cy + e.globalY() - my, 0), p.height.calcFloat() - height.calcFloat())
             );
         });
         titleBar.addEventListener(MouseUpEvent.class, e -> notHolding = true);
