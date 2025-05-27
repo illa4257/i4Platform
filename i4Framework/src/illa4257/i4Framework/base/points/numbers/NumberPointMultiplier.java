@@ -9,10 +9,8 @@ public class NumberPointMultiplier extends Point {
     private final SyncVar<Point> point = new SyncVar<>();
     private final AtomicReference<Float> number = new AtomicReference<>();
 
-    public NumberPointMultiplier(final Point point, float number) {
-        this.point.set(point);
-        this.number.set(number);
-    }
+    public NumberPointMultiplier(float number, final Point point) { this.number.set(number); this.point.set(point); }
+    public NumberPointMultiplier(final Point point, float number) { this.point.set(point); this.number.set(number); }
 
     public void setPoint(final Point newValue) {
         if (getLinkNumber() > 0)
