@@ -47,12 +47,14 @@ TextArea,
 TextField {
     cursor: text;
     --selection-color: #3333;
+    --cursor-width: 1dp;
 }
 
 TextArea {
     --gutter-background-color: #ccc;
     --gutter-color: #333;
     --gutter-padding: 8dp;
+    --current-line-background-color: #ccc;
 }
 
 TextArea:focus,

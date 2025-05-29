@@ -7,11 +7,12 @@ import illa4257.i4Framework.base.events.components.RecalculateEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyUpEvent;
+import illa4257.i4Framework.base.events.mouse.MouseButton;
+import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseScrollEvent;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.points.PointAttach;
-import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.lists.MutableCharArray;
 
 import java.util.ArrayList;
@@ -21,13 +22,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 /// WIP
 public class TextArea extends Container {
     public final ScrollBar vBar = new ScrollBar(Orientation.VERTICAL), hBar = new ScrollBar(Orientation.HORIZONTAL);
-    private final SyncVar<Context> lastContext = new SyncVar<>();
+    private volatile Context lastContext = null;
 
     private final AtomicInteger ctrlCounter = new AtomicInteger(0), shiftCounter = new AtomicInteger(0);
 
     private final ArrayList<MutableCharArray> lines = new ArrayList<>();
     private final ArrayList<Float> lineWidths = new ArrayList<>();
     private float posX = 0, posY = 0;
+    private volatile int lineY = 0, lineX = 0;
 
     public TextArea() {
         setFocusable(true);
@@ -54,6 +56,31 @@ public class TextArea extends Container {
                 posX = e.newValue;
                 repaint();
             }
+        });
+        addEventListener(MouseDownEvent.class, e -> {
+            if (e.button != MouseButton.BUTTON0)
+                return;
+            final Context c = lastContext;
+            lineY = Math.min((int) Math.floor((posY + e.y()) / c.bounds(new char[] { 'H' }).y), lines.size() - 1);
+            final MutableCharArray arr = lines.get(lineY);
+            final float cx = e.x() + posX;
+            float x = c.bounds(Integer.toString(lines.size())).x +
+                    calcStyleNumber("--gutter-padding", Orientation.HORIZONTAL, 0) * 3;
+            int i = 0;
+            Character ch = arr.getChar(i, null);
+            if (ch != null) {
+                while (cx > x) {
+                    x += c.charWidth(ch);
+                    i++;
+                    ch = arr.getChar(i, null);
+                    if (ch == null)
+                        break;
+                }
+                if (ch != null && i > 0 && cx < x - c.charWidth(arr.getChar(i - 1)) / 2)
+                    i--;
+            }
+            lineX = i;
+            repaint();
         });
         addEventListener(MouseScrollEvent.class, e -> {
             final ScrollBar bar = e.orientation == Orientation.VERTICAL ? vBar : hBar;
@@ -95,7 +122,7 @@ public class TextArea extends Container {
         synchronized (lines) {
             Float r = lineWidths.get(index);
             if (r == null) {
-                final Context c = lastContext.get();
+                final Context c = lastContext;
                 if (c != null) {
                     final char[] b = lines.get(index).getChars();
                     r = c.bounds(b).x;
@@ -117,7 +144,7 @@ public class TextArea extends Container {
     }
 
     private void reCalc() {
-        final Context c = lastContext.get();
+        final Context c = lastContext;
         if (c == null) {
             fireLater(new ReCalc());
             return;
@@ -164,7 +191,7 @@ public class TextArea extends Container {
     @Override
     public void paint(final Context context) {
         super.paint(context);
-        lastContext.set(context);
+        lastContext = context;
 
         Color col = getColor("color");
         if (col.alpha <= 0)
@@ -183,6 +210,14 @@ public class TextArea extends Container {
             for (int lineIndex = (int) Math.floor(posY / textHeight); lineIndex < l && y < h; lineIndex++, y += textHeight) {
                 x = gutterPaddingX;
                 final MutableCharArray line = lines.get(lineIndex);
+                if (lineIndex == lineY) {
+                    final Color curLineCol = getColor("--current-line-background-color");
+                    if (curLineCol.alpha > 0) {
+                        context.setColor(curLineCol);
+                        context.drawRect(0, y, w, textHeight);
+                        context.setColor(col);
+                    }
+                }
                 i = 0;
                 x -= posX;
                 while (true) {
@@ -197,6 +232,8 @@ public class TextArea extends Container {
                 }
                 x += lineNumberWidth;
                 for (; x < w; i++) {
+                    if (lineY == lineIndex && lineX == i)
+                        context.drawRect(x, y, 2, textHeight);
                     final Character ch = line.getChar(i, null);
                     if (ch == null)
                         break;

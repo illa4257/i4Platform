@@ -47,12 +47,14 @@ TextArea,
 TextField {
     cursor: text;
     --selection-color: #3333;
+    --cursor-width: 1dp;
 }
 
 TextArea {
     --gutter-background-color: #101019;
     --gutter-color: #EEE;
     --gutter-padding: 8dp;
+    --current-line-background-color: #444;
 }
 
 TextArea:focus,
@@ -67,6 +69,6 @@ TabPane {
 }
 
 ScrollBar {
-    background-color: #a0a0a0;
-    thumb-color: #f0f0f0;
+    background-color: #30303B;
+    thumb-color: #404049;
 }
