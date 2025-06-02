@@ -7,9 +7,7 @@ import illa4257.i4Framework.base.events.components.RecalculateEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyUpEvent;
-import illa4257.i4Framework.base.events.mouse.MouseButton;
-import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
-import illa4257.i4Framework.base.events.mouse.MouseScrollEvent;
+import illa4257.i4Framework.base.events.mouse.*;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.points.PointAttach;
@@ -29,7 +27,8 @@ public class TextArea extends Container {
     private final ArrayList<MutableCharArray> lines = new ArrayList<>();
     private final ArrayList<Float> lineWidths = new ArrayList<>();
     private float posX = 0, posY = 0;
-    private volatile int lineY = 0, lineX = 0;
+    private volatile int lineY = 0, lineX = 0, lineStartY = -1;
+    private boolean mouseLeft = false;
 
     public TextArea() {
         setFocusable(true);
@@ -60,27 +59,26 @@ public class TextArea extends Container {
         addEventListener(MouseDownEvent.class, e -> {
             if (e.button != MouseButton.BUTTON0)
                 return;
+            mouseLeft = true;
             final Context c = lastContext;
-            lineY = Math.min((int) Math.floor((posY + e.y()) / c.bounds(new char[] { 'H' }).y), lines.size() - 1);
-            final MutableCharArray arr = lines.get(lineY);
-            final float cx = e.x() + posX;
-            float x = c.bounds(Integer.toString(lines.size())).x +
-                    calcStyleNumber("--gutter-padding", Orientation.HORIZONTAL, 0) * 3;
-            int i = 0;
-            Character ch = arr.getChar(i, null);
-            if (ch != null) {
-                while (cx > x) {
-                    x += c.charWidth(ch);
-                    i++;
-                    ch = arr.getChar(i, null);
-                    if (ch == null)
-                        break;
-                }
-                if (ch != null && i > 0 && cx < x - c.charWidth(arr.getChar(i - 1)) / 2)
-                    i--;
-            }
-            lineX = i;
+            lineStartY = -1;
+            lineY = getLineY(c, e.y());
+            lineX = getCursorX(c, e.x(), lineY);
             repaint();
+        });
+        addEventListener(MouseMoveEvent.class, e -> {
+            if (!mouseLeft)
+                return;
+            final Context c = lastContext;
+            if (lineStartY == -1)
+                lineStartY = lineY;
+            lineY = getLineY(c, e.y());
+            lineX = getCursorX(c, e.x(), lineY);
+            repaint();
+        });
+        addEventListener(MouseUpEvent.class, e -> {
+            if (e.button == MouseButton.BUTTON0)
+                mouseLeft = false;
         });
         addEventListener(MouseScrollEvent.class, e -> {
             final ScrollBar bar = e.orientation == Orientation.VERTICAL ? vBar : hBar;
@@ -116,6 +114,31 @@ public class TextArea extends Container {
                     break;
             }
         });
+    }
+
+    private int getLineY(final Context ctx, final float cursorY) {
+        return Math.max(Math.min((int) Math.floor((posY + cursorY) / ctx.bounds(new char[] { 'H' }).y), lines.size() - 1), 0);
+    }
+
+    private int getCursorX(final Context ctx, final float cursorX, final int lineY) {
+        final MutableCharArray arr = lines.get(lineY);
+        final float cx = cursorX + posX;
+        float x = ctx.bounds(Integer.toString(lines.size())).x +
+                calcStyleNumber("--gutter-padding", Orientation.HORIZONTAL, 0) * 3;
+        int i = 0;
+        Character ch = arr.getChar(i, null);
+        if (ch != null) {
+            while (cx > x) {
+                x += ctx.charWidth(ch);
+                i++;
+                ch = arr.getChar(i, null);
+                if (ch == null)
+                    break;
+            }
+            if (ch != null && i > 0 && cx < x - ctx.charWidth(arr.getChar(i - 1)) / 2)
+                i--;
+        }
+        return i;
     }
 
     private Float getLineWidth(final int index) {

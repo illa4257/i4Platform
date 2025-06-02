@@ -54,7 +54,7 @@ TextArea {
     --gutter-background-color: #101019;
     --gutter-color: #EEE;
     --gutter-padding: 8dp;
-    --current-line-background-color: #444;
+    --current-line-background-color: #223;
 }
 
 TextArea:focus,
