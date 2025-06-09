@@ -284,12 +284,12 @@ public class WebFactory implements IWebClientFactory {
         return IO.readByteI(is);
     }
 
-    private static String readStr(final InputStream is, final char end, final int max) throws IOException {
+    private static String readStr(final InputStream is, final int max) throws IOException {
         final StringBuilder b = strReadBuff.get();
         b.setLength(0);
         for (int i = 0; i < max; i++) {
             final char ch = (char) readByte(is);
-            if (ch == end)
+            if (ch == ' ')
                 return b.toString();
             b.append(ch);
         }
@@ -321,11 +321,11 @@ public class WebFactory implements IWebClientFactory {
         throw new IOException("Reached the maximum number of characters.");
     }
 
-    private static String readStrLn(final InputStream is, final char end, final int max) throws IOException {
+    private static String readStrLn(final InputStream is) throws IOException {
         final StringBuilder b = strReadBuff.get();
         b.setLength(0);
         boolean r = false;
-        for (int i = 0; i < max; i++) {
+        for (int i = 0; i < 64; i++) {
             final char ch = (char) readByte(is);
             if (ch == '\r') {
                 if (r) {
@@ -341,8 +341,8 @@ public class WebFactory implements IWebClientFactory {
                 oldByte.set((int) ch);
                 return b.toString();
             }
-            if (ch == end) {
-                oldByte.set((int) end);
+            if (ch == ':') {
+                oldByte.set((int) ':');
                 return b.toString();
             }
             b.append(ch);
@@ -353,11 +353,11 @@ public class WebFactory implements IWebClientFactory {
     public static WebRequest accept(final InputStream is, final String ip, final String scheme, final Runnable end) throws IOException {
         oldByte.set(-1);
         final WebRequest r = new WebRequest()
-                .setMethod(readStr(is, ' ', 8))
+                .setMethod(readStr(is, 8))
                 .setURI(new i4URI(
                         scheme,
                         ip,
-                        readStr(is, ' ', 256)
+                        readStr(is, 256)
                 ))
                 .setProtocol(readStrLn(is, 16));
         readHeaders(is, r.clientHeaders);
@@ -397,7 +397,7 @@ public class WebFactory implements IWebClientFactory {
 
     public static void readHeaders(final InputStream is, final Map<String, String> headers) throws IOException {
         while (true) {
-            final String k = readStrLn(is, ':', 64).trim();
+            final String k = readStrLn(is).trim();
             if (k.isEmpty() || oldByte.get() != ':')
                 break;
             oldByte.set(-1);
@@ -482,8 +482,8 @@ public class WebFactory implements IWebClientFactory {
         return CompletableFuture.supplyAsync(() -> {
             try (final CloseableSyncVar<Socket> v2 = new CloseableSyncVar<>(s)) {
                 final InputStream is = s.getInputStream();
-                r.protocol = readStr(is, ' ', 12);
-                r.responseCode = Integer.parseInt(readStr(is, ' ', 4));
+                r.protocol = readStr(is, 12);
+                r.responseCode = Integer.parseInt(readStr(is, 4));
                 r.responseStatus = readStrLn(is, 32);
                 readHeaders(is, r.serverHeaders);
 
