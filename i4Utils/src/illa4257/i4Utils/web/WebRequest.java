@@ -13,6 +13,7 @@ public class WebRequest {
     public Object reserved = null;
     public boolean keepAlive = true, hasContent = false, isClient = true;
     public int responseCode = -1, timeout = 15000;
+    public volatile long lastWrittenData = 0;
     public String protocol = "HTTP/1.1", responseStatus = null, method;
     public i4URI uri;
     public final Map<String, String> clientHeaders, serverHeaders = new KeyMap<>(

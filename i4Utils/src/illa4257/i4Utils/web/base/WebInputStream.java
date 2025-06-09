@@ -1,6 +1,8 @@
 package illa4257.i4Utils.web.base;
 
 import illa4257.i4Utils.io.IO;
+import illa4257.i4Utils.logger.Level;
+import illa4257.i4Utils.logger.i4Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,7 +29,7 @@ public abstract class WebInputStream extends InputStream {
     }
 
     public static class Chunked extends WebInputStream {
-        private boolean isFinished = false;
+        private boolean isFinished = false, isClosed = false;
         private long remaining = 0;
         private int oldByte = '\n';
         private final StringBuilder b = new StringBuilder();
@@ -47,11 +49,9 @@ public abstract class WebInputStream extends InputStream {
             b.setLength(0);
 
             int ch = readCh();
-            if (ch == '\r') {
+            if (ch == '\r')
                 ch = readCh();
-                if (ch != '\n')
-                    oldByte = ch;
-            } else if (ch != '\n')
+            if (ch != '\n')
                 oldByte = ch;
 
             boolean r = false;
@@ -74,13 +74,19 @@ public abstract class WebInputStream extends InputStream {
                 return;
             }
             remaining = Long.parseLong(b.toString(), 16);
-            if (remaining == 0)
+            if (remaining == 0) {
                 isFinished = true;
+                ch = inputStream.read();
+                if (ch == '\n')
+                    return;
+                if (ch == '\r' && inputStream.read() != '\n')
+                    i4Logger.INSTANCE.log(Level.WARN, "Weird server.");
+            }
         }
 
         @Override
         public int read() throws IOException {
-            if (isFinished)
+            if (isFinished || isClosed)
                 return -1;
             if (remaining == 0) {
                 nextChunk();
@@ -94,12 +100,15 @@ public abstract class WebInputStream extends InputStream {
                 return r;
             }
             remaining--;
-            return inputStream.read();
+            final int r = inputStream.read();
+            if (r == -1)
+                isClosed = true;
+            return r;
         }
 
         @Override
-        public int read(final byte[] b, int off, int len) throws IOException {
-            if (isFinished)
+        public int read(@SuppressWarnings("NullableProblems") final byte[] b, int off, int len) throws IOException {
+            if (isFinished || isClosed)
                 return -1;
             if (remaining == 0) {
                 nextChunk();
@@ -117,8 +126,10 @@ public abstract class WebInputStream extends InputStream {
                 len--;
             }
             final int l = inputStream.read(b, off, (int) Math.min(len, remaining));
-            if (l == -1)
+            if (l == -1) {
+                isClosed = true;
                 return -1;
+            }
             remaining -= l;
             return l;
         }
@@ -136,7 +147,7 @@ public abstract class WebInputStream extends InputStream {
                 remaining -= s;
             }
             super.close();
-            if (isFinished)
+            if (isClosed)
                 inputStream.close();
             else
                 end();
@@ -160,7 +171,7 @@ public abstract class WebInputStream extends InputStream {
         }
 
         @Override
-        public int read(final byte[] bytes, final int i, final int i1) throws IOException {
+        public int read(@SuppressWarnings("NullableProblems") final byte[] bytes, final int i, final int i1) throws IOException {
             if (remaining <= 0)
                 return -1;
             final int r = inputStream.read(bytes, i, (int) Math.min(remaining, i1));

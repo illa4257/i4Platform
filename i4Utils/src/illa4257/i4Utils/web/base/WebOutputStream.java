@@ -1,5 +1,7 @@
 package illa4257.i4Utils.web.base;
 
+import illa4257.i4Utils.web.WebRequest;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -11,8 +13,12 @@ public abstract class WebOutputStream extends OutputStream {
         private boolean isClosed = false;
         public final OutputStream outputStream;
         public final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        public final WebRequest request;
 
-        public Chunked(final OutputStream outputStream) { this.outputStream = outputStream; }
+        public Chunked(final OutputStream outputStream, final WebRequest request) {
+            this.outputStream = outputStream;
+            this.request = request;
+        }
 
         @Override
         public void write(final int b) throws IOException {
@@ -48,6 +54,7 @@ public abstract class WebOutputStream extends OutputStream {
             isClosed = true;
             outputStream.write("0\r\n\r\n".getBytes(CHARSET));
             outputStream.flush();
+            request.lastWrittenData = System.currentTimeMillis();
         }
     }
 }

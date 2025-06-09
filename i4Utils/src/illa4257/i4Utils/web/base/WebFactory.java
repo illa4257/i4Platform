@@ -1,5 +1,6 @@
 package illa4257.i4Utils.web.base;
 
+import illa4257.i4Utils.Arch;
 import illa4257.i4Utils.CloseableSyncVar;
 import illa4257.i4Utils.io.IO;
 import illa4257.i4Utils.io.NullInputStream;
@@ -13,16 +14,21 @@ import illa4257.i4Utils.web.i4URI;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.zip.GZIPInputStream;
@@ -38,6 +44,24 @@ public class WebFactory implements IWebClientFactory {
 
     public static final WebFactory INSTANCE = new WebFactory();
 
+    private static final ThreadLocal<Integer> oldByte = ThreadLocal.withInitial(() -> -1);
+    private static final ThreadLocal<StringBuilder> strReadBuff = ThreadLocal.withInitial(StringBuilder::new);
+
+    private final Scheduler scheduler = new Scheduler();
+
+    private static final long SYSTEM_CHECK_DELAY = 5_000;
+
+    private static final Object sys = new Object();
+    private static volatile boolean sysCheck = false;
+    private static long sysNextCheck = 0;
+    private static volatile long sysKeepAliveWait = 0;
+
+    public volatile SocketFactory sslFactory = SSLSocketFactory.getDefault();
+
+    private final ConcurrentHashMap<String, ConcurrentLinkedQueue<SocketCon>>
+            connections = new ConcurrentHashMap<>(),
+            securedConnections = new ConcurrentHashMap<>();
+
     static {
         DECOMPRESSORS.put("gzip", GZIPInputStream::new);
         DECOMPRESSORS.put("deflate", InflaterInputStream::new);
@@ -51,56 +75,204 @@ public class WebFactory implements IWebClientFactory {
             i4Logger.INSTANCE.log(ex);
         }
         SHA1 = digest;
+
+        try {
+            if (Arch.JVM.IS_LINUX) {
+                final File
+                        keepaliveTime = new File("/proc/sys/net/ipv4/tcp_keepalive_time"),
+                        keepaliveProbes = new File("/proc/sys/net/ipv4/tcp_keepalive_probes"),
+                        keepaliveIntVL = new File("/proc/sys/net/ipv4/tcp_keepalive_intvl");
+
+                final List<String> nl = Arrays.asList(keepaliveTime.getName(), keepaliveProbes.getName(), keepaliveIntVL.getName());
+
+                final WatchService s = FileSystems.getDefault().newWatchService();
+                Paths.get("/proc/sys/net/ipv4/").register(s, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
+                new Thread() {
+                    {
+                        setName("Network Configuration monitor (Linux)");
+                        setDaemon(true);
+                    }
+
+                    @Override
+                    public void run() {
+                        try {
+                            boolean changed = true;
+                            //noinspection InfiniteLoopStatement
+                            while (true) {
+                                if (changed) {
+                                    changed = false;
+                                    sysKeepAliveWait = (
+                                            Long.parseLong(new String(IO.readFully(keepaliveTime), StandardCharsets.UTF_8).trim()) +
+                                                    Long.parseLong(new String(IO.readFully(keepaliveIntVL), StandardCharsets.UTF_8).trim()) *
+                                                (Long.parseLong(new String(IO.readFully(keepaliveProbes), StandardCharsets.UTF_8).trim()) - 1)
+                                    ) * 1000;
+                                }
+                                final WatchKey k = s.take();
+                                for (final WatchEvent<?> e : k.pollEvents())
+                                    if (nl.contains(((Path) e.context()).toString())) {
+                                        changed = true;
+                                        break;
+                                    }
+                                k.reset();
+                            }
+                        } catch (final Exception ex) {
+                            i4Logger.INSTANCE.log(ex);
+                        }
+                    }
+                }.start();
+            } else
+                sysKeepAliveWait = (120 * 60 + 75 * (9 - 1)) * 1000;
+        } catch (final Exception ex) {
+            i4Logger.INSTANCE.log(ex);
+        }
     }
 
-    public volatile SocketFactory sslFactory = SSLSocketFactory.getDefault();
-    private final ConcurrentHashMap<String, ConcurrentLinkedQueue<Socket>> connections = new ConcurrentHashMap<>(), securedConnections = new ConcurrentHashMap<>();
-    private static final ThreadLocal<Integer> oldByte = ThreadLocal.withInitial(() -> -1);
-    private static final ThreadLocal<StringBuilder> strReadBuff = ThreadLocal.withInitial(StringBuilder::new);
+    public static long getKeepAliveWait() {
+        if (sysCheck && System.currentTimeMillis() > sysNextCheck && sysCheck)
+            synchronized (sys) {
+                if (System.currentTimeMillis() < sysNextCheck || !sysCheck)
+                    return sysKeepAliveWait;
+                try {
+                    sysNextCheck = System.currentTimeMillis() + SYSTEM_CHECK_DELAY;
+                } catch (final Exception ex) {
+                    i4Logger.INSTANCE.log(WARN, ex);
+                    sysCheck = false;
+                }
+            }
+        return sysKeepAliveWait;
+    }
+
+    private class Scheduler extends Thread {
+        private final Object schedulerLocker = new Object();
+        private long max = -1;
+
+        public Scheduler() {
+            setName("Web Scheduler");
+            setDaemon(true);
+            start();
+        }
+
+        public void schedule(final long nv) {
+            synchronized (schedulerLocker) {
+                if (nv < max)
+                    return;
+                max = nv;
+                schedulerLocker.notify();
+            }
+        }
+
+        @Override
+        public void run() {
+            try {
+                //noinspection InfiniteLoopStatement
+                while (true) {
+                    final long d;
+                    synchronized (schedulerLocker) {
+                        if (max == -1)
+                            schedulerLocker.wait();
+                        d = max;
+                        max = -1;
+                    }
+                    //noinspection BusyWait
+                    Thread.sleep(d);
+                    reduce();
+                }
+            } catch (final InterruptedException ex) {
+                i4Logger.INSTANCE.log(ex);
+            }
+        }
+    }
+
+    private static class SocketCon {
+        public final Socket socket;
+        public final long close;
+
+        public SocketCon(final Socket s, final long close) {
+            socket = s;
+            this.close = close;
+        }
+
+        public boolean isClosed() {
+            if (socket.isClosed())
+                return true;
+            if (close < System.currentTimeMillis()) {
+                try {
+                    socket.close();
+                } catch (final Exception ex) {
+                    i4Logger.INSTANCE.log(ex);
+                }
+                return true;
+            }
+            return false;
+        }
+    }
 
     public WebFactory() {}
 
     public void reduce() {
         connections.values().removeIf(q -> {
-            q.removeIf(Socket::isClosed);
+            q.removeIf(SocketCon::isClosed);
             return q.isEmpty();
         });
         securedConnections.values().removeIf(q -> {
-            q.removeIf(Socket::isClosed);
+            q.removeIf(SocketCon::isClosed);
             return q.isEmpty();
         });
     }
 
-    private Socket newCon1(final boolean isSecure, final String domain, final int port, final int timeout) throws IOException {
+    private Socket newCon1(final boolean isSecure, final String domain, final int port, final int timeout,
+                           final byte[] initData) throws IOException {
         try (final CloseableSyncVar<Socket> var = new CloseableSyncVar<>(
                 isSecure ? sslFactory.createSocket() : new Socket()
         )) {
             var.get().connect(new InetSocketAddress(domain, port), timeout);
+            var.get().setSoTimeout(timeout);
+            var.get().setKeepAlive(true);
+            var.get().setSoLinger(true, Math.max(timeout / 1000, 1));
+            var.get().getOutputStream().write(initData);
             var.preventClosing.set(true);
             return var.get();
         }
     }
 
-    private Socket newCon0(final boolean isSecure, final String domain, final int port, final int timeout) throws IOException {
-        final ConcurrentHashMap<String, ConcurrentLinkedQueue<Socket>> m = isSecure ? securedConnections : connections;
-        final ConcurrentLinkedQueue<Socket> q = m.get(domain + ':' + port);
+    private Socket newCon0(final boolean isSecure, final String domain, final int port, final int timeout, final byte[] initData) throws IOException {
+        final ConcurrentHashMap<String, ConcurrentLinkedQueue<SocketCon>> m = isSecure ? securedConnections : connections;
+        final ConcurrentLinkedQueue<SocketCon> q = m.get(domain + ':' + port);
         if (q == null)
-            return newCon1(isSecure, domain, port, timeout);
+            return newCon1(isSecure, domain, port, timeout, initData);
         while (true) {
-            final Socket s = q.poll();
+            final SocketCon s = q.poll();
             if (s == null) {
                 m.remove(domain + ':' + port, q);
-                return newCon1(isSecure, domain, port, timeout);
+                return newCon1(isSecure, domain, port, timeout, initData);
             }
             if (s.isClosed())
                 continue;
-            return s;
+            try {
+                final OutputStream o = s.socket.getOutputStream();
+                o.write(initData[0]);
+                o.flush();
+                o.write(initData, 1, initData.length - 1);
+            } catch (final SocketException ex) {
+                if (
+                        "Broken pipe".equalsIgnoreCase(ex.getMessage()) ||
+                        "Broken pipe (Write failed)".equalsIgnoreCase(ex.getMessage())
+                )
+                    continue;
+                i4Logger.INSTANCE.log(ex);
+                continue;
+            }
+            return s.socket;
         }
     }
 
-    protected void pass(final boolean isSecure, final String domain, final int port, final Socket socket) {
+    protected void pass(final boolean isSecure, final String domain, final int port, final Socket socket, final long lastWrittenData) {
+        final long d = getKeepAliveWait();
+        if (d <= 0)
+            return;
         (isSecure ? securedConnections : connections).computeIfAbsent(domain + ':' + port, k -> new ConcurrentLinkedQueue<>())
-                .offer(socket);
+                .offer(new SocketCon(socket, lastWrittenData + d));
+        scheduler.schedule(d);
     }
 
     private static int readByte(final InputStream is) throws IOException {
@@ -238,15 +410,13 @@ public class WebFactory implements IWebClientFactory {
         return CompletableFuture.supplyAsync(() -> {
             final boolean isSecure = r.uri.scheme.equalsIgnoreCase("https") || r.uri.scheme.equalsIgnoreCase("wss");
             final int port = r.uri.port >= 0 ? r.uri.port : isSecure ? 443 : 80;
-            try (final CloseableSyncVar<Socket> v = new CloseableSyncVar<>(newCon0(isSecure, r.uri.domain, port, r.timeout))) {
+            try (final CloseableSyncVar<Socket> v = new CloseableSyncVar<>(newCon0(isSecure, r.uri.domain, port, r.timeout, r.method.getBytes(CHARSET)))) {
                 oldByte.set(-1);
                 final Socket s = v.get();
-                s.setSoTimeout(r.timeout);
-                s.setKeepAlive(true);
                 final OutputStream os = s.getOutputStream();
 
                 final String connectionHeader = r.clientHeaders.get("connection"), upgradeHeader = r.clientHeaders.get("upgrade");
-                os.write((r.method + ' ' + (r.uri.fullPath == null ? '/' : Str.encodeURI(r.uri.fullPath, false)) + ' ' + r.protocol + "\r\n").getBytes(CHARSET));
+                os.write((" " + (r.uri.fullPath == null ? '/' : Str.encodeURI(r.uri.fullPath, false)) + ' ' + r.protocol + "\r\n").getBytes(CHARSET));
 
                 if (!r.clientHeaders.containsKey("host"))
                     os.write(("host: " + r.uri.domain + (
@@ -291,13 +461,14 @@ public class WebFactory implements IWebClientFactory {
                     r.outputStream = new WSOutputStreamImpl(os);
                 else {
                     if (!r.hasContent || r.bodyOutput == null)
-                        r.outputStream = new WebOutputStream.Chunked(os);
+                        r.outputStream = new WebOutputStream.Chunked(os, r);
                     else {
                         os.write(r.bodyOutput);
                         r.outputStream = new NullOutputStream();
                     }
                 }
                 os.flush();
+                r.lastWrittenData = System.currentTimeMillis();
                 v.preventClosing.set(true);
                 r.setRunner(ignored -> processRead(s, r, port, isSecure));
                 return r;
@@ -319,14 +490,20 @@ public class WebFactory implements IWebClientFactory {
                 final Runnable end = () -> {
                     if (s.isClosed())
                         return;
-                    if ("keep-alive".equalsIgnoreCase(r.serverHeaders.get("connection")))
-                        pass(isSecure, r.uri.domain, port, s);
-                    else
-                        try {
-                            s.close();
-                        } catch (final IOException ex) {
-                            i4Logger.INSTANCE.log(ex);
+                    final String con = r.serverHeaders.get("connection");
+                    if (con != null)
+                        for (String a : con.split(",")) {
+                            a = a.trim();
+                            if (a.equalsIgnoreCase("keep-alive")) {
+                                pass(isSecure, r.uri.domain, port, s, r.lastWrittenData);
+                                return;
+                            }
                         }
+                    try {
+                        s.close();
+                    } catch (final IOException ex) {
+                        i4Logger.INSTANCE.log(ex);
+                    }
                 };
 
                 r.inputStream = null;
