@@ -20,6 +20,7 @@ public interface Context {
     void setStrokeWidth(final float newWidth);
     void setClipI(final Object clipArea);
     void setClip(final IPath path);
+    void translate(final float x, final float y);
 
     IPath newPath();
 

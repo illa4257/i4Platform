@@ -63,6 +63,11 @@ public class SwingContext implements Context {
     }
 
     @Override
+    public void translate(float x, float y) {
+        graphics.translate(Math.round(x), Math.round(y));
+    }
+
+    @Override
     public void drawLine(float x1, float y1, float x2, float y2) {
         graphics.drawLine(Math.round(x1), Math.round(y1), Math.round(x2), Math.round(y2));
     }

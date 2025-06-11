@@ -64,6 +64,11 @@ public class AndroidGContext implements Context {
     }
 
     @Override
+    public void translate(final float x, final float y) {
+        canvas.translate(x, y);
+    }
+
+    @Override
     public IPath newPath() {
         return new AndroidPath();
     }
