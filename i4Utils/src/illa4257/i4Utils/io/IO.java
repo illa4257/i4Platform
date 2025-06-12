@@ -10,11 +10,13 @@ import java.nio.file.Files;
 public class IO {
     public static final int BUFFER_SIZE = 1024 * 1024;
 
+    private static final ThreadLocal<byte[]> BUFF = ThreadLocal.withInitial(() -> new byte[BUFFER_SIZE]);
+
     private interface IReader {
         byte[] run(final InputStream inputStream) throws IOException;
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({"rawtypes", "unchecked", "JavaReflectionMemberAccess"})
     private static IReader detectReader() {
         try {
             final Method m = InputStream.class.getMethod("readAllBytes");
@@ -87,7 +89,7 @@ public class IO {
             if (is == null)
                 throw new NullPointerException("InputStream is null!");
             final ByteArrayOutputStream r = new ByteArrayOutputStream();
-            final byte[] buff = new byte[BUFFER_SIZE];
+            final byte[] buff = BUFF.get();
             for (int len = is.read(buff, 0, buff.length); len > -1; len = is.read(buff, 0, buff.length))
                 r.write(buff, 0, len);
             return r.toByteArray();
