@@ -3,6 +3,11 @@ package illa4257.i4Utils.logger;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
+
+import static illa4257.i4Utils.logger.Level.ERROR;
+import static illa4257.i4Utils.logger.Level.INFO;
 
 public class i4Logger extends LogHandler {
     public static final i4Logger INSTANCE;
@@ -81,7 +86,23 @@ public class i4Logger extends LogHandler {
     public void log(final Level level, final String message) { log(level, name, message); }
     public void log(final Level level, final String message, final StackTraceElement[] stackTraceElements) { log(level, name, message, stackTraceElements); }
     public void log(final Level level, final Throwable throwable) { log(level, name, throwable); }
-    public void log(final Throwable throwable) { log(Level.ERROR, name, throwable); }
+    public void log(final Throwable throwable) { log(ERROR, name, throwable); }
     public void log(final Level level, final Object... objects) { log(level, name, objects); }
     public void log(final Level level, final Object object) { log(level, name, object); }
+
+    public i4Logger inheritIO() {
+        System.setOut(newPrintStream(INFO));
+        System.setErr(newPrintStream(ERROR));
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> log(e));
+
+        LogManager.getLogManager().reset();
+        Logger.getGlobal().setLevel(java.util.logging.Level.ALL);
+        Logger.getGlobal().addHandler(new JavaLogCatcher(this));
+        return this;
+    }
+
+    public i4Logger inheritGlobalIO() {
+        i4Logger.INSTANCE.unregisterAllHandlers().registerHandler(this);
+        return inheritIO();
+    }
 }
