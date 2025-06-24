@@ -1,5 +1,6 @@
 package illa4257.i4Framework.base.graphics;
 
+import illa4257.i4Utils.media.Image;
 import illa4257.i4Utils.logger.i4Logger;
 
 import java.util.concurrent.ExecutorService;

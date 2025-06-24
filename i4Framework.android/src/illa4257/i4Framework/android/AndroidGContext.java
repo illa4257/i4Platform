@@ -6,7 +6,7 @@ import android.graphics.Rect;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.graphics.IPath;
-import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.math.Vector2D;
 
 public class AndroidGContext implements Context {
@@ -63,10 +63,8 @@ public class AndroidGContext implements Context {
             canvas.clipPath(((AndroidPath) path).path);
     }
 
-    @Override
-    public void translate(final float x, final float y) {
-        canvas.translate(x, y);
-    }
+    @Override public void translate(final float x, final float y) { canvas.translate(x, y); }
+    @Override public void scale(final float x, final float y) { canvas.scale(x, y); }
 
     @Override
     public IPath newPath() {
@@ -95,7 +93,7 @@ public class AndroidGContext implements Context {
 
     @Override
     public void drawImage(Image image, float x, float y, float width, float height) {
-        canvas.drawBitmap(AndroidUtils.toBitmap(image), null,
+        canvas.drawBitmap(((AndroidImage) image.imageMap.computeIfAbsent(AndroidImage.class, ignored -> AndroidImage.compute(image))).bitmap, null,
                 new Rect(Math.round(x), Math.round(y), Math.round(x + width), Math.round(y + height)),
                 paint);
     }

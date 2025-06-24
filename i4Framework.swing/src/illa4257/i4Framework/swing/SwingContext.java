@@ -3,7 +3,8 @@ package illa4257.i4Framework.swing;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.graphics.IPath;
-import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.desktop.BufImgRef;
+import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.math.Vector2D;
 
 import java.awt.*;
@@ -62,10 +63,8 @@ public class SwingContext implements Context {
         return new SwingPath();
     }
 
-    @Override
-    public void translate(float x, float y) {
-        graphics.translate(Math.round(x), Math.round(y));
-    }
+    @Override public void translate(float x, float y) { graphics.translate(x, y); }
+    @Override public void scale(float x, float y) { graphics.scale(x, y); }
 
     @Override
     public void drawLine(float x1, float y1, float x2, float y2) {
@@ -91,6 +90,8 @@ public class SwingContext implements Context {
 
     @Override
     public void drawImage(Image image, float x, float y, float width, float height) {
-        graphics.drawImage(image.asBufferedImage(), Math.round(x), Math.round(y), Math.round(width), Math.round(height), null);
+        graphics.drawImage(((BufImgRef) image.imageMap.computeIfAbsent(BufImgRef.class,
+                ignored -> BufImgRef.compute(image))).image,
+                Math.round(x), Math.round(y), Math.round(width), Math.round(height), null);
     }
 }

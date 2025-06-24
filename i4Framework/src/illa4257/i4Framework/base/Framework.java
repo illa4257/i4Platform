@@ -4,6 +4,7 @@ import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.FileChooser;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Framework.base.styling.StyleSelector;
 import illa4257.i4Framework.base.styling.StyleSetting;
@@ -13,6 +14,7 @@ import illa4257.i4Utils.res.ResourceProvider;
 import illa4257.i4Utils.runnables.Consumer2;
 import illa4257.i4Utils.web.i4URI;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -110,6 +112,14 @@ public abstract class Framework implements ResourceProvider {
         return uri.fullPath != null ? ClassLoader.getSystemResourceAsStream(uri.fullPath.startsWith("/") ?
                         uri.fullPath.substring(1) : uri.fullPath) : null;
     }
+
+    public Image getImage(final InputStream inputStream) throws IOException {
+
+        throw new UnsupportedOperationException("Unsupported image format.");
+    }
+
+    public Image getImage(final i4URI uri) throws IOException { return getImage(openResource(uri)); }
+    public Image getImage(final String uri) throws IOException { return getImage(openResource(uri)); }
 
     @Override
     public void addTo(final ResourceManager mgr) {

@@ -33,7 +33,11 @@ public class WindowFrame extends Container {
         });
         titleBar.setX(2, Unit.DP);
         titleBar.setY(2, Unit.DP);
-        //titleBar.setText(window.getTitle());
+        if (window instanceof Window) {
+            final Window w = (Window) window;
+            w.addEventListener(ChangeTextEvent.class, e -> titleBar.setText(e.newValue));
+            titleBar.setText(w.getTitle());
+        }
         titleBar.setWidth(window.width);
         titleBar.setHeight(32, Unit.DP);
         window.setStartX(titleBar.startX);

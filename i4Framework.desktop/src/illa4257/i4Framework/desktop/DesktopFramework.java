@@ -7,6 +7,7 @@ import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.IFileChooser;
 import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Framework.desktop.cheerpj.CheerpJThemeDetector;
 import illa4257.i4Framework.desktop.win32.DwmAPI;
@@ -16,7 +17,11 @@ import illa4257.i4Utils.Arch;
 import illa4257.i4Utils.logger.Level;
 import illa4257.i4Utils.logger.i4Logger;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 
 public abstract class DesktopFramework extends Framework {
     public static Pointer getWindowPointer(final Window window) {
@@ -77,4 +82,14 @@ public abstract class DesktopFramework extends Framework {
     }
 
     @Override public void onSystemThemeChange(final String theme, final BaseTheme baseTheme) { super.onSystemThemeChange(theme, baseTheme); }
+
+    @Override
+    public Image getImage(final InputStream inputStream) throws IOException {
+        try {
+            final BufferedImage i = ImageIO.read(inputStream);
+            return new Image(i.getWidth(), i.getHeight(), BufImgRef.class, new BufImgRef(i));
+        } catch (final Exception ignored) {
+            return super.getImage(inputStream);
+        }
+    }
 }

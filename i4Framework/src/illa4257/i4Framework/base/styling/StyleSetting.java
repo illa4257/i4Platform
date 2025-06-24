@@ -2,7 +2,7 @@ package illa4257.i4Framework.base.styling;
 
 import illa4257.i4Framework.base.utils.Cache;
 import illa4257.i4Framework.base.graphics.Color;
-import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Utils.media.Image;
 import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.runnables.Provider;

@@ -1,6 +1,6 @@
 package illa4257.i4Framework.base.utils;
 
-import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Utils.media.Image;
 
 import java.util.concurrent.ConcurrentHashMap;
 

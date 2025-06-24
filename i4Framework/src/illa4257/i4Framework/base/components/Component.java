@@ -10,7 +10,7 @@ import illa4257.i4Framework.base.events.mouse.MouseEnterEvent;
 import illa4257.i4Framework.base.events.mouse.MouseLeaveEvent;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.graphics.IPath;
-import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.math.Unit;
 import illa4257.i4Framework.base.points.Point;

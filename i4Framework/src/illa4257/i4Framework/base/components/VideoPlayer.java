@@ -3,7 +3,7 @@ package illa4257.i4Framework.base.components;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.graphics.IFrameGrabber;
-import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.events.components.RepaintEvent;
 import illa4257.i4Utils.logger.i4Logger;
 

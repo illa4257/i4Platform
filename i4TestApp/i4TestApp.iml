@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/assets" type="java-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+    </content>
+    <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="i4Utils" />
+    <orderEntry type="module" module-name="i4Framework" />
+    <orderEntry type="module" module-name="i4Framework.swing" />
+    <orderEntry type="module" module-name="i4Framework.desktop" />
+    <orderEntry type="library" name="net.java.dev.jna.platform" level="application" />
+    <orderEntry type="module" module-name="i4Framework.android" />
+    <orderEntry type="library" scope="PROVIDED" name="android" level="application" />
+  </component>
+</module>

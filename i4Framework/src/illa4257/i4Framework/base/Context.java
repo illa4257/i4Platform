@@ -2,7 +2,7 @@ package illa4257.i4Framework.base;
 
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.graphics.IPath;
-import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.math.Vector2D;
 import illa4257.i4Framework.base.utils.Geom;
 
@@ -21,6 +21,7 @@ public interface Context {
     void setClipI(final Object clipArea);
     void setClip(final IPath path);
     void translate(final float x, final float y);
+    void scale(final float x, final float y);
 
     IPath newPath();
 

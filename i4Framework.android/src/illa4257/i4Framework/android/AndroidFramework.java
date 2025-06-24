@@ -3,6 +3,8 @@ package illa4257.i4Framework.android;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Handler;
 import illa4257.i4Framework.base.Framework;
@@ -10,10 +12,12 @@ import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.web.i4URI;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -138,14 +142,31 @@ public class AndroidFramework extends Framework {
 
     @Override
     public InputStream openResource(final i4URI uri) {
-        if (uri.fullPath != null)
+        if (uri.fullPath != null) {
+            final String s = uri.fullPath.startsWith("/") ? uri.fullPath.substring(1) :
+                    uri.fullPath;
             try {
                 return context.getAssets().open(
-                        (uri.fullPath.startsWith("/") ? uri.fullPath.substring(1) :
-                        uri.fullPath).replaceAll("/", "\\\\"));
-            } catch (final Exception ex) {
-                i4Logger.INSTANCE.log(ex);
+                        s.replaceAll("/", "\\\\"));
+            } catch (final Exception ignored) {
+                try {
+                    return context.getAssets().open(
+                            s.replaceAll("\\\\", "/"));
+                } catch (final Exception ex) {
+                    i4Logger.INSTANCE.log(ex);
+                }
             }
+        }
         return super.openResource(uri);
+    }
+
+    @Override
+    public Image getImage(final InputStream inputStream) throws IOException {
+        try {
+            final Bitmap b = BitmapFactory.decodeStream(inputStream);
+            return new Image(b.getWidth(), b.getHeight(), AndroidImage.class, new AndroidImage(b));
+        } catch (final Exception ignored) {
+            return super.getImage(inputStream);
+        }
     }
 }
