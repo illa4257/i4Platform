@@ -79,137 +79,155 @@ public class MultiSocketFactory implements Closeable {
                     throw ex;
                 }
                 final AtomicBoolean isNotShuttingDown = new AtomicBoolean(true);
-                new Thread(() -> {
-                    final SecureRandom r = new SecureRandom();
-                    try (final ServerSocket serv = server) {
-                        while (!serv.isClosed()) {
-                            final Socket s = serv.accept();
-                            new Thread(() -> {
-                                try (final CloseableSyncVar<Socket> ac = new CloseableSyncVar<>(s)) {
-                                    s.setTcpNoDelay(true);
-                                    final InputStream is = s.getInputStream();
-                                    final OutputStream os = s.getOutputStream();
-                                    final byte[] ver = new byte[VERSION.length];
-                                    int a;
-                                    for (int i = 0; i < ver.length; i++) {
-                                        a = is.read();
-                                        if (a == -1)
-                                            throw new IOException("End");
-                                        ver[i] = (byte) a;
+                new Thread() {
+                    {
+                        setName("MultiSocketServer");
+                        setDaemon(true);
+                        setPriority(MIN_PRIORITY);
+                    }
+
+                    @Override
+                    public void run() {
+                        final SecureRandom r = new SecureRandom();
+                        try (final ServerSocket serv = server) {
+                            while (!serv.isClosed()) {
+                                final Socket s = serv.accept();
+                                new Thread() {
+                                    {
+                                        setName("MultiSocket Connection");
+                                        setDaemon(true);
+                                        setPriority(MIN_PRIORITY);
                                     }
-                                    for (int i = 0; i < VERSION.length; i++)
-                                        if (VERSION[i] != ver[i]) {
-                                            os.write(0);
-                                            os.flush();
-                                            return;
-                                        }
-                                    a = is.read();
-                                    if (a == -1)
-                                        throw new IOException("End");
-                                    final byte[] applicationIdArr = new byte[a + 1];
-                                    for (int i = 0; i < applicationIdArr.length; i++) {
-                                        a = is.read();
-                                        if (a == -1)
-                                            throw new IOException("End");
-                                        applicationIdArr[i] = (byte) a;
-                                    }
-                                    final String applicationId = Arrays.toString(applicationIdArr);
-                                    os.write(1);
-                                    os.flush();
-                                    a = is.read();
-                                    if (a == -1)
-                                        throw new IOException("End");
-                                    if (a == RESERVE) {
-                                        final Socket sm = servers.putIfAbsent(applicationId, s);
-                                        System.out.println("Reserving, old = " + sm);
-                                        if (sm == null) {
+
+                                    @Override
+                                    public void run() {
+                                        try (final CloseableSyncVar<Socket> ac = new CloseableSyncVar<>(s)) {
+                                            s.setTcpNoDelay(true);
+                                            final InputStream is = s.getInputStream();
+                                            final OutputStream os = s.getOutputStream();
+                                            final byte[] ver = new byte[VERSION.length];
+                                            int a;
+                                            for (int i = 0; i < ver.length; i++) {
+                                                a = is.read();
+                                                if (a == -1)
+                                                    throw new IOException("End");
+                                                ver[i] = (byte) a;
+                                            }
+                                            for (int i = 0; i < VERSION.length; i++)
+                                                if (VERSION[i] != ver[i]) {
+                                                    os.write(0);
+                                                    os.flush();
+                                                    return;
+                                                }
+                                            a = is.read();
+                                            if (a == -1)
+                                                throw new IOException("End");
+                                            final byte[] applicationIdArr = new byte[a + 1];
+                                            for (int i = 0; i < applicationIdArr.length; i++) {
+                                                a = is.read();
+                                                if (a == -1)
+                                                    throw new IOException("End");
+                                                applicationIdArr[i] = (byte) a;
+                                            }
+                                            final String applicationId = Arrays.toString(applicationIdArr);
                                             os.write(1);
                                             os.flush();
-                                            try {
-                                                if (is.read() == CLOSE)
-                                                    System.out.println("Stop reserving");
-                                            } catch (final Exception ex) {
-                                                log(ex);
+                                            a = is.read();
+                                            if (a == -1)
+                                                throw new IOException("End");
+                                            if (a == RESERVE) {
+                                                final Socket sm = servers.putIfAbsent(applicationId, s);
+                                                System.out.println("Reserving, old = " + sm);
+                                                if (sm == null) {
+                                                    os.write(1);
+                                                    os.flush();
+                                                    try {
+                                                        if (is.read() == CLOSE)
+                                                            System.out.println("Stop reserving");
+                                                    } catch (final Exception ex) {
+                                                        log(ex);
+                                                    }
+                                                    servers.remove(applicationId).close();
+                                                    if (servers.isEmpty())
+                                                        close();
+                                                    return;
+                                                }
+                                            } else if (a == CONNECT) {
+                                                final Socket sm = servers.get(applicationId);
+                                                System.out.println("Connecting to " + sm);
+                                                if (sm == null) {
+                                                    os.write(0);
+                                                    os.flush();
+                                                    return;
+                                                }
+                                                synchronized (sm) {
+                                                    final OutputStream osm = sm.getOutputStream();
+                                                    while (true) {
+                                                        final int b = r.nextInt();
+                                                        System.out.println("Accept code: " + b);
+                                                        if (clients.putIfAbsent(b, s) != null)
+                                                            continue;
+                                                        osm.write(0);
+                                                        illa4257.i4Utils.io.IO.writeBEInteger(osm, b);
+                                                        osm.flush();
+                                                        break;
+                                                    }
+                                                }
+                                                ac.preventClosing.set(true);
+                                                return;
+                                            } else if (a == ACCEPT) {
+                                                try (final Socket client = clients.remove(illa4257.i4Utils.io.IO.readBEInteger(is))) {
+                                                    if (client == null)
+                                                        return;
+                                                    final InputStream clientIS = client.getInputStream();
+                                                    final OutputStream clientOS = client.getOutputStream();
+                                                    clientOS.write(1);
+                                                    clientOS.flush();
+
+                                                    final Thread ct = new Thread(() -> {
+                                                        try {
+                                                            transfer(os, clientIS);
+                                                        } catch (final Exception ex) {
+                                                            log(ex);
+                                                        }
+                                                    });
+                                                    ct.start();
+                                                    try {
+                                                        transfer(clientOS, is);
+                                                    } catch (final IOException ex) {
+                                                        log(ex);
+                                                    }
+                                                    ct.join();
+                                                    try {
+                                                        client.close();
+                                                    } catch (final Exception ex) {
+                                                        log(ex);
+                                                    }
+                                                    return;
+                                                }
                                             }
-                                            servers.remove(applicationId).close();
-                                            if (servers.isEmpty())
-                                                close();
-                                            return;
-                                        }
-                                    } else if (a == CONNECT) {
-                                        final Socket sm = servers.get(applicationId);
-                                        System.out.println("Connecting to " + sm);
-                                        if (sm == null) {
                                             os.write(0);
                                             os.flush();
-                                            return;
-                                        }
-                                        synchronized (sm) {
-                                            final OutputStream osm = sm.getOutputStream();
-                                            while (true) {
-                                                final int b = r.nextInt();
-                                                System.out.println("Accept code: " + b);
-                                                if (clients.putIfAbsent(b, s) != null)
-                                                    continue;
-                                                osm.write(0);
-                                                illa4257.i4Utils.io.IO.writeBEInteger(osm, b);
-                                                osm.flush();
-                                                break;
-                                            }
-                                        }
-                                        ac.preventClosing.set(true);
-                                        return;
-                                    } else if (a == ACCEPT) {
-                                        try (final Socket client = clients.remove(illa4257.i4Utils.io.IO.readBEInteger(is))) {
-                                            if (client == null)
-                                                return;
-                                            final InputStream clientIS = client.getInputStream();
-                                            final OutputStream clientOS = client.getOutputStream();
-                                            clientOS.write(1);
-                                            clientOS.flush();
-
-                                            final Thread ct = new Thread(() -> {
-                                                try {
-                                                    transfer(os, clientIS);
-                                                } catch (final Exception ex) {
-                                                    log(ex);
-                                                }
-                                            });
-                                            ct.start();
-                                            try {
-                                                transfer(clientOS, is);
-                                            } catch (final IOException ex) {
-                                                log(ex);
-                                            }
-                                            ct.join();
-                                            try {
-                                                client.close();
-                                            } catch (final Exception ex) {
-                                                log(ex);
-                                            }
-                                            return;
+                                        } catch (final Exception ex) {
+                                            log(ex);
                                         }
                                     }
-                                    os.write(0);
-                                    os.flush();
-                                } catch (final Exception ex) {
-                                    log(ex);
-                                }
-                            }).start();
+                                }.start();
+                            }
+                        } catch (final Exception ex) {
+                            if (!(ex instanceof SocketException && ("Socket closed".equals(ex.getMessage()) || "socket closed".equals(ex.getMessage()))))
+                                log(ex);
                         }
-                    } catch (final Exception ex) {
-                        if (!(ex instanceof SocketException && ("Socket closed".equals(ex.getMessage()) || "socket closed".equals(ex.getMessage()))))
-                            log(ex);
+                        MultiSocketFactory.this.server.setIfEquals(null, server);
+                        synchronized (locker) {
+                            if (t == null)
+                                return;
+                            if (isNotShuttingDown.get())
+                                Runtime.getRuntime().removeShutdownHook(t);
+                            t = null;
+                        }
                     }
-                    this.server.setIfEquals(null, server);
-                    synchronized (locker) {
-                        if (t == null)
-                            return;
-                        if (isNotShuttingDown.get())
-                            Runtime.getRuntime().removeShutdownHook(t);
-                        t = null;
-                    }
-                }).start();
+                }.start();
                 Runtime.getRuntime().addShutdownHook(t = new Thread(() -> {
                     isNotShuttingDown.set(false);
                     try {
