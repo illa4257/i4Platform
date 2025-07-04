@@ -8,6 +8,7 @@ public class SemVer implements Comparable<SemVer>, Serializable {
     public enum ReleaseType {
         RELEASE,
         RELEASE_CANDIDATE,
+        PRE_RELEASE,
         BETA,
         ALPHA;
 
@@ -17,6 +18,8 @@ public class SemVer implements Comparable<SemVer>, Serializable {
             switch (tag.toLowerCase()) {
                 case "rc":
                     return ReleaseType.RELEASE_CANDIDATE;
+                case "pre-release":
+                    return ReleaseType.PRE_RELEASE;
                 case "b":
                 case "beta":
                     return ReleaseType.BETA;
@@ -114,6 +117,10 @@ public class SemVer implements Comparable<SemVer>, Serializable {
         if (build != o.build) return Integer.compare(build, o.build);
         if (revision != o.revision) return Integer.compare(revision, o.revision);
         return releaseType.compareTo(o.releaseType);
+    }
+
+    public String format() {
+        return major + "." + minor + "." + patch + (tag != null ? "-" + tag : "") + "+" + build;
     }
 
     @Override
