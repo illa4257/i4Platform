@@ -21,6 +21,7 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
     public final Container root;
     @SuppressWarnings("rawtypes")
     public EventListener[] l;
+    private volatile boolean center = false;
 
     public SwingWindow(final SwingFramework framework) { this(framework, null); }
     public SwingWindow(final SwingFramework framework, final Window window) {
@@ -81,6 +82,10 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
                 window.link();
                 pack();
                 framework.add(this);
+                if (center) {
+                    center = false;
+                    setLocationRelativeTo(null);
+                }
             } else {
                 if (!window.frameworkWindow.setIfEquals(null, this))
                     return;
@@ -118,7 +123,12 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
         });
         return new EventListener[] {
                 window.addEventListener(RepaintEvent.class, e -> repaint()),
-                window.addEventListener(CenterWindowEvent.class, event -> setLocationRelativeTo(null))
+                window.addDirectEventListener(CenterWindowEvent.class, event -> {
+                    if (isVisible())
+                        setLocationRelativeTo(null);
+                    else
+                        center = true;
+                })
         };
     }
 
