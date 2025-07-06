@@ -63,9 +63,9 @@ public class Container extends Component implements Iterable<Component> {
         final boolean r = component != null && this.components.add(component);
         if (r) {
             component.densityMultiplier.set(densityMultiplier);
+            final Container c = component.parent.getAndSet(this);
             if (getLinkNumber() > 0)
                 component.link();
-            final Container c = component.parent.getAndSet(this);
             if (c != null && c != this)
                 c.remove(c);
             component.fire(new ChangeParentEvent());
