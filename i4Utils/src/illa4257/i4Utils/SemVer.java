@@ -10,7 +10,8 @@ public class SemVer implements Comparable<SemVer>, Serializable {
         RELEASE_CANDIDATE,
         PRE_RELEASE,
         BETA,
-        ALPHA;
+        ALPHA,
+        DEV;
 
         public static ReleaseType of(final String tag) {
             if (tag == null)
@@ -26,6 +27,8 @@ public class SemVer implements Comparable<SemVer>, Serializable {
                 case "a":
                 case "alpha":
                     return ReleaseType.ALPHA;
+                case "dev":
+                    return ReleaseType.DEV;
                 default:
                     return ReleaseType.RELEASE;
             }
