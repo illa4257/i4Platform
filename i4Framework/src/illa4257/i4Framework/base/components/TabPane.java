@@ -57,7 +57,6 @@ public class TabPane extends Container {
                 } else
                     x -= (int) w;
             }
-            selectTab(Math.round(x / 130));
         });
     }
 
