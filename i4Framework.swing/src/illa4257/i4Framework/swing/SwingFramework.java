@@ -94,8 +94,8 @@ public class SwingFramework extends DesktopFramework {
 
     private final ConcurrentLinkedQueue<SwingWindow> frames = new ConcurrentLinkedQueue<>();
 
-    public SwingFramework(final String pkgName) {
-        super(pkgName);
+    public SwingFramework(final String appName) {
+        super(appName);
         addThemeListener((theme, baseTheme) -> {
             final boolean isDark = baseTheme == BaseTheme.DARK;
             for (final SwingWindow w : frames)

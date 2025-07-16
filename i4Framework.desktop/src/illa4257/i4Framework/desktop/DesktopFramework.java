@@ -37,10 +37,10 @@ public abstract class DesktopFramework extends Framework {
         return null;
     }
 
-    private final String pkgName;
+    private final String appName;
 
-    public DesktopFramework(final String pkgName) {
-        this.pkgName = pkgName;
+    public DesktopFramework(final String appName) {
+        this.appName = appName;
         try {
             if (Arch.REAL.IS_WINDOWS) {
                 if (Arch.REAL.osVer.major >= 10)
@@ -102,17 +102,17 @@ public abstract class DesktopFramework extends Framework {
     @Override
     public File getAppDataDir() {
         return Arch.JVM.IS_WINDOWS ?
-                        Arch.JVM.osVer.major >= 6 ? new File(System.getenv("APPDATA"), pkgName) :
-                                new File(System.getProperty("user.home"), "Local Settings/Application Data/" + pkgName) :
-                new File(System.getProperty("user.home"), Arch.JVM.IS_MACOS ? "/Library/Application Support/" + pkgName : "/.local/share/" + pkgName);
+                        Arch.JVM.osVer.major >= 6 ? new File(System.getenv("APPDATA"), appName) :
+                                new File(System.getProperty("user.home"), "Local Settings/Application Data/" + appName) :
+                new File(System.getProperty("user.home"), Arch.JVM.IS_MACOS ? "/Library/Application Support/" + appName : "/.local/share/" + appName);
     }
 
     @Override
     public File getLocalAppDataDir() {
         return Arch.JVM.IS_WINDOWS ?
-                Arch.JVM.osVer.major >= 6 ? new File(System.getenv("LOCALAPPDATA"), pkgName) :
-                        new File(System.getProperty("user.home"), "Local Settings/Application Data/" + pkgName) :
-                new File(System.getProperty("user.home"), Arch.JVM.IS_MACOS ? "/Library/Application Support/" + pkgName : "/.local/share/" + pkgName);
+                Arch.JVM.osVer.major >= 6 ? new File(System.getenv("LOCALAPPDATA"), appName) :
+                        new File(System.getProperty("user.home"), "Local Settings/Application Data/" + appName) :
+                new File(System.getProperty("user.home"), Arch.JVM.IS_MACOS ? "/Library/Application Support/" + appName : "/.local/share/" + appName);
     }
 
     @Override
