@@ -1,6 +1,5 @@
 package illa4257.i4Framework.swing;
 
-import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
