@@ -10,7 +10,6 @@ import illa4257.i4Framework.base.math.Vector2D;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.ChangeTextEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
-import illa4257.i4Utils.SyncVar;
 
 import java.util.Objects;
 
