@@ -111,7 +111,7 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
 
     @SuppressWarnings("rawtypes")
     private EventListener[] registerListeners() {
-        window.addDirectEventListener(ChangeTextEvent.class, e -> setTitle(e.newValue));
+        window.addDirectEventListener(ChangeTextEvent.class, e -> setTitle(String.valueOf(e.newValue)));
         window.addDirectEventListener(VisibleEvent.class, e -> {
             if (isVisible() != e.value)
                 setVisible(e.value);

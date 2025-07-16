@@ -28,14 +28,14 @@ public class WindowFrame extends Container {
         add(window);
         add(titleBar);
         window.addEventListener(ChangeTextEvent.class, e -> {
-            titleBar.setText(e.newValue);
+            titleBar.setText(String.valueOf(e.newValue));
             titleBar.repaint();
         });
         titleBar.setX(2, Unit.DP);
         titleBar.setY(2, Unit.DP);
         if (window instanceof Window) {
             final Window w = (Window) window;
-            w.addEventListener(ChangeTextEvent.class, e -> titleBar.setText(e.newValue));
+            w.addEventListener(ChangeTextEvent.class, e -> titleBar.setText(String.valueOf(e.newValue)));
             titleBar.setText(w.getTitle());
         }
         titleBar.setWidth(window.width);

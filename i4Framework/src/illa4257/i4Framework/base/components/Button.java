@@ -18,11 +18,12 @@ import static illa4257.i4Framework.base.math.HorizontalAlign.CENTER;
 import static illa4257.i4Framework.base.math.HorizontalAlign.LEFT;
 
 public class Button extends Component {
-    private final SyncVar<String> text;
+    private final Object textLocker = new Object();
+    private volatile Object text;
 
     public Button() { this(null); }
-    public Button(final String text) {
-        this.text = new SyncVar<>(text);
+    public Button(final Object text) {
+        this.text = text;
         setFocusable(true);
         final EventListener<IMoveableInputEvent> ml = e -> {
             if (
@@ -36,19 +37,24 @@ public class Button extends Component {
         addEventListener(TouchUpEvent.class, ml::run);
     }
 
-    public void setText(final String text) {
-        final String old;
-        if (!Objects.equals(old = this.text.getAndSet(text), text))
+    public void setText(final Object text) {
+        synchronized (textLocker) {
+            if (Objects.equals(this.text, text))
+                return;
+            final Object old = this.text;
+            this.text = text;
             fire(new ChangeTextEvent(old, text));
+        }
     }
 
     @Override
     public void paint(final Context ctx) {
         super.paint(ctx);
-        final String t = text.get();
+        final Object te = text;
         final Color c = getColor("color");
-        if (t == null || c.alpha <= 0)
+        if (te == null || c.alpha <= 0)
             return;
+        final String t = String.valueOf(te);
         ctx.setColor(c);
         final Vector2D s = ctx.bounds(t);
         final HorizontalAlign a = getEnumValue("text-align", HorizontalAlign.class, LEFT);
