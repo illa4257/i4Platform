@@ -6,6 +6,6 @@ import illa4257.i4Utils.logger.AnsiColoredPrintStreamLogHandler;
 public class DesktopLauncher {
     public static void main(final String[] args) {
         i4Test.L.registerHandler(new AnsiColoredPrintStreamLogHandler(System.out));
-        i4Test.init(SwingFramework.INSTANCE);
+        i4Test.init(new SwingFramework("illa4257.i4Test"));
     }
 }

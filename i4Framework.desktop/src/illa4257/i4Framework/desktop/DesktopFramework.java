@@ -7,6 +7,7 @@ import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.IFileChooser;
 import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Framework.desktop.cheerpj.CheerpJThemeDetector;
@@ -20,6 +21,7 @@ import illa4257.i4Utils.logger.i4Logger;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -35,7 +37,10 @@ public abstract class DesktopFramework extends Framework {
         return null;
     }
 
-    public DesktopFramework() {
+    private final String pkgName;
+
+    public DesktopFramework(final String pkgName) {
+        this.pkgName = pkgName;
         try {
             if (Arch.REAL.IS_WINDOWS) {
                 if (Arch.REAL.osVer.major >= 10)
@@ -50,6 +55,7 @@ public abstract class DesktopFramework extends Framework {
             i4Logger.INSTANCE.log(Level.WARN, "Failed to initialize theme listener.");
             i4Logger.INSTANCE.log(ex);
         }
+        Framework.registerFramework(this);
     }
 
     protected static void setDarkMode(final Window window, final boolean enabled) {
@@ -92,4 +98,23 @@ public abstract class DesktopFramework extends Framework {
             return super.getImage(inputStream);
         }
     }
+
+    @Override
+    public File getAppDataDir() {
+        return Arch.JVM.IS_WINDOWS ?
+                        Arch.JVM.osVer.major >= 6 ? new File(System.getenv("APPDATA"), pkgName) :
+                                new File(System.getProperty("user.home"), "Local Settings/Application Data/" + pkgName) :
+                new File(System.getProperty("user.home"), Arch.JVM.IS_MACOS ? "/Library/Application Support/" + pkgName : "/.local/share/" + pkgName);
+    }
+
+    @Override
+    public File getLocalAppDataDir() {
+        return Arch.JVM.IS_WINDOWS ?
+                Arch.JVM.osVer.major >= 6 ? new File(System.getenv("LOCALAPPDATA"), pkgName) :
+                        new File(System.getProperty("user.home"), "Local Settings/Application Data/" + pkgName) :
+                new File(System.getProperty("user.home"), Arch.JVM.IS_MACOS ? "/Library/Application Support/" + pkgName : "/.local/share/" + pkgName);
+    }
+
+    @Override
+    public File getAppDir() { return MiniUtil.getPath(DesktopFramework.class); }
 }

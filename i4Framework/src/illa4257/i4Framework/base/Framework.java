@@ -14,6 +14,7 @@ import illa4257.i4Utils.res.ResourceProvider;
 import illa4257.i4Utils.runnables.Consumer2;
 import illa4257.i4Utils.web.i4URI;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
@@ -120,6 +121,10 @@ public abstract class Framework implements ResourceProvider {
 
     public Image getImage(final i4URI uri) throws IOException { return getImage(openResource(uri)); }
     public Image getImage(final String uri) throws IOException { return getImage(openResource(uri)); }
+
+    public File getAppDataDir() { return null; }
+    public File getLocalAppDataDir() { return null; }
+    public File getAppDir() { return null; }
 
     @Override
     public void addTo(final ResourceManager mgr) {

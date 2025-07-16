@@ -3,8 +3,10 @@ package illa4257.i4test;
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
+import illa4257.i4Framework.base.components.Label;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
+import illa4257.i4Framework.base.math.Unit;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Framework.base.styling.StyleSetting;
@@ -56,6 +58,22 @@ public class i4Test {
         c.styles.put("background-color", new StyleSetting("0x0000FF"));
         c.styles.put("background-image", new StyleSetting("test-img"));
         w.add(c);
+
+        final Label l = new Label("???");
+        try {
+            l.setText(framework.getAppDataDir() + "\n" +
+                    framework.getLocalAppDataDir() + "\n" +
+                    framework.getAppDir());
+        } catch (final Exception ex) {
+            l.setText(ex.toString());
+            L.log(ex);
+        }
+        l.setStartX(w.safeStartX);
+        l.setEndX(w.safeEndX);
+        l.setStartY(w.safeStartY);
+        l.setHeight(32 * 3, Unit.DP);
+        w.add(l);
+
 
         w.setSize(720, 480);
         w.center();

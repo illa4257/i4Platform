@@ -12,11 +12,13 @@ import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Utils.Arch;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.web.i4URI;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -169,4 +171,8 @@ public class AndroidFramework extends Framework {
             return super.getImage(inputStream);
         }
     }
+
+    @Override public File getAppDataDir() { return new File(context.getApplicationInfo().dataDir); }
+    @Override public File getLocalAppDataDir() {return context.getFilesDir(); }
+    @Override public File getAppDir() { return new File(context.getApplicationInfo().sourceDir).getParentFile(); }
 }

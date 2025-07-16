@@ -23,7 +23,6 @@ import static java.awt.RenderingHints.*;
 public class SwingFramework extends DesktopFramework {
     static Font font;
     static Map<RenderingHints.Key, Object> current, RECOMMENDED;
-    public static final SwingFramework INSTANCE = new SwingFramework();
 
     private final SyncVar<Instance> timer = new SyncVar<>();
     private class Instance {
@@ -92,13 +91,12 @@ public class SwingFramework extends DesktopFramework {
         current = RECOMMENDED;
 
         font = new Font(Font.DIALOG, Font.PLAIN, 16);
-
-        Framework.registerFramework(INSTANCE);
     }
 
     private final ConcurrentLinkedQueue<SwingWindow> frames = new ConcurrentLinkedQueue<>();
 
-    public SwingFramework() {
+    public SwingFramework(final String pkgName) {
+        super(pkgName);
         addThemeListener((theme, baseTheme) -> {
             final boolean isDark = baseTheme == BaseTheme.DARK;
             for (final SwingWindow w : frames)
