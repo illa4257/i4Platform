@@ -84,4 +84,20 @@ public class Str {
             buf[len] = chars.charAt(randomizer.nextInt(cl));
         return new String(buf);
     }
+
+    public static int countSubstringsNoOverlap(final String str, final String substring) {
+        int i = 0, n = 0;
+        while ((i = str.indexOf(substring, i)) != -1) {
+            i += substring.length();
+            n++;
+        }
+        return n;
+    }
+
+    public static boolean contains(final String str, final Iterable<String> iterable) {
+        for (final String s : iterable)
+            if (str.contains(s))
+                return true;
+        return false;
+    }
 }

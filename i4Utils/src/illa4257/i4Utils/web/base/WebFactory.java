@@ -325,7 +325,7 @@ public class WebFactory implements IWebClientFactory {
         final StringBuilder b = strReadBuff.get();
         b.setLength(0);
         boolean r = false;
-        for (int i = 0; i < 64; i++) {
+        for (int i = 0; i < 256; i++) {
             final char ch = (char) readByte(is);
             if (ch == '\r') {
                 if (r) {

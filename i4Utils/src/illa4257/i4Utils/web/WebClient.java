@@ -10,7 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class WebClient {
-    private final IWebClientFactory factory;
+    public final IWebClientFactory factory;
     public final Map<String, String> headers = new KeyMap<>(
             new ConcurrentHashMap<>(), String::toLowerCase,
             k -> k instanceof String ? ((String) k).toLowerCase() : k
