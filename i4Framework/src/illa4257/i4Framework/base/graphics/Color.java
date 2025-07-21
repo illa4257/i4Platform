@@ -48,21 +48,21 @@ public class Color {
     }
 
     public Color(final int red, final int green, final int blue) {
-        this.red = red % 256 / 255f;
-        this.green = green % 256 / 255f;
-        this.blue = blue % 256 / 255f;
+        this.red = (red & 0xFF) / 255f;
+        this.green = (green & 0xFF) / 255f;
+        this.blue = (blue & 0xFF) / 255f;
         this.alpha = 1;
     }
 
     public Color(final int red, final int green, final int blue, final int alpha) {
-        this.red = red % 256 / 255f;
-        this.green = green % 256 / 255f;
-        this.blue = blue % 256 / 255f;
-        this.alpha = alpha % 256 / 255f;
+        this.red = (red & 0xFF) / 255f;
+        this.green = (green & 0xFF) / 255f;
+        this.blue = (blue & 0xFF) / 255f;
+        this.alpha = (alpha & 0xFF) / 255f;
     }
 
-    public Color(final int rgba) {
-        this(rgba >> 24, rgba >> 16, rgba >> 8, rgba);
+    public Color(final int argb) {
+        this(argb >> 16, argb >> 8, argb, argb >> 24);
     }
 
     public Color(final java.awt.Color color) {
