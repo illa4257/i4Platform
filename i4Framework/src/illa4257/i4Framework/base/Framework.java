@@ -115,7 +115,6 @@ public abstract class Framework implements ResourceProvider {
     }
 
     public Image getImage(final InputStream inputStream) throws IOException {
-
         throw new UnsupportedOperationException("Unsupported image format.");
     }
 
