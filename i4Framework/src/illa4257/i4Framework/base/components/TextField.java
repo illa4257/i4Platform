@@ -20,6 +20,7 @@ public class TextField extends Component {
     public final AtomicBoolean hideCharacters = new AtomicBoolean(false);
     public final AtomicInteger index = new AtomicInteger(0), selectionIndex = new AtomicInteger(-1), position = new AtomicInteger(0);
     public final MutableCharArray text = new MutableCharArray();
+    public volatile Object hint = null;
     private volatile Context lastContext = null;
 
     private final AtomicBoolean md = new AtomicBoolean();
@@ -304,6 +305,16 @@ public class TextField extends Component {
     public void paint(final Context context) {
         super.paint(context);
         lastContext = context;
+
+        if (!isFocused() && text.isEmpty()) {
+            final Object h = hint;
+            final Color hintColor = getColor("--hint-color");
+            if (h != null && hintColor.alpha > 0) {
+                context.setColor(hintColor);
+                context.drawString(h.toString(), 8, (height.calcFloat() - context.bounds(new char[] { 'H' }).y) / 2);
+            }
+            return;
+        }
 
         final Color textColor = getColor("color");
         if (textColor.alpha <= 0)

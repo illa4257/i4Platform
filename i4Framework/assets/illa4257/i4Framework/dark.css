@@ -1,6 +1,7 @@
 * {
     color: #f0f0f0;
     --scrollbar-width: 16dp;
+    --hint-color: #aaa;
 }
 
 .context-menu > *,
