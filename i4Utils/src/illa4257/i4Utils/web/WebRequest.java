@@ -4,7 +4,9 @@ import illa4257.i4Utils.KeyMap;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -16,7 +18,7 @@ public class WebRequest {
     public volatile long lastWrittenData = 0;
     public String protocol = "HTTP/1.1", responseStatus = null, method;
     public i4URI uri;
-    public final Map<String, String> clientHeaders, serverHeaders = new KeyMap<>(
+    public final Map<String, List<String>> clientHeaders, serverHeaders = new KeyMap<>(
             new HashMap<>(), String::toLowerCase,
             k -> k instanceof String ? ((String) k).toLowerCase() : k
     );
@@ -39,7 +41,7 @@ public class WebRequest {
         );
     }
 
-    public WebRequest(final String method, final i4URI uri, final Map<String, String> headers) {
+    public WebRequest(final String method, final i4URI uri, final Map<String, List<String>> headers) {
         this.method = method != null ? method : "GET";
         this.uri = uri;
         this.clientHeaders = new KeyMap<>(
@@ -53,10 +55,11 @@ public class WebRequest {
         this.timeout = client.timeout;
         this.method = method != null ? method : "GET";
         this.uri = uri;
-        this.clientHeaders = new KeyMap<>(
+        /*this.clientHeaders = new KeyMap<>(
                 new HashMap<>(client.headers), String::toLowerCase,
                 k -> k instanceof String ? ((String) k).toLowerCase() : k
-        );
+        );*/
+        this.clientHeaders = new HashMap<>(client.headers);
     }
 
     public WebRequest setMethod(final String method) {
@@ -77,13 +80,27 @@ public class WebRequest {
     }
 
     public WebRequest setHeader(final String key, final String value) {
-        (isClient ? clientHeaders : serverHeaders).put(key, value);
+        setHeader(isClient ? clientHeaders : serverHeaders, key, value);
         return this;
     }
 
-    public WebRequest setHeaders(final Map<String, String> headers) {
+    public WebRequest setHeaders(final Map<String, List<String>> headers) {
         (isClient ? clientHeaders : serverHeaders).putAll(headers);
         return this;
+    }
+
+    public static void setHeader(final Map<String, List<String>> headers, final String key, final String value) {
+        final List<String> l = headers.computeIfAbsent(key, ignored -> new ArrayList<>());
+        if (!l.isEmpty())
+            l.clear();
+        l.add(value);
+    }
+
+    public static String getHeader(final Map<String, List<String>> headers, final String key) {
+        final List<String> l = headers.get(key);
+        if (l == null)
+            return null;
+        return l.isEmpty() ? null : l.get(0);
     }
 
     public WebRequest setKeepAlive(final boolean keepAlive) {

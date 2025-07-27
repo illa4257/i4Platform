@@ -111,7 +111,11 @@ public class i4URI {
         parseQueries(queries, q);
     }
 
-    public i4URI(String uri, final String defaultScheme) {
+    public static i4URI resolve(final String uri, final i4URI base) {
+        return new i4URI(uri, base.scheme, new char[0][], base.domain, base.port, base.path);
+    }
+
+    public i4URI(String uri, final String defaultScheme, final char[][] defaultUserInfo, final String defaultDomain, final int defaultPort, final String defaultPath) {
         if (isEmpty(uri))
             throw new IllegalArgumentException("URI cannot be null or empty");
         int colon = uri.indexOf(':'), splash = uri.indexOf('/'), atSymbol, query, min, i;
@@ -129,7 +133,7 @@ public class i4URI {
         for (i = 0; i < ul; i++)
             if (uri.charAt(i) != '/')
                 break;
-        if (i > 0) {
+        if (i > 1) {
             uri = uri.substring(i);
 
             // User Info
@@ -156,13 +160,13 @@ public class i4URI {
                 else
                     min = query;
             } else
-                userInfo = new char[0][];
+                userInfo = defaultUserInfo;
             colon = uri.indexOf(':');
 
             // Domain
             if (colon == -1 && min == -1) {
                 domain = uri;
-                port = -1;
+                port = defaultPort;
                 fullPath = path = null;
                 queries = null;
                 return;
@@ -183,19 +187,34 @@ public class i4URI {
             }
         } else {
             splash = min = 0;
-            port = -1;
-            domain = "";
-            userInfo = new char[0][];
+            port = defaultPort;
+            domain = defaultDomain;
+            userInfo = defaultUserInfo;
         }
-        fullPath = splash == min ? uri.substring(splash) : '/' + uri.substring(min);
+
         queries = new HashMap<>();
-        query = fullPath.indexOf('?');
+        String tmp1 = splash == min ? uri.substring(splash) : '/' + uri.substring(min), tmp2;
+        query = tmp1.indexOf('?');
         if (query == -1) {
-            path = fullPath;
+            if (tmp1.equals("."))
+                tmp1 = defaultPath;
+            path = fullPath = tmp1;
             return;
         }
-        path = fullPath.substring(0, query);
-        parseQueries(queries, fullPath.substring(query + 1));
+        parseQueries(queries, tmp1.substring(query + 1));
+
+        tmp2 = tmp1.substring(0, query);
+        if (tmp2.equals(".")) {
+            path = defaultPath;
+            fullPath = defaultPath + tmp1.substring(query);
+            return;
+        }
+        path = tmp2;
+        fullPath = tmp1;
+    }
+
+    public i4URI(String uri, final String defaultScheme) {
+        this(uri, defaultScheme, new char[0][], "", -1, "/");
     }
 
     public i4URI(final String uri) { this(uri, null); }
