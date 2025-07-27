@@ -61,9 +61,7 @@ public class Color {
         this.alpha = (alpha & 0xFF) / 255f;
     }
 
-    public Color(final int argb) {
-        this(argb >> 16, argb >> 8, argb, argb >> 24);
-    }
+    public Color(final int rgba) { this(rgba >> 24, rgba >> 16, rgba >> 8, rgba); }
 
     public Color(final java.awt.Color color) {
         this.red = color.getRed() / 255f;
@@ -72,9 +70,8 @@ public class Color {
         this.alpha = color.getAlpha() / 255f;
     }
 
-    public static Color fromRGB(final int rgb) {
-        return new Color(rgb >> 16, rgb >> 8, rgb);
-    }
+    public static Color fromRGB(final int rgb) { return new Color(rgb >> 16, rgb >> 8, rgb); }
+    public static Color fromARGB(final int argb) { return new Color(argb >> 16, argb >> 8, argb, argb >> 24); }
 
     public Color withAlpha(final float newAlpha) { return new Color(red, green, blue, newAlpha); }
 
