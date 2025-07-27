@@ -33,19 +33,19 @@ public class WSInputStreamImpl extends WSInputStream {
             b ^= 0x80;
             IO.readByteArray(inputStream, mask);
         }
-        if (frameType == 0x08) {
-            closeCode = IO.readBEShort(inputStream);
-            remaining -= 2;
-        }
-        if (b < 0x7E) {
+        if (b < 0x7E)
             remaining = b;
-            return frameType;
-        }
-        if (b == 0x7E) {
+        else if (b == 0x7E)
             remaining = IO.readBEShort(inputStream);
-            return frameType;
+        else
+            remaining = IO.readBELong(inputStream);
+        if (frameType == 0x08) {
+            if (remaining >= 2) {
+                closeCode = IO.readBEShort(inputStream);
+                remaining -= 2;
+            } else
+                closeCode = 1005;
         }
-        remaining = IO.readBELong(inputStream);
         return frameType;
     }
 

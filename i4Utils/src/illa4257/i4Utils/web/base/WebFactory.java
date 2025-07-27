@@ -26,10 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
@@ -221,7 +218,7 @@ public class WebFactory implements IWebClientFactory {
     }
 
     private Socket newCon1(final boolean isSecure, final String domain, final int port, final int timeout,
-                           final byte[] initData) throws IOException {
+                           final String protocol, final byte[] initData) throws IOException {
         try (final CloseableSyncVar<Socket> var = new CloseableSyncVar<>(
                 isSecure ? sslFactory.createSocket() : new Socket()
         )) {
@@ -229,22 +226,26 @@ public class WebFactory implements IWebClientFactory {
             var.get().setSoTimeout(timeout);
             var.get().setKeepAlive(true);
             var.get().setSoLinger(true, Math.max(timeout / 1000, 1));
+
+
+
             var.get().getOutputStream().write(initData);
             var.preventClosing.set(true);
             return var.get();
         }
     }
 
-    private Socket newCon0(final boolean isSecure, final String domain, final int port, final int timeout, final byte[] initData) throws IOException {
+    private Socket newCon0(final boolean isSecure, final String domain, final int port, final int timeout,
+                           final String protocol, final byte[] initData) throws IOException {
         final ConcurrentHashMap<String, ConcurrentLinkedQueue<SocketCon>> m = isSecure ? securedConnections : connections;
         final ConcurrentLinkedQueue<SocketCon> q = m.get(domain + ':' + port);
         if (q == null)
-            return newCon1(isSecure, domain, port, timeout, initData);
+            return newCon1(isSecure, domain, port, timeout, protocol, initData);
         while (true) {
             final SocketCon s = q.poll();
             if (s == null) {
                 m.remove(domain + ':' + port, q);
-                return newCon1(isSecure, domain, port, timeout, initData);
+                return newCon1(isSecure, domain, port, timeout, protocol, initData);
             }
             if (s.isClosed())
                 continue;
@@ -364,14 +365,14 @@ public class WebFactory implements IWebClientFactory {
 
         r.inputStream = null;
 
-        final String contentLength = r.clientHeaders.get("content-length");
+        final String contentLength = WebRequest.getHeader(r.clientHeaders, "content-length");
         if (contentLength != null)
             try {
                 r.inputStream = new WebInputStream.LongPolling(is, end, Long.parseLong(contentLength));
             } catch (final Exception ex) {
                 i4Logger.INSTANCE.log(ex);
             }
-        else if ("chunked".equalsIgnoreCase(r.clientHeaders.get("transfer-encoding")))
+        else if ("chunked".equalsIgnoreCase(WebRequest.getHeader(r.clientHeaders, "transfer-encoding")))
             r.inputStream = new WebInputStream.Chunked(is, end);
 
         if (r.inputStream == null) {
@@ -379,7 +380,7 @@ public class WebFactory implements IWebClientFactory {
             return r;
         }
 
-        final String contentEncoding = r.clientHeaders.get("content-encoding");
+        final String contentEncoding = WebRequest.getHeader(r.clientHeaders, "content-encoding");
         if (contentEncoding != null) {
             final FuncIOEx<InputStream, InputStream> decompressor = DECOMPRESSORS.get(contentEncoding);
             if (decompressor != null)
@@ -390,18 +391,19 @@ public class WebFactory implements IWebClientFactory {
         return r;
     }
 
-    public static void writeHeaders(final OutputStream os, final Map<String, String> headers) throws IOException {
-        for (final Map.Entry<String, String> e : headers.entrySet())
-            os.write((e.getKey() + ": " + e.getValue() + "\r\n").getBytes(CHARSET));
+    public static void writeHeaders(final OutputStream os, final Map<String, List<String>> headers) throws IOException {
+        for (final Map.Entry<String, List<String>> e : headers.entrySet())
+            for (final String v : e.getValue())
+                os.write((e.getKey() + ": " + v + "\r\n").getBytes(CHARSET));
     }
 
-    public static void readHeaders(final InputStream is, final Map<String, String> headers) throws IOException {
+    public static void readHeaders(final InputStream is, final Map<String, List<String>> headers) throws IOException {
         while (true) {
             final String k = readStrLn(is).trim();
             if (k.isEmpty() || oldByte.get() != ':')
                 break;
             oldByte.set(-1);
-            headers.put(k, readStrLn(is, 4096).trim());
+            headers.computeIfAbsent(k, ignored -> new ArrayList<>()).add(readStrLn(is, 4090).trim());
         }
     }
 
@@ -410,12 +412,13 @@ public class WebFactory implements IWebClientFactory {
         return CompletableFuture.supplyAsync(() -> {
             final boolean isSecure = r.uri.scheme.equalsIgnoreCase("https") || r.uri.scheme.equalsIgnoreCase("wss");
             final int port = r.uri.port >= 0 ? r.uri.port : isSecure ? 443 : 80;
-            try (final CloseableSyncVar<Socket> v = new CloseableSyncVar<>(newCon0(isSecure, r.uri.domain, port, r.timeout, r.method.getBytes(CHARSET)))) {
+            try (final CloseableSyncVar<Socket> v = new CloseableSyncVar<>(newCon0(isSecure, r.uri.domain, port, r.timeout, r.protocol, r.method.getBytes(CHARSET)))) {
                 oldByte.set(-1);
                 final Socket s = v.get();
                 final OutputStream os = s.getOutputStream();
 
-                final String connectionHeader = r.clientHeaders.get("connection"), upgradeHeader = r.clientHeaders.get("upgrade");
+                final String connectionHeader = WebRequest.getHeader(r.clientHeaders, "connection"),
+                        upgradeHeader = WebRequest.getHeader(r.clientHeaders, "upgrade");
                 os.write((" " + (r.uri.fullPath == null ? '/' : Str.encodeURI(r.uri.fullPath, false)) + ' ' + r.protocol + "\r\n").getBytes(CHARSET));
 
                 if (!r.clientHeaders.containsKey("host"))
@@ -490,7 +493,7 @@ public class WebFactory implements IWebClientFactory {
                 final Runnable end = () -> {
                     if (s.isClosed())
                         return;
-                    final String con = r.serverHeaders.get("connection");
+                    final String con = WebRequest.getHeader(r.serverHeaders, "connection");
                     if (con != null)
                         for (String a : con.split(",")) {
                             a = a.trim();
@@ -507,24 +510,24 @@ public class WebFactory implements IWebClientFactory {
                 };
 
                 r.inputStream = null;
-                final String contentLength = r.serverHeaders.get("content-length");
+                final String contentLength = WebRequest.getHeader(r.serverHeaders, "content-length");
                 if (contentLength != null)
                     try {
                         r.inputStream = new WebInputStream.LongPolling(is, end, Long.parseLong(contentLength));
                     } catch (final Exception ex) {
                         i4Logger.INSTANCE.log(ex);
                     }
-                else if ("chunked".equalsIgnoreCase(r.serverHeaders.get("transfer-encoding")))
+                else if ("chunked".equalsIgnoreCase(WebRequest.getHeader(r.serverHeaders, "transfer-encoding")))
                     r.inputStream = new WebInputStream.Chunked(is, end);
-                else if (r.responseCode == 101 && "upgrade".equalsIgnoreCase(r.serverHeaders.get("connection"))) {
-                    final String upgrade = r.serverHeaders.get("upgrade");
+                else if (r.responseCode == 101 && "upgrade".equalsIgnoreCase(WebRequest.getHeader(r.serverHeaders, "connection"))) {
+                    final String upgrade = WebRequest.getHeader(r.serverHeaders, "upgrade");
                     if (upgrade != null) {
                         if ("websocket".equalsIgnoreCase(upgrade)) {
                             if (r.reserved instanceof String) {
                                 if (!Base64.getEncoder()
                                         .encodeToString(SHA1.digest((r.reserved + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
                                                 .getBytes(StandardCharsets.US_ASCII)))
-                                        .equals(r.serverHeaders.get("sec-websocket-accept"))) {
+                                        .equals(WebRequest.getHeader(r.serverHeaders, "sec-websocket-accept"))) {
                                     r.reserved = null;
                                     throw new IOException("Failed validating");
                                 }
@@ -547,8 +550,9 @@ public class WebFactory implements IWebClientFactory {
                     return r;
                 }
 
-                final String contentEncoding = r.serverHeaders.get("content-encoding");
-                if (contentEncoding != null) {
+
+                final String contentEncoding = WebRequest.getHeader(r.serverHeaders, "content-encoding");
+                if (contentEncoding != null && !contentEncoding.isEmpty()) {
                     final FuncIOEx<InputStream, InputStream> decompressor = DECOMPRESSORS.get(contentEncoding);
                     if (decompressor != null)
                         r.inputStream = decompressor.accept(r.inputStream);
