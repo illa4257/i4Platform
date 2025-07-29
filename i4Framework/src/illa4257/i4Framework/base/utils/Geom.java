@@ -1,5 +1,7 @@
 package illa4257.i4Framework.base.utils;
 
+import java.util.ArrayList;
+
 public class Geom {
     /// Half PI
     public static final double hPI = Math.PI / 2d;
@@ -20,6 +22,22 @@ public class Geom {
             oldX = x;
             oldY = y;
         }
+        return r;
+    }
+
+    public static int[] steps(final float radius) {
+        final double d = hPI, s = d / radius;
+        final ArrayList<Integer> ints = new ArrayList<>();
+        for (double c = 0; c < d; c += s) {
+            final int cur = (int) Math.round(Math.sin(c) * radius);
+            while (ints.size() <= cur)
+                ints.add(0);
+            ints.add(ints.remove(ints.size() - 1) + 1);
+        }
+        final int[] r = new int[ints.size()];
+        int i = 0;
+        for (final int n : ints)
+            r[i++] = n;
         return r;
     }
 }

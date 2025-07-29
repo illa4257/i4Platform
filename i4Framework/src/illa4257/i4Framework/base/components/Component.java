@@ -662,16 +662,13 @@ public class Component extends Destructor {
 
             p.begin(borderRadius, 0);
             p.lineTo(ew, 0); // Top Line
-            //p.arc(ew, borderRadius, borderRadius, 0, 1.57f);
-            p.lineTo(w, borderRadius);
+            p.arcQ(w, borderRadius, borderRadius, false);
             p.lineTo(w, eh); // Right line
-            //p.arc(ew, eh, borderRadius, 1.57f, 1.57f);
-            p.lineTo(ew, h);
+            p.arcQ(ew, h, borderRadius, true);
             p.lineTo(borderRadius, h); // Bottom line
-            //p.arc(borderRadius, eh, borderRadius, 90, 90);
+            p.arcQ(0, eh, borderRadius, false);
             p.lineTo(0, borderRadius); // Left line
-            //p.arc(borderRadius, borderRadius, borderRadius, 180, 90);
-            //p.arc(borderRadius, borderRadius, borderRadius, -1.57f, 1.57f);
+            p.arcQ(borderRadius, borderRadius, borderRadius, true);
 
             p.close();
             context.setClip(p);
