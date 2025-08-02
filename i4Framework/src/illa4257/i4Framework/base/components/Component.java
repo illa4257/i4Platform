@@ -339,6 +339,10 @@ public class Component extends Destructor {
 
     public Object getLocker() { return locker; }
     public Container getParent() { return parent.get(); }
+    public boolean remove() {
+        final Container c = parent.get();
+        return c != null && c.remove(this);
+    }
 
     public Window getWindow() {
         final Container c = parent.get();
