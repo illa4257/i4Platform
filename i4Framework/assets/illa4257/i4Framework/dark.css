@@ -33,7 +33,8 @@ Button {
 
 Button,
 TextArea,
-TextField {
+TextField,
+ComboBox {
     background-color: #191920;
     border-width: 1dp;
     border-radius: 8dp;
@@ -45,7 +46,8 @@ Button:hover {
 }
 
 TextArea,
-TextField {
+TextField,
+ComboBox {
     cursor: text;
     --selection-color: #3333;
     --cursor-width: 1dp;
@@ -59,7 +61,8 @@ TextArea {
 }
 
 TextArea:focus,
-TextField:focus {
+TextField:focus,
+ComboBox:focus {
     --selection-color: #33b3;
 }
 
