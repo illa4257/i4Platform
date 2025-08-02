@@ -635,17 +635,17 @@ public class Component extends Destructor {
             context.setColor(borderColor);
 
             if (borderRadius >= 0.5f) {
-                final float offset = Math.round(borderWidth / 2);
+                final int offset = Math.round(borderWidth) % 2 == 1 ? (int) Math.floor(borderWidth / 2) : Math.round(borderWidth / 2);
 
                 context.setStrokeWidth(borderWidth);
 
                 final IPath p = context.newPath();
                 p.begin(borderRadius - offset, -offset); // Start top line
-                p.lineTo(w - borderRadius, -offset); // top line
-                p.arcTo(w, borderRadius - offset, Geom.hPI, 0); // top right
-                p.lineTo(w, h - borderRadius); // right line
-                p.arcTo(w - borderRadius, h, Geom.hPI, 0); // bottom right
-                p.lineTo(borderRadius - offset, h); // bottom line
+                p.lineTo(w - borderRadius + offset, -offset); // top line
+                p.arcTo(w + offset, borderRadius - offset, Geom.hPI, 0); // top right
+                p.lineTo(w + offset, h - borderRadius); // right line
+                p.arcTo(w - borderRadius, h + offset, Geom.hPI, 0); // bottom right
+                p.lineTo(borderRadius, h + offset); // bottom line
                 p.arcTo(-offset, h - borderRadius, Geom.hPI, 0); // bottom left
                 p.lineTo(-offset, borderRadius - offset); // left line
                 p.arcTo(borderRadius - offset, -offset, Geom.hPI, 0); // top left
