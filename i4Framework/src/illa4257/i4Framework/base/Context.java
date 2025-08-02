@@ -17,6 +17,7 @@ public interface Context {
     Vector2D bounds(final char[] string);
 
     void setColor(final Color color);
+    float getStrokeWidth();
     void setStrokeWidth(final float newWidth);
     void setClipI(final Object clipArea);
     void setClip(final IPath path);
@@ -25,9 +26,11 @@ public interface Context {
 
     IPath newPath();
 
+    void draw(final IPath path);
+
     void drawLine(final float x1, final float y1, final float x2, final float y2);
 
-    default void drawArc(final float x, final float y, final float radius, double startAngle, double angle) {
+    /*default void drawArc(final float x, final float y, final float radius, double startAngle, double angle) {
         final double step = 1 / (radius * 2);
         angle += startAngle + step;
         float ox = x + (float) Math.sin(startAngle) * radius, oy = y - (float) Math.cos(startAngle) * radius;
@@ -50,6 +53,13 @@ public interface Context {
             for (; (float) startAngle >= (float) angle; startAngle -= step)
                 drawLine(x + (float) Math.sin(startAngle) * radiusFrom, y - (float) Math.cos(startAngle) * radiusFrom,
                         x + (float) Math.sin(startAngle) * radiusTo, y - (float) Math.cos(startAngle) * radiusTo);
+    }*/
+
+    default void drawArc(final float startX, final float startY, final float endX, final float endY, final double angle, final float cut) {
+        final IPath p = newPath();
+        p.begin(startX, startY);
+        p.arcTo(endX, endY, angle, cut);
+        draw(p);
     }
 
     void drawRect(final float x, final float y, final float w, final float h);

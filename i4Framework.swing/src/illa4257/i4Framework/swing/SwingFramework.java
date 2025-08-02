@@ -84,6 +84,7 @@ public class SwingFramework extends DesktopFramework {
         m.put(KEY_TEXT_ANTIALIASING, VALUE_TEXT_ANTIALIAS_ON);
         m.put(KEY_RENDERING, VALUE_RENDER_QUALITY);
         m.put(KEY_INTERPOLATION, VALUE_INTERPOLATION_BILINEAR);
+        m.put(KEY_STROKE_CONTROL, VALUE_STROKE_PURE);
 
         RECOMMENDED = Collections.unmodifiableMap(m);
 

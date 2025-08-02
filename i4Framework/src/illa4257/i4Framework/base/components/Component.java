@@ -10,6 +10,7 @@ import illa4257.i4Framework.base.events.mouse.MouseEnterEvent;
 import illa4257.i4Framework.base.events.mouse.MouseLeaveEvent;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.graphics.IPath;
+import illa4257.i4Framework.base.utils.Geom;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.math.Unit;
@@ -634,18 +635,23 @@ public class Component extends Destructor {
             context.setColor(borderColor);
 
             if (borderRadius >= 0.5f) {
-                final float br2 = borderRadius * 2, brw = borderRadius + borderWidth;
+                final float offset = Math.round(borderWidth / 2);
 
-                context.drawRect(-borderWidth, borderRadius, borderWidth, h - br2);
-                context.drawRect(borderRadius, -borderWidth, w - br2, borderWidth);
-                context.drawRect(w, borderRadius, borderWidth, h - br2);
-                context.drawRect(borderRadius, h, w - br2, borderWidth);
+                context.setStrokeWidth(borderWidth);
 
-                /*context.drawArc(borderRadius - .5f, borderRadius - .5f, borderRadius + .16f, brw - .3f, -1.57, 1.57);
-                context.drawArc(w - borderRadius - .5f, borderRadius - .5f, borderRadius + .16f, brw - .3f, 0, 1.57);
-                context.drawArc(w - borderRadius - .5f, h - borderRadius - .5f, borderRadius + .34f, brw, 1.57, 1.57);
-                context.drawArc(borderRadius - .5f, h - borderRadius - .5f, borderRadius + .34f, brw, 3.14, 1.57);*/
+                final IPath p = context.newPath();
+                p.begin(borderRadius - offset, -offset); // Start top line
+                p.lineTo(w - borderRadius, -offset); // top line
+                p.arcTo(w, borderRadius - offset, Geom.hPI, 0); // top right
+                p.lineTo(w, h - borderRadius); // right line
+                p.arcTo(w - borderRadius, h, Geom.hPI, 0); // bottom right
+                p.lineTo(borderRadius - offset, h); // bottom line
+                p.arcTo(-offset, h - borderRadius, Geom.hPI, 0); // bottom left
+                p.lineTo(-offset, borderRadius - offset); // left line
+                p.arcTo(borderRadius - offset, -offset, Geom.hPI, 0); // top left
+                context.draw(p);
 
+                context.setStrokeWidth(1);
             } else {
                 context.drawRect(-borderWidth, -borderWidth, w + borderWidth * 2, borderWidth);
                 context.drawRect(-borderWidth, h, w + borderWidth * 2, borderWidth);
@@ -662,13 +668,13 @@ public class Component extends Destructor {
 
             p.begin(borderRadius, 0);
             p.lineTo(ew, 0); // Top Line
-            p.arcQ(w, borderRadius, borderRadius, false);
+            p.arcTo(w, borderRadius, Geom.hPI, borderRadius);
             p.lineTo(w, eh); // Right line
-            p.arcQ(ew, h, borderRadius, true);
+            p.arcTo(ew, h, Geom.hPI, borderRadius);
             p.lineTo(borderRadius, h); // Bottom line
-            p.arcQ(0, eh, borderRadius, false);
+            p.arcTo(0, eh, Geom.hPI, borderRadius);
             p.lineTo(0, borderRadius); // Left line
-            p.arcQ(borderRadius, borderRadius, borderRadius, true);
+            p.arcTo(borderRadius, 0, Geom.hPI, borderRadius);
 
             p.close();
             context.setClip(p);

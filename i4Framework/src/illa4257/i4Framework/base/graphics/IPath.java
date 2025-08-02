@@ -1,8 +1,7 @@
 package illa4257.i4Framework.base.graphics;
 
+import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.utils.Geom;
-
-import java.util.Arrays;
 
 public interface IPath {
     float x();
@@ -34,6 +33,33 @@ public interface IPath {
                 cx += mx * curve[curve.length - i - 1];
             }
             lineTo(cx, cy);
+        }
+    }
+
+    default void arcTo(final float x, final float y, final double angle, final float cut) {
+        final float
+                dx = x - x(), dy = y - y(),
+                d = (float) Math.hypot(dx, dy),
+                o = d / (2f * (float) Math.sin(angle / 2f)),
+
+                px = -dy / d,
+                py = dx / d,
+
+                mx = x() + dx / 2f,
+                my = y() + dy / 2f,
+
+                cx = (float) (mx + px * o * Math.signum(angle)),
+                cy = (float) (my + py * o * Math.signum(angle)),
+                r = (float) Math.hypot(cx - x, cy - y);
+
+        float segments = Math.max(6, (int) (Math.abs(angle) * r / 0.2));
+        final double sa = (Math.atan2(y() - cy, x() - cx) + Math.atan2(y - cy, x - cx) - angle) / 2, ma = angle / segments;
+        segments -= cut;
+
+        for (float i = cut; i <= segments; i++) {
+            final double theta = sa + i * ma;
+            float rx = cx + (float) (r * Math.cos(theta)), ry = cy + (float) (r * Math.sin(theta));
+            lineTo(rx, ry);
         }
     }
 

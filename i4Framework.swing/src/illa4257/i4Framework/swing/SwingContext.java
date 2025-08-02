@@ -44,6 +44,12 @@ public class SwingContext implements Context {
     }
 
     @Override
+    public float getStrokeWidth() {
+        final Stroke s = graphics.getStroke();
+        return s instanceof BasicStroke ? ((BasicStroke) s).getLineWidth() : 1;
+    }
+
+    @Override
     public void setStrokeWidth(final float newWidth) {
         graphics.setStroke(new BasicStroke(newWidth));
     }
@@ -61,6 +67,11 @@ public class SwingContext implements Context {
     @Override
     public SwingPath newPath() {
         return new SwingPath();
+    }
+
+    @Override
+    public void draw(final IPath path) {
+        graphics.draw(((SwingPath) path).path);
     }
 
     @Override public void translate(float x, float y) { graphics.translate(x, y); }
