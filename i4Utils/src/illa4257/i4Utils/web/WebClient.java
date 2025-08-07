@@ -1,7 +1,7 @@
 package illa4257.i4Utils.web;
 
 import illa4257.i4Utils.Arch;
-import illa4257.i4Utils.KeyMap;
+import illa4257.i4Utils.PreservedKeyMap;
 import illa4257.i4Utils.web.base.WebFactory;
 import illa4257.i4Utils.web.cheerpj.CheerpJClientFactory;
 
@@ -12,8 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class WebClient {
     public final IWebClientFactory factory;
-    public final Map<String, List<String>> headers = new KeyMap<>(
-            new ConcurrentHashMap<>(), String::toLowerCase,
+    public final Map<String, List<String>> headers = new PreservedKeyMap<>(
+            new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), String::toLowerCase,
             k -> k instanceof String ? ((String) k).toLowerCase() : k
     );
 
