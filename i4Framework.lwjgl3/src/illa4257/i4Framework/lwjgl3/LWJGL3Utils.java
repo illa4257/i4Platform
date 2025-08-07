@@ -1,6 +1,6 @@
 package illa4257.i4Framework.lwjgl3;
 
-import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Utils.media.Image;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 

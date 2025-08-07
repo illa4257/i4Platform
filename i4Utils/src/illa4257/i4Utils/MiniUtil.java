@@ -7,6 +7,9 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.function.Function;
 
 public class MiniUtil {
     @SuppressWarnings("unchecked")
@@ -35,5 +38,25 @@ public class MiniUtil {
             i4Logger.INSTANCE.log(Level.WARN, ex);
             return null;
         }
+    }
+
+    public static <L1 extends Iterable<T1>, T1, L2 extends Collection<T2>, T2> L2 convert(final L1 in, final L2 out, final Function<T1, T2> convertor) {
+        for (final T1 e : in)
+            out.add(convertor.apply(e));
+        return out;
+    }
+
+    public static <L1 extends Collection<T1>, T1, T2> ArrayList<T2> convert(final L1 in, final Function<T1, T2> convertor) {
+        final ArrayList<T2> arr = new ArrayList<>(in.size());
+        for (final T1 e : in)
+            arr.add(convertor.apply(e));
+        return arr;
+    }
+
+    public static <L1 extends Iterable<T1>, T1, T2> ArrayList<T2> convert(final L1 in, final Function<T1, T2> convertor) {
+        final ArrayList<T2> arr = new ArrayList<>();
+        for (final T1 e : in)
+            arr.add(convertor.apply(e));
+        return arr;
     }
 }

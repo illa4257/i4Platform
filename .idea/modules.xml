@@ -2,15 +2,22 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/APITesting/APITesting.iml" filepath="$PROJECT_DIR$/APITesting/APITesting.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AutoTool/AutoTool.iml" filepath="$PROJECT_DIR$/AutoTool/AutoTool.iml" />
       <module fileurl="file://$PROJECT_DIR$/i4LCommon/I4LCommon.iml" filepath="$PROJECT_DIR$/i4LCommon/I4LCommon.iml" />
       <module fileurl="file://$PROJECT_DIR$/i4LParser/I4LParser.iml" filepath="$PROJECT_DIR$/i4LParser/I4LParser.iml" />
       <module fileurl="file://$PROJECT_DIR$/Test/Test.iml" filepath="$PROJECT_DIR$/Test/Test.iml" />
       <module fileurl="file://$PROJECT_DIR$/Testing/Testing.iml" filepath="$PROJECT_DIR$/Testing/Testing.iml" />
       <module fileurl="file://$PROJECT_DIR$/i4Framework/i4Framework.iml" filepath="$PROJECT_DIR$/i4Framework/i4Framework.iml" />
       <module fileurl="file://$PROJECT_DIR$/i4Framework.android/i4Framework.android.iml" filepath="$PROJECT_DIR$/i4Framework.android/i4Framework.android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/i4Framework.desktop/i4Framework.desktop.iml" filepath="$PROJECT_DIR$/i4Framework.desktop/i4Framework.desktop.iml" />
       <module fileurl="file://$PROJECT_DIR$/i4Framework.lwjgl3/i4Framework.lwjgl3.iml" filepath="$PROJECT_DIR$/i4Framework.lwjgl3/i4Framework.lwjgl3.iml" />
       <module fileurl="file://$PROJECT_DIR$/i4Framework.swing/i4Framework.swing.iml" filepath="$PROJECT_DIR$/i4Framework.swing/i4Framework.swing.iml" />
+      <module fileurl="file://$PROJECT_DIR$/i4LCommon/i4LCommon.iml" filepath="$PROJECT_DIR$/i4LCommon/i4LCommon.iml" />
+      <module fileurl="file://$PROJECT_DIR$/i4LParser/i4LParser.iml" filepath="$PROJECT_DIR$/i4LParser/i4LParser.iml" />
       <module fileurl="file://$PROJECT_DIR$/i4Language.iml" filepath="$PROJECT_DIR$/i4Language.iml" />
+      <module fileurl="file://$PROJECT_DIR$/i4Platform.iml" filepath="$PROJECT_DIR$/i4Platform.iml" />
+      <module fileurl="file://$PROJECT_DIR$/i4TestApp/i4TestApp.iml" filepath="$PROJECT_DIR$/i4TestApp/i4TestApp.iml" />
       <module fileurl="file://$PROJECT_DIR$/i4Utils/i4Utils.iml" filepath="$PROJECT_DIR$/i4Utils/i4Utils.iml" />
     </modules>
   </component>

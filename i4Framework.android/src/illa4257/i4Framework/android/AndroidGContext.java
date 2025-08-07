@@ -42,15 +42,9 @@ public class AndroidGContext implements Context {
         return new Vector2D(bounds.width(), bounds.height() + paint.getFontMetrics().descent);
     }
 
-    @Override
-    public void setColor(Color color) {
-        paint.setColor(color.toARGB());
-    }
-
-    @Override
-    public void setStrokeWidth(float newWidth) {
-        paint.setStrokeWidth(newWidth);
-    }
+    @Override public void setColor(final Color color) { paint.setColor(color.toARGB()); }
+    @Override public float getStrokeWidth() { return paint.getStrokeWidth(); }
+    @Override public void setStrokeWidth(final float newWidth) { paint.setStrokeWidth(newWidth); }
 
     @Override
     public void setClipI(Object clipArea) {
@@ -69,6 +63,11 @@ public class AndroidGContext implements Context {
     @Override
     public IPath newPath() {
         return new AndroidPath();
+    }
+
+    @Override
+    public void draw(final IPath path) {
+        canvas.drawPath(((AndroidPath) path).path, paint);
     }
 
     @Override

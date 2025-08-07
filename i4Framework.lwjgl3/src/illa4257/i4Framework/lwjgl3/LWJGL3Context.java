@@ -2,8 +2,9 @@ package illa4257.i4Framework.lwjgl3;
 
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
-import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.base.math.Vector2D;
+import illa4257.i4Utils.media.Image;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
@@ -41,6 +42,16 @@ public class LWJGL3Context implements Context {
     }
 
     @Override
+    public Object getClipI() {
+        return null;
+    }
+
+    @Override
+    public float charWidth(final char ch) {
+        return framework.g2d.getFontMetrics().charWidth(ch);
+    }
+
+    @Override
     public Vector2D bounds(final String string) {
         return Vector2D.fromSize(framework.g2d.getFontMetrics().getStringBounds(string, framework.g2d));
     }
@@ -53,6 +64,31 @@ public class LWJGL3Context implements Context {
     @Override
     public void setColor(final Color color) {
         GL11.glColor4f(color.red, color.green, color.blue, color.alpha);
+    }
+
+    @Override
+    public void setStrokeWidth(float newWidth) {
+
+    }
+
+    @Override
+    public void setClipI(Object clipArea) {
+
+    }
+
+    @Override
+    public void setClip(IPath path) {
+
+    }
+
+    @Override
+    public IPath newPath() {
+        return null;
+    }
+
+    @Override
+    public void drawLine(float x1, float y1, float x2, float y2) {
+
     }
 
     @Override
