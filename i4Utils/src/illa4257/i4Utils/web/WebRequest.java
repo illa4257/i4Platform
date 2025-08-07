@@ -1,6 +1,6 @@
 package illa4257.i4Utils.web;
 
-import illa4257.i4Utils.KeyMap;
+import illa4257.i4Utils.PreservedKeyMap;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,8 +18,8 @@ public class WebRequest {
     public volatile long lastWrittenData = 0;
     public String protocol = "HTTP/1.1", responseStatus = null, method;
     public i4URI uri;
-    public final Map<String, List<String>> clientHeaders, serverHeaders = new KeyMap<>(
-            new HashMap<>(), String::toLowerCase,
+    public final Map<String, List<String>> clientHeaders, serverHeaders = new PreservedKeyMap<>(
+            new HashMap<>(), new HashMap<>(), String::toLowerCase,
             k -> k instanceof String ? ((String) k).toLowerCase() : k
     );
     public byte[] bodyOutput = null;
@@ -28,15 +28,15 @@ public class WebRequest {
     public Function<WebRequest, CompletableFuture<WebRequest>> runner = null;
 
     public WebRequest() {
-        clientHeaders = new KeyMap<>(new HashMap<>(), String::toLowerCase,
+        clientHeaders = new PreservedKeyMap<>(new HashMap<>(), new HashMap<>(), String::toLowerCase,
             k -> k instanceof String ? ((String) k).toLowerCase() : k);
     }
 
     public WebRequest(final String method, final i4URI uri) {
         this.method = method != null ? method : "GET";
         this.uri = uri;
-        clientHeaders = new KeyMap<>(
-                new HashMap<>(), String::toLowerCase,
+        clientHeaders = new PreservedKeyMap<>(
+                new HashMap<>(), new HashMap<>(), String::toLowerCase,
                 k -> k instanceof String ? ((String) k).toLowerCase() : k
         );
     }
@@ -44,8 +44,8 @@ public class WebRequest {
     public WebRequest(final String method, final i4URI uri, final Map<String, List<String>> headers) {
         this.method = method != null ? method : "GET";
         this.uri = uri;
-        this.clientHeaders = new KeyMap<>(
-                new HashMap<>(), headers, String::toLowerCase,
+        this.clientHeaders = new PreservedKeyMap<>(
+                new HashMap<>(), new HashMap<>(headers), String::toLowerCase,
                 k -> k instanceof String ? ((String) k).toLowerCase() : k
         );
     }
@@ -55,11 +55,10 @@ public class WebRequest {
         this.timeout = client.timeout;
         this.method = method != null ? method : "GET";
         this.uri = uri;
-        /*this.clientHeaders = new KeyMap<>(
-                new HashMap<>(client.headers), String::toLowerCase,
+        this.clientHeaders = new PreservedKeyMap<>(
+                new HashMap<>(), new HashMap<>(client.headers), String::toLowerCase,
                 k -> k instanceof String ? ((String) k).toLowerCase() : k
-        );*/
-        this.clientHeaders = new HashMap<>(client.headers);
+        );
     }
 
     public WebRequest setMethod(final String method) {
@@ -132,7 +131,7 @@ public class WebRequest {
 
     public CompletableFuture<WebRequest> run() {
         if (runner == null)
-            return CompletableFuture.supplyAsync(() -> this);
+            return CompletableFuture.completedFuture(this);
         final Function<WebRequest, CompletableFuture<WebRequest>> s = runner;
         runner = null;
         return s.apply(this);
