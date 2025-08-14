@@ -9,6 +9,7 @@ import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.function.Function;
 
 public class MiniUtil {
@@ -58,5 +59,13 @@ public class MiniUtil {
         for (final T1 e : in)
             arr.add(convertor.apply(e));
         return arr;
+    }
+
+    @SafeVarargs
+    public static <T> boolean contains(final T element, final T... array) {
+        for (final T e : array)
+            if (Objects.equals(element, e))
+                return true;
+        return false;
     }
 }
