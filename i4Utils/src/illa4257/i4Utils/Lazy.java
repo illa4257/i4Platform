@@ -9,6 +9,8 @@ public class Lazy<T> {
     public Lazy(final Supplier<T> supplier) { this.supplier = supplier; }
 
     public boolean isInitialized() { return value != null; }
+    public void set(final T value) { this.value = value; }
+    public void remove() { value = null; }
 
     public T get() {
         T v = value;
@@ -19,6 +21,4 @@ public class Lazy<T> {
             }
         return v;
     }
-
-    public void remove() { value = null; }
 }
