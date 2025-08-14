@@ -100,4 +100,11 @@ public class Str {
                 return true;
         return false;
     }
+
+    public static boolean containsChars(final String str, final Iterable<Character> chars) {
+        for (final char c : chars)
+            if (str.indexOf(c) != -1)
+                return true;
+        return false;
+    }
 }
