@@ -5,6 +5,7 @@ import illa4257.i4Utils.PreservedKeyMap;
 import illa4257.i4Utils.web.base.WebFactory;
 import illa4257.i4Utils.web.cheerpj.CheerpJClientFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -22,6 +23,13 @@ public class WebClient {
 
     public WebClient(final IWebClientFactory factory) { this.factory = factory; }
     public WebClient() { this(Arch.REAL.IS_CHEERPJ ? new CheerpJClientFactory() : WebFactory.INSTANCE); }
+
+    public WebClient setHeader(final String key, final String value) {
+        final ArrayList<String> l = new ArrayList<>();
+        l.add(value);
+        headers.put(key, l);
+        return this;
+    }
 
     public WebRequest newBuilder(final String method, final i4URI uri) {
         return new WebRequest(method, uri, this)
