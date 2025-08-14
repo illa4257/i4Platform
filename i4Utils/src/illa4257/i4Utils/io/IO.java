@@ -16,7 +16,7 @@ public class IO {
         byte[] run(final InputStream inputStream) throws IOException;
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked", "JavaReflectionMemberAccess"})
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private static IReader detectReader() {
         try {
             final Method m = InputStream.class.getMethod("readAllBytes");
@@ -204,7 +204,7 @@ public class IO {
      * @throws IOException if any input stream throws IOException, or if it reaches the end.
      */
     public static int readBEShortI(final InputStream stream) throws IOException {
-        return (readByteI(stream) << 8) + readByteI(stream);
+        return (readByteI(stream) << 8) | readByteI(stream);
     }
 
     /**
@@ -219,7 +219,7 @@ public class IO {
      * @throws IOException if any input stream throws IOException, or if it reaches the end.
      */
     public static short readBEShort(final InputStream stream) throws IOException {
-        return (short) ((readByteI(stream) << 8) + readByteI(stream));
+        return (short) ((readByteI(stream) << 8) | readByteI(stream));
     }
 
     /**
@@ -234,7 +234,7 @@ public class IO {
      * @throws IOException if any input stream throws IOException, or if it reaches the end.
      */
     public static int readBEInteger(final InputStream stream) throws IOException {
-        return (readByteI(stream) << 24) + (readByteI(stream) << 16) + (readByteI(stream) << 8) + readByteI(stream);
+        return (readByteI(stream) << 24) | (readByteI(stream) << 16) + (readByteI(stream) << 8) | readByteI(stream);
     }
 
     /**
@@ -258,14 +258,25 @@ public class IO {
      * @throws IOException if any input stream throws IOException, or if it reaches the end.
      */
     public static long readBELong(final InputStream stream) throws IOException {
-        return ((long) readByteI(stream) << 56) +
-               ((long) readByteI(stream) << 48) +
-               ((long) readByteI(stream) << 40) +
-               ((long) readByteI(stream) << 32) +
-               ((long) readByteI(stream) << 24) +
-               ((long) readByteI(stream) << 16) +
-               ((long) readByteI(stream) <<  8) +
+        return ((long) readByteI(stream) << 56) |
+               ((long) readByteI(stream) << 48) |
+               ((long) readByteI(stream) << 40) |
+               ((long) readByteI(stream) << 32) |
+               ((long) readByteI(stream) << 24) |
+               ((long) readByteI(stream) << 16) |
+               ((long) readByteI(stream) <<  8) |
                 (long) readByteI(stream);
+    }
+
+    public static long readBELong(final byte[] stream, final int offset) {
+        return  ((long) (stream[offset    ] & 0xFF) << 56) |
+                ((long) (stream[offset + 1] & 0xFF) << 48) |
+                ((long) (stream[offset + 2] & 0xFF) << 40) |
+                ((long) (stream[offset + 3] & 0xFF) << 32) |
+                ((long) (stream[offset + 4] & 0xFF) << 24) |
+                ((long) (stream[offset + 5] & 0xFF) << 16) |
+                ((long) (stream[offset + 6] & 0xFF) <<  8) |
+                 (long) (stream[offset + 7] & 0xFF);
     }
 
     /**
