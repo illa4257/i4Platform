@@ -21,7 +21,8 @@ import static java.awt.RenderingHints.*;
 
 public class SwingFramework extends DesktopFramework {
     static Font font;
-    static Map<RenderingHints.Key, Object> current, RECOMMENDED;
+    public static final Map<RenderingHints.Key, Object> BEST;
+    static Map<RenderingHints.Key, Object> current;
 
     private final SyncVar<Instance> timer = new SyncVar<>();
     private class Instance {
@@ -86,9 +87,9 @@ public class SwingFramework extends DesktopFramework {
         m.put(KEY_INTERPOLATION, VALUE_INTERPOLATION_BILINEAR);
         m.put(KEY_STROKE_CONTROL, VALUE_STROKE_PURE);
 
-        RECOMMENDED = Collections.unmodifiableMap(m);
+        BEST = Collections.unmodifiableMap(m);
 
-        current = RECOMMENDED;
+        current = BEST;
 
         font = new Font(Font.DIALOG, Font.PLAIN, 16);
     }

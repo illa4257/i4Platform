@@ -192,7 +192,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
     @Override
     protected void paintComponent(final Graphics graphics) {
         final Graphics2D g = (Graphics2D) graphics;
-        g.setRenderingHints(SwingFramework.RECOMMENDED);
+        g.setRenderingHints(SwingFramework.BEST);
         component.paint(new SwingContext(g));
     }
 
