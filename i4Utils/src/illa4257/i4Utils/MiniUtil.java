@@ -9,6 +9,7 @@ import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -67,5 +68,25 @@ public class MiniUtil {
             if (Objects.equals(element, e))
                 return true;
         return false;
+    }
+
+    public static <M extends Map<K, V>, K, V> M put(final M map, final Object... pairs) {
+        if (pairs.length % 2 != 0)
+            throw new IllegalArgumentException("Not even amount of values: " + pairs.length);
+        for (int i = 0; i < pairs.length; i++)
+            //noinspection unchecked
+            map.put((K) pairs[i++], (V) pairs[i]);
+        return map;
+    }
+
+    @SafeVarargs
+    public static <T> int indexOf(final T element, T... elements) {
+        int i = 0;
+        for (final T e : elements) {
+            if (Objects.equals(element, e))
+                return i;
+            i++;
+        }
+        return -1;
     }
 }
