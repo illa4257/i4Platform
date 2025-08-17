@@ -11,6 +11,7 @@ public class Color {
     public static Color repeat4(final int value) { return new Color(value, value, value, value); }
     public static Color repeat4(final float value) { return new Color(value, value, value, value); }
 
+    @SuppressWarnings("unused")
     public static final Color
                 WHITE = repeat3(1f),
                 LIGHT_GRAY = repeat3(.7529412f),
@@ -27,6 +28,8 @@ public class Color {
                 YELLOW = new Color(1f, 1f, 0),
                 CYAN = new Color(0, 1f, 1f),
                 MAGENTA = new Color(1f, 0, 1f),
+
+                PURPLE = new Color(.5f, 0, .5f),
 
                 ORANGE = new Color(1f, .78431374f, 0),
                 PINK = new Color(1f, .6862745f, .6862745f);
