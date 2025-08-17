@@ -43,7 +43,9 @@ public class Component extends Destructor {
 
     public final PointSet startX = new PointSet(), startY = new PointSet(), endX = new PointSet(), endY = new PointSet(),
             densityMultiplier = new PointSet(NumberPointConstant.ONE);
-    public final Point width = new PPointSubtract(endX, startX), height = new PPointSubtract(endY, startY);
+    public final Point width = new PPointSubtract(endX, startX), height = new PPointSubtract(endY, startY),
+                    windowStartX = new PPointAdd(startX, null), windowStartY = new PPointAdd(startY, null),
+                    windowEndX = new PPointAdd(endX, null), windowEndY = new PPointAdd(endY, null);
 
     protected final ConcurrentLinkedQueue<Runnable> repeatedInvoke = new ConcurrentLinkedQueue<>();
     protected final AtomicBoolean isRepeated = new AtomicBoolean(false);
@@ -89,7 +91,16 @@ public class Component extends Destructor {
         listeners = new Runnable[] {
                 () -> fire(new RecalculateEvent())
         };
-        addEventListener(ChangeParentEvent.class, e -> fire(new StyleUpdateEvent()));
+        addEventListener(ChangeParentEvent.class, e -> {
+            final Container co = getParent();
+            if (co != null) {
+                ((PPointAdd) windowStartX).setPoint2(co.windowStartX);
+                ((PPointAdd) windowStartY).setPoint2(co.windowStartY);
+                ((PPointAdd) windowEndX).setPoint2(co.windowStartX);
+                ((PPointAdd) windowEndY).setPoint2(co.windowStartY);
+            }
+            fire(new StyleUpdateEvent());
+        });
         addEventListener(StyleUpdateEvent.class, e -> {
             synchronized (cache) {
                 for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> entry : cache)
