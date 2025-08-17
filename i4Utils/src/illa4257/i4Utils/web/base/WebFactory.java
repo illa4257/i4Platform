@@ -227,8 +227,6 @@ public class WebFactory implements IWebClientFactory {
             var.get().setKeepAlive(true);
             var.get().setSoLinger(true, Math.max(timeout / 1000, 1));
 
-
-
             var.get().getOutputStream().write(initData);
             var.preventClosing.set(true);
             return var.get();
@@ -250,6 +248,7 @@ public class WebFactory implements IWebClientFactory {
             if (s.isClosed())
                 continue;
             try {
+                s.socket.setSoTimeout(timeout);
                 final OutputStream o = s.socket.getOutputStream();
                 o.write(initData[0]);
                 o.flush();
