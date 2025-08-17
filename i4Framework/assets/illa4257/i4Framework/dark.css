@@ -4,6 +4,7 @@
     --hint-color: #aaa;
 }
 
+.combobox-options > container > *,
 .context-menu > *,
 .list > Button {
     border-width: 0;
