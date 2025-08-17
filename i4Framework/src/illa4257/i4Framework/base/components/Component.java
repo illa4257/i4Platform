@@ -136,6 +136,7 @@ public class Component extends Destructor {
     public boolean isVisible() { return visible; }
     public boolean isFocusable() { return isFocusable; }
     public boolean isFocused() { return pseudoClasses.contains("focus"); }
+    public boolean isFocusedWithin() { return pseudoClasses.contains("focus-within"); }
     public boolean isRepeated() { return isRepeated.get(); }
     public Component find(final float x, final float y, final float[] localPos) {
         if (startX.calcFloat() < x && endX.calcFloat() > x &&

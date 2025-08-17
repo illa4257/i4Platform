@@ -44,7 +44,7 @@ public class Window extends Container {
             final FrameworkWindow fw = frameworkWindow.get();
             if (fw != null) {
                 if (focused != null)
-                    focused.fire(new FocusEvent(false));
+                    unfocus(false);
                 focused = targetChild;
                 if (targetChild == target)
                     focused.fire(new FocusEvent(true));

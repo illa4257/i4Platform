@@ -95,6 +95,22 @@ public class Container extends Component implements Iterable<Component> {
         return null;
     }
 
+    protected void unfocus(final boolean u) {
+        if (focused != null) {
+            if (u)
+                setPseudoClass("focus-within", false);
+            if (focused instanceof Container)
+                ((Container) focused).unfocus(true);
+            if (focused.isFocused()) {
+                focused.setPseudoClass("focus-within", false);
+                focused.setPseudoClass("focus", false);
+                focused.fire(new FocusEvent(false));
+            }
+            if (u)
+                focused = null;
+        }
+    }
+
     protected boolean childFocus(final Component targetChild, final Component target) {
         synchronized (locker) {
             if (!isVisible())
@@ -103,11 +119,12 @@ public class Container extends Component implements Iterable<Component> {
             if (p == null)
                 return false;
             if (p.childFocus(this, target)) {
+                targetChild.setPseudoClass("focus-within", true);
                 targetChild.setPseudoClass("focus", true);
-                if (focused != null) {
-                    focused.setPseudoClass("focus", false);
-                    focused.fire(new FocusEvent(false));
-                }
+                if (focused == null)
+                    setPseudoClass("focus-within", true);
+                else
+                    unfocus(false);
                 focused = targetChild;
                 if (targetChild == target)
                     focused.fire(new FocusEvent(true));

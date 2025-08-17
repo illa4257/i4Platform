@@ -30,9 +30,8 @@ public class ComboBox<T> extends TextField {
         addEventListener(ChangeParentEvent.class, e -> optionsPane.remove());
         addEventListener(FocusEvent.class, e -> {
             if (!e.value) {
-                for (final Component c : optionsPane)
-                    if (c.isFocused())
-                        return;
+                if (optionsPane.isFocusedWithin())
+                    return;
                 optionsPane.remove();
             }
         });
