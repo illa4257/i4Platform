@@ -17,16 +17,6 @@ public class Container extends Component implements Iterable<Component> {
             for (final Component c : components)
                 c.fire(e);
         });
-        addEventListener(FocusEvent.class, e -> {
-            if (e.value)
-                return;
-            synchronized (locker) {
-                if (focused != null) {
-                    focused.fire(new FocusEvent(false));
-                    focused = null;
-                }
-            }
-        });
     }
 
     @Override
@@ -113,8 +103,11 @@ public class Container extends Component implements Iterable<Component> {
             if (p == null)
                 return false;
             if (p.childFocus(this, target)) {
-                if (focused != null)
+                targetChild.setPseudoClass("focus", true);
+                if (focused != null) {
+                    focused.setPseudoClass("focus", false);
                     focused.fire(new FocusEvent(false));
+                }
                 focused = targetChild;
                 if (targetChild == target)
                     focused.fire(new FocusEvent(true));
