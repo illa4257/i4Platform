@@ -15,7 +15,7 @@ public class i4URI {
     public final char[][] userInfo;
 
     /// Any changes will not be represented in the field called `path`.
-    public final Map<String, String> queries;
+    public final Map<String, List<String>> queries;
 
     private static boolean isEmpty(final String str) { return str == null || str.isEmpty(); }
 
@@ -30,7 +30,7 @@ public class i4URI {
         return ll.toArray(new char[1][]);
     }
 
-    public static void parseQueries(final Map<String, String> map, final String queries) {
+    public static void parseQueries(final Map<String, List<String>> map, final String queries) {
         if (map == null)
             throw new IllegalArgumentException("Map cannot be null");
         if (queries == null || queries.isEmpty())
@@ -43,7 +43,7 @@ public class i4URI {
                 map.put(query, null);
                 continue;
             }
-            map.put(query.substring(0, eq), query.substring(eq + 1));
+            map.computeIfAbsent(query.substring(0, eq), ignored -> new ArrayList<>()).add(query.substring(eq + 1));
         }
     }
 
@@ -64,7 +64,7 @@ public class i4URI {
         this.port = port;
         this.fullPath = isEmpty(fullPath) ? null : fullPath;
         if (this.fullPath == null) {
-            this.queries = null;
+            this.queries = new HashMap<>();
             this.path = null;
             return;
         }
@@ -168,7 +168,7 @@ public class i4URI {
                 domain = uri;
                 port = defaultPort;
                 fullPath = path = null;
-                queries = null;
+                queries = new HashMap<>();
                 return;
             }
             if (colon > -1 && (colon < min || min == -1)) {
@@ -177,7 +177,7 @@ public class i4URI {
                 if (min == -1) {
                     port = Integer.parseInt(uri.substring(colon));
                     fullPath = path = null;
-                    queries = null;
+                    queries = new HashMap<>();
                     return;
                 }
                 port = Integer.parseInt(uri.substring(colon, min));
@@ -218,6 +218,11 @@ public class i4URI {
     }
 
     public i4URI(final String uri) { this(uri, null); }
+
+    public String getQuery(final String key) {
+        final List<String> l = queries.get(key);
+        return l != null && !l.isEmpty() ? l.get(0) : null;
+    }
 
     @Override
     public boolean equals(Object o) {
