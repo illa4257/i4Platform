@@ -16,7 +16,7 @@ public class IO {
         byte[] run(final InputStream inputStream) throws IOException;
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({"rawtypes", "unchecked", "JavaReflectionMemberAccess"})
     private static IReader detectReader() {
         try {
             final Method m = InputStream.class.getMethod("readAllBytes");
@@ -295,6 +295,24 @@ public class IO {
     public static void writeBEShort(final OutputStream stream, int number) throws IOException {
         stream.write(number >> 8);
         stream.write(number);
+    }
+
+    /**
+     * Writes in little-endian order.
+     *
+     * <pre>
+     * {@code
+     * stream.write(number & 0xFF);
+     * stream.write((number >> 8) & 0xFF);
+     * }
+     * </pre>
+     *
+     * @param stream OutputStream
+     * @param number Short
+     */
+    public static void writeLEShort(final OutputStream stream, int number) throws IOException {
+        stream.write(number & 0xFF);
+        stream.write((number >> 8)  & 0xFF);
     }
 
     /**
