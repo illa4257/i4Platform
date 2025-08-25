@@ -8,7 +8,7 @@ import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyUpEvent;
 import illa4257.i4Framework.base.events.mouse.*;
-import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.points.PointAttach;
 import illa4257.i4Utils.lists.MutableCharArray;

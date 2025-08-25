@@ -3,9 +3,9 @@ package illa4257.i4Framework.android;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.graphics.IPath;
+import illa4257.i4Utils.media.Color;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.math.Vector2D;
 

@@ -8,7 +8,7 @@ import illa4257.i4Framework.base.events.SingleEvent;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseEnterEvent;
 import illa4257.i4Framework.base.events.mouse.MouseLeaveEvent;
-import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.base.utils.Geom;
 import illa4257.i4Utils.media.Image;

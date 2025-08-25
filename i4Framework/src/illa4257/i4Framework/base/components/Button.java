@@ -3,7 +3,7 @@ package illa4257.i4Framework.base.components;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.IMoveableInputEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
-import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.math.HorizontalAlign;
 import illa4257.i4Framework.base.math.Vector2D;

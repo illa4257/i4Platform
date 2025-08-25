@@ -1,6 +1,6 @@
 package illa4257.i4Framework.base.components;
 
-import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.math.HorizontalAlign;
 import illa4257.i4Framework.base.math.Vector2D;
@@ -8,8 +8,6 @@ import illa4257.i4Framework.base.math.Vector2D;
 import java.util.Objects;
 
 public class Label extends Component {
-    public static final String regExp = "\r\n|\r|\n";
-
     public volatile Object text;
     private String old = null;
     private String[] lines = null;

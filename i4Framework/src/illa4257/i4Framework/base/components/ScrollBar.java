@@ -1,7 +1,7 @@
 package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.events.Event;
-import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.events.components.ChangePointEvent;

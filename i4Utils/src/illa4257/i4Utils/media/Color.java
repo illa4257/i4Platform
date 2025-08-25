@@ -1,6 +1,4 @@
-package illa4257.i4Framework.base.graphics;
-
-import illa4257.i4Framework.base.styling.StyleSetting;
+package illa4257.i4Utils.media;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -73,6 +71,42 @@ public class Color {
         this.alpha = color.getAlpha() / 255f;
     }
 
+    public static Color parse(final String s) {
+        try {
+            final int l = s.length();
+            if (s.startsWith("#")) {
+                if (l == 4) {
+                    final int r = Integer.parseInt(s.substring(1, 2), 16),
+                            g = Integer.parseInt(s.substring(2, 3), 16),
+                            b = Integer.parseInt(s.substring(3, 4), 16);
+                    return new Color(r * 16 + r, g * 16 + g, b * 16 + b);
+                }
+                if (l == 5) {
+                    final int r = Integer.parseInt(s.substring(1, 2), 16),
+                            g = Integer.parseInt(s.substring(2, 3), 16),
+                            b = Integer.parseInt(s.substring(3, 4), 16),
+                            a = Integer.parseInt(s.substring(4, 5), 16);
+                    return new Color(r * 16 + r, g * 16 + g, b * 16 + b, a * 16 + a);
+                }
+                if (l == 7)
+                    return fromRGB(Integer.parseInt(s.substring(1), 16));
+                if (l == 9)
+                    return new Color(Integer.parseInt(s.substring(1), 16));
+            } else if (s.startsWith("0x")) {
+                if (l == 8)
+                    return fromRGB(Integer.parseInt(s.substring(2), 16));
+                if (l == 10)
+                    return new Color(Integer.parseInt(s.substring(2), 16));
+            }
+        } catch (final Exception ignored) {}
+        try {
+            final Field f = Color.class.getDeclaredField(s.toUpperCase());
+            if (Modifier.isPublic(f.getModifiers()) && Modifier.isStatic(f.getModifiers()))
+                return (Color) f.get(null);
+        } catch (final Exception ignored) {}
+        throw new IllegalArgumentException("Invalid color format: " + s);
+    }
+
     public static Color fromRGB(final int rgb) { return new Color(rgb >> 16, rgb >> 8, rgb); }
     public static Color fromARGB(final int argb) { return new Color(argb >> 16, argb >> 8, argb, argb >> 24); }
 
@@ -108,55 +142,5 @@ public class Color {
     @Override
     public String toString() {
         return "Color{red=" + redInt() + ", green=" + greenInt() + ", blue=" + blueInt() + ", alpha=" + alphaInt() + "}";
-    }
-
-    public static Color styleSettingParser(final StyleSetting setting) {
-        return styleSettingParser(setting, TRANSPARENT);
-    }
-
-    public static Color styleSettingParser(final StyleSetting setting, final Color defaultValue) {
-        {
-            final String v = setting.get(String.class);
-            if (v != null) {
-                try {
-                    final int l = v.length();
-                    if (v.startsWith("#")) {
-                        if (l == 4) {
-                            final int r = Integer.parseInt(v.substring(1, 2), 16),
-                                    g = Integer.parseInt(v.substring(2, 3), 16),
-                                    b = Integer.parseInt(v.substring(3, 4), 16);
-                            return new Color(r * 16 + r, g * 16 + g, b * 16 + b);
-                        }
-                        if (l == 5) {
-                            final int r = Integer.parseInt(v.substring(1, 2), 16),
-                                    g = Integer.parseInt(v.substring(2, 3), 16),
-                                    b = Integer.parseInt(v.substring(3, 4), 16),
-                                    a = Integer.parseInt(v.substring(4, 5), 16);
-                            return new Color(r * 16 + r, g * 16 + g, b * 16 + b, a * 16 + a);
-                        }
-                        if (l == 7)
-                            return fromRGB(Integer.parseInt(v.substring(1), 16));
-                        if (l == 9)
-                            return new Color(Integer.parseInt(v.substring(1), 16));
-                    } else if (v.startsWith("0x")) {
-                        if (l == 8)
-                            return fromRGB(Integer.parseInt(v.substring(2), 16));
-                        if (l == 10)
-                            return new Color(Integer.parseInt(v.substring(2), 16));
-                    }
-                } catch (final Exception ignored) {}
-                try {
-                    final Field f = Color.class.getDeclaredField(v.toUpperCase());
-                    if (Modifier.isPublic(f.getModifiers()) && Modifier.isStatic(f.getModifiers()))
-                        return (Color) f.get(null);
-                } catch (final Exception ignored) {}
-            }
-        }
-        {
-            final Integer n = setting.get(Integer.class);
-            if (n != null)
-                return new Color(n);
-        }
-        return defaultValue;
     }
 }

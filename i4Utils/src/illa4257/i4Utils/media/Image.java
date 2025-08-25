@@ -100,6 +100,14 @@ public class Image implements Closeable {
 
     public final ConcurrentHashMap<Object, Object> imageMap = new ConcurrentHashMap<>();
 
+    public int getInt(final int x, final int y) {
+        return directIntArray()[x + y * width];
+    }
+
+    public Color getColor(final int x, final int y) {
+        return Color.fromARGB(directIntArray()[x + y * width]);
+    }
+
     @Override
     public void close() {
         synchronized (locker) {

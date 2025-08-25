@@ -1,7 +1,7 @@
 package illa4257.i4Framework.base.styling;
 
 import illa4257.i4Framework.base.utils.Cache;
-import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Utils.media.Color;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Utils.logger.i4Logger;
@@ -80,10 +80,20 @@ public class StyleSetting {
     public StyleSetting set(final Color value) { return set(Color.class, value); }
     public StyleSetting set(final Cursor value) { return set(Cursor.class, value); }
 
-    public Color color() { return computeIfAbsentF(Color.class, Color::styleSettingParser); }
+    public Color color() { return color(Color.TRANSPARENT); }
 
     public Color color(final Color defaultColor) {
-        return computeIfAbsentF(Color.class, Color::styleSettingParser, defaultColor);
+        return computeIfAbsentP(Color.class, () -> {
+            final String v = get(String.class);
+            if (v != null)
+                try {
+                    return Color.parse(v);
+                } catch (final IllegalArgumentException ignored) {}
+            final Integer n = get(Integer.class);
+            if (n != null)
+                return new Color(n);
+            return null;
+        }, defaultColor);
     }
 
     public Cursor cursor() { return computeIfAbsentF(Cursor.class, Cursor::from); }
