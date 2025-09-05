@@ -1,5 +1,8 @@
 package illa4257.i4Utils.logger;
 
+import illa4257.i4Utils.Str;
+import illa4257.i4Utils.lists.ArrIterable;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -32,7 +35,7 @@ public abstract class LogHandler implements ILogHandler {
 
     @Override
     public void log(final Level level, final String prefix, final Object... objects) {
-        log(level, prefix, objects == null ? "null" : Arrays.hashCode(objects) + Arrays.toString(objects));
+        log(level, prefix, objects == null ? "null" : Str.join(" ", new ArrIterable<>(objects), Objects::toString));
     }
 
     @Override

@@ -90,6 +90,10 @@ public class i4Logger extends LogHandler {
     public void log(final Level level, final Object... objects) { log(level, name, objects); }
     public void log(final Level level, final Object object) { log(level, name, object); }
 
+    public void i(final String message) { log(INFO, name, message); }
+    public void i(final Object... objects) { log(INFO, name, objects); }
+    public void i(final Object object) { log(INFO, name, object); }
+
     public i4Logger inheritIO() {
         System.setOut(newPrintStream(INFO));
         System.setErr(newPrintStream(ERROR));
