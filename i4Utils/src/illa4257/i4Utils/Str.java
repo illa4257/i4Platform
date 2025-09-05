@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
 public class Str {
@@ -18,6 +19,8 @@ public class Str {
     public static final List<Character>
             CHARS_NUMS;
 
+    private static final ConcurrentLinkedQueue<StringBuilder> builders = new ConcurrentLinkedQueue<>();
+
     static {
         ArrayList<Character> l = new ArrayList<>();
         for (final char c : STR_NUMS.toCharArray())
@@ -25,19 +28,31 @@ public class Str {
         CHARS_NUMS = Collections.unmodifiableList(l);
     }
 
+    public static StringBuilder builder() {
+        final StringBuilder b = builders.poll();
+        return b != null ? b : new StringBuilder();
+    }
+
+    public static void recycle(final StringBuilder builder) {
+        builder.setLength(0);
+        builders.offer(builder);
+    }
+
     public static String encodeURI(final String uri, final boolean isQuery) throws UnsupportedEncodingException {
         final String space = isQuery ? "+" : "%20";
-        final StringBuilder builder = new StringBuilder();
-
-        for (final char ch : uri.toCharArray())
-            if (STR_URI_CHARS.indexOf(ch) == -1)
-                builder.append(URLEncoder.encode(String.valueOf(ch), UTF_8));
-            else if (ch == ' ')
-                builder.append(space);
-            else
-                builder.append(ch);
-
-        return builder.toString();
+        final StringBuilder builder = builder();
+        try {
+            for (final char ch : uri.toCharArray())
+                if (STR_URI_CHARS.indexOf(ch) == -1)
+                    builder.append(URLEncoder.encode(String.valueOf(ch), UTF_8));
+                else if (ch == ' ')
+                    builder.append(space);
+                else
+                    builder.append(ch);
+            return builder.toString();
+        } finally {
+            recycle(builder);
+        }
     }
 
     public static StringBuilder repeat(final StringBuilder builder, final String str, int n) {
@@ -46,7 +61,14 @@ public class Str {
         return builder;
     }
 
-    public static String repeat(final String str, final int n) { return repeat(new StringBuilder(), str, n).toString(); }
+    public static String repeat(final String str, final int n) {
+        final StringBuilder b = builder();
+        try {
+            return repeat(b, str, n).toString();
+        } finally {
+            recycle(b);
+        }
+    }
 
     public static <T> StringBuilder join(final StringBuilder builder, final String delimiter, final Iterator<T> iter, Function<T, String> func) {
         if (iter == null)
@@ -71,8 +93,22 @@ public class Str {
         return builder;
     }
 
+    public static <T> String join(final String delimiter, final Iterator<T> items, Function<T, String> func) {
+        final StringBuilder b = builder();
+        try {
+            return join(b, delimiter, items, func).toString();
+        } finally {
+            recycle(b);
+        }
+    }
+
     public static <T> String join(final String delimiter, final Iterable<T> items, Function<T, String> func) {
-        return join(new StringBuilder(), delimiter, items, func).toString();
+        final StringBuilder b = builder();
+        try {
+            return join(b, delimiter, items, func).toString();
+        } finally {
+            recycle(b);
+        }
     }
 
     public static String random(final int len) { return random(new Random(), len, STR_NUMS + STR_EN_LOW + STR_EN_UP); }
