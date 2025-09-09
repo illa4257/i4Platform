@@ -164,6 +164,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         final Cursor c = s.cursor();
         final int cursor =
                 c == Cursor.TEXT ? TEXT_CURSOR :
+                c == Cursor.POINTER ? HAND_CURSOR :
                 c == Cursor.N_RESIZE ? N_RESIZE_CURSOR :
                 c == Cursor.SE_RESIZE ? SE_RESIZE_CURSOR :
                 c == Cursor.E_RESIZE ? E_RESIZE_CURSOR :
