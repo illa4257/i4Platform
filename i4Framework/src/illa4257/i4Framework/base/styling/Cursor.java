@@ -3,6 +3,7 @@ package illa4257.i4Framework.base.styling;
 public enum Cursor {
     DEFAULT,
     TEXT,
+    POINTER,
 
     E_RESIZE,
     EW_RESIZE,
@@ -23,6 +24,7 @@ public enum Cursor {
             return DEFAULT;
         switch (name.replaceAll("_", "-").toLowerCase()) {
             case "text": return TEXT;
+            case "pointer": return POINTER;
             case "e-resize": return E_RESIZE;
             case "ew-resize": return EW_RESIZE;
             case "n-resize": return N_RESIZE;

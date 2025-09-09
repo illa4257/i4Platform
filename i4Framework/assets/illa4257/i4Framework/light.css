@@ -28,6 +28,7 @@ Panel {
 
 Button {
     text-align: center;
+    cursor: pointer;
 }
 
 Button,
