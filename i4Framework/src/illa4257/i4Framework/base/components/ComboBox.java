@@ -5,6 +5,7 @@ import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.ChangeParentEvent;
 import illa4257.i4Framework.base.events.components.FocusEvent;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
+import illa4257.i4Framework.base.points.PPointSubtract;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.points.Point;
@@ -14,15 +15,13 @@ import illa4257.i4Framework.base.points.ops.PPointMin;
 
 import static illa4257.i4Framework.base.math.Unit.DP;
 
-/**
- * Not implemented yet.<br>
- * TODO: implement
- */
 public class ComboBox<T> extends TextField {
     private final ScrollPane optionsPane = new ScrollPane();
     private volatile Context ctx;
     public volatile Iterable<T> options = null;
     private volatile T selected = null;
+
+    private final Point contextHeight = new NumberPointMultiplier(256, densityMultiplier);
 
     public ComboBox() {
         optionsPane.classes.add("combobox-options");
@@ -83,13 +82,13 @@ public class ComboBox<T> extends TextField {
             op.add(noOptions);
         }
 
-        /* TODO: Differentiate when to top
-        optionsPane.setStartY(new PPointSubtract(optionsPane.endY, new PPointMin(op.height, new NumberPointMultiplier(256, densityMultiplier))));
-        optionsPane.setEndY(new PointAttach(-calcStyleNumber("border-width", Orientation.VERTICAL, 0), windowStartY));
-        */
-
-        optionsPane.setStartY(new PointAttach(calcStyleNumber("border-width", Orientation.VERTICAL, 0), windowEndY));
-        optionsPane.setHeight(new PPointMin(op.height, new NumberPointMultiplier(256, densityMultiplier)));
+        if (getWindow().safeEndY.calcFloat() >= windowEndY.calcFloat() + contextHeight.calcFloat()) {
+            optionsPane.setStartY(new PointAttach(calcStyleNumber("border-width", Orientation.VERTICAL, 0), windowEndY));
+            optionsPane.setHeight(new PPointMin(op.height, contextHeight));
+        } else {
+            optionsPane.setStartY(new PPointSubtract(optionsPane.endY, new PPointMin(op.height, contextHeight)));
+            optionsPane.setEndY(new PointAttach(-calcStyleNumber("border-width", Orientation.VERTICAL, 0), windowStartY));
+        }
 
         optionsPane.setContent(op);
 
