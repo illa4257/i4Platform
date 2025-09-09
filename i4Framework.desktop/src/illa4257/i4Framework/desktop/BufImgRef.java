@@ -10,9 +10,11 @@ public class BufImgRef implements ImagePixelable {
 
     public BufImgRef(final BufferedImage img) { image = img; }
 
+    public static int[] getPixels(final BufferedImage image) { return image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth()); }
+
     @Override
     public int[] getPixels() {
-        return image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());
+        return getPixels(image);
     }
 
     public static BufImgRef compute(final Image img) {
