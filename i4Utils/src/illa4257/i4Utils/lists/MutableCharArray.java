@@ -291,7 +291,7 @@ public class MutableCharArray {
         }
     }
 
-    public void add(final String str) { addDirect(str.toCharArray()); }
+    public void add(final String str) { if (str != null) addDirect(str.toCharArray()); }
     public void add(final char[] charArray) { addDirect(charArray.clone()); }
     public void addDirect(final char[] charArray) {
         synchronized (locker) {
