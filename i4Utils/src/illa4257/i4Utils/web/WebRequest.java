@@ -18,7 +18,7 @@ public class WebRequest {
     public volatile long lastWrittenData = 0;
     public String protocol = "HTTP/1.1", responseStatus = null, method;
     public i4URI uri;
-    public final Map<String, List<String>> clientHeaders, serverHeaders = new PreservedKeyMap<>(
+    public final PreservedKeyMap<String, List<String>> clientHeaders, serverHeaders = new PreservedKeyMap<>(
             new HashMap<>(), new HashMap<>(), String::toLowerCase,
             k -> k instanceof String ? ((String) k).toLowerCase() : k
     );
@@ -29,7 +29,7 @@ public class WebRequest {
 
     public WebRequest() {
         clientHeaders = new PreservedKeyMap<>(new HashMap<>(), new HashMap<>(), String::toLowerCase,
-            k -> k instanceof String ? ((String) k).toLowerCase() : k);
+                k -> k instanceof String ? ((String) k).toLowerCase() : k);
     }
 
     public WebRequest(final String method, final i4URI uri) {

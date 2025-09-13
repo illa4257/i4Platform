@@ -421,7 +421,7 @@ public class WebFactory implements IWebClientFactory {
                 os.write((" " + (r.uri.fullPath == null ? '/' : Str.encodeURI(r.uri.fullPath, false)) + ' ' + r.protocol + "\r\n").getBytes(CHARSET));
 
                 if (!r.clientHeaders.containsKey("host"))
-                    os.write(("host: " + r.uri.domain + (
+                    os.write(("Host: " + r.uri.domain + (
                             (isSecure && port == 443) ||
                                     (!isSecure && port == 80) ? "" : ":" + port) + "\r\n").getBytes(CHARSET));
                 writeHeaders(os, r.clientHeaders);

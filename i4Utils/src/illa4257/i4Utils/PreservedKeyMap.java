@@ -36,6 +36,13 @@ public class PreservedKeyMap<K, V> extends KeyMap<K, V> {
     }
 
     @Override
+    public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+        final K k = kp.apply(key);
+        originalKeys.put(k, key);
+        return originalMap.computeIfAbsent(k, mappingFunction);
+    }
+
+    @Override
     public void clear() {
         originalMap.clear();
         originalKeys.clear();
