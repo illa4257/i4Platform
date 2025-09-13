@@ -433,26 +433,26 @@ public class WebFactory implements IWebClientFactory {
                             isWebSocketClient = "websocket".equalsIgnoreCase(upgrade);
                 final String dec = DECOMPRESSORS_VALUE;
                 if (!r.clientHeaders.containsKey("accept-encoding") && dec != null && !dec.isEmpty())
-                    os.write(("accept-encoding: " + dec + "\r\n").getBytes(CHARSET));
+                    os.write(("Accept-Encoding: " + dec + "\r\n").getBytes(CHARSET));
                 if (r.hasContent) {
                     if (r.bodyOutput != null) {
                         if (!r.clientHeaders.containsKey("content-length"))
-                            os.write(("content-length: " + r.bodyOutput.length + "\r\n").getBytes(CHARSET));
+                            os.write(("Content-Length: " + r.bodyOutput.length + "\r\n").getBytes(CHARSET));
                     } else if (!r.clientHeaders.containsKey("transfer-encoding"))
-                        os.write(("transfer-encoding: chunked\r\n").getBytes(CHARSET));
+                        os.write(("Transfer-Encoding: chunked\r\n").getBytes(CHARSET));
                 } else if (!r.clientHeaders.containsKey("content-length"))
-                    os.write(("content-length: 0\r\n").getBytes(CHARSET));
+                    os.write(("Content-Length: 0\r\n").getBytes(CHARSET));
                 if (upgradeHeader == null && upgrade != null)
-                    os.write(("upgrade: " + upgrade + "\r\n").getBytes(CHARSET));
+                    os.write(("Upgrade: " + upgrade + "\r\n").getBytes(CHARSET));
                 if (!r.clientHeaders.containsKey("connection"))
-                    os.write(("connection: " + (upgrade != null ? "upgrade" : keepAlive ? "keep-alive" : "closed") + "\r\n").getBytes(CHARSET));
+                    os.write(("Connection: " + (upgrade != null ? "upgrade" : keepAlive ? "keep-alive" : "closed") + "\r\n").getBytes(CHARSET));
                 if (isWebSocketClient) {
                     if (!r.clientHeaders.containsKey("sec-websocket-version"))
-                        os.write("sec-websocket-version: 13\r\n".getBytes(CHARSET));
+                        os.write("Sec-WebSocket-Version: 13\r\n".getBytes(CHARSET));
                     if (r.clientHeaders.containsKey("sec-websocket-key"))
                         r.reserved = r.clientHeaders.get("sec-websocket-key");
                     else
-                        os.write(("sec-websocket-key: " + (
+                        os.write(("Sec-WebSocket-Key: " + (
                                 r.reserved = Base64.getEncoder().encodeToString(Str.random(
                                         new SecureRandom(), 16, Str.STR_NUMS + Str.STR_EN_LOW + Str.STR_EN_UP
                                 ).getBytes(CHARSET))
