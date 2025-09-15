@@ -15,11 +15,6 @@ public class AndroidGContext implements Context {
 
     public AndroidGContext() {}
 
-    @Override
-    public Object getClipI() {
-        return null;
-    }
-
     private final char[] buff = new char[1];
 
     @Override
@@ -45,11 +40,6 @@ public class AndroidGContext implements Context {
     @Override public void setColor(final Color color) { paint.setColor(color.toARGB()); }
     @Override public float getStrokeWidth() { return paint.getStrokeWidth(); }
     @Override public void setStrokeWidth(final float newWidth) { paint.setStrokeWidth(newWidth); }
-
-    @Override
-    public void setClipI(Object clipArea) {
-
-    }
 
     @Override
     public void setClip(final IPath path) {

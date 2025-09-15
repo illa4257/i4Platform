@@ -10,7 +10,6 @@ public interface Context {
     default Context sub(final float x, final float y, final float w, final float h) { return this; }
     default void dispose() {}
 
-    Object getClipI();
     float charWidth(final char ch);
     Vector2D bounds(final String string);
     Vector2D bounds(final char[] string);
@@ -18,7 +17,6 @@ public interface Context {
     void setColor(final Color color);
     float getStrokeWidth();
     void setStrokeWidth(final float newWidth);
-    void setClipI(final Object clipArea);
     void setClip(final IPath path);
     void translate(final float x, final float y);
     void scale(final float x, final float y);

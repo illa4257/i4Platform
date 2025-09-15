@@ -125,6 +125,8 @@ public class Component extends Destructor {
                         entry2.getValue().subscribed.offer(cons);
                     }
             }
+            for (final Map.Entry<String, Consumer<StyleSetting>> cons : subscribers.entrySet())
+                cons.getValue().accept(getStyle(cons.getKey()));
             repaint();
         });
         addEventListener(HoverEvent.class, e -> setPseudoClass("hover", e.value));
@@ -234,8 +236,9 @@ public class Component extends Destructor {
             return;
         subscribers.computeIfAbsent(name, k -> {
             final Consumer<StyleSetting> cons = s -> {
-                if (getStyle(k) == s)
-                    l.forEach(c -> c.accept(s));
+                if (s == null || getStyle(k) != s)
+                    return;
+                l.forEach(c -> c.accept(s));
             };
             synchronized (cache) {
                 for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> entry : cache) {
@@ -645,9 +648,6 @@ public class Component extends Destructor {
                     bg = getColor("background-color");
 
         if (borderWidth >= 0.5f && borderColor.alpha > 0) {
-            final Object o = context.getClipI();
-            context.setClipI(null);
-
             context.setColor(borderColor);
 
             if (borderRadius >= 0.5f) {
@@ -674,8 +674,6 @@ public class Component extends Destructor {
                 context.drawRect(-borderWidth, 0, borderWidth, h);
                 context.drawRect(w, 0, borderWidth, h);
             }
-
-            context.setClipI(o);
         }
 
         if (borderRadius >= 0.5f) {

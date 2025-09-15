@@ -19,11 +19,6 @@ public class SwingContext implements Context {
     }
 
     @Override
-    public Object getClipI() {
-        return graphics.getClip();
-    }
-
-    @Override
     public float charWidth(final char ch) {
         return graphics.getFontMetrics().charWidth(ch);
     }
@@ -52,11 +47,6 @@ public class SwingContext implements Context {
     @Override
     public void setStrokeWidth(final float newWidth) {
         graphics.setStroke(new BasicStroke(newWidth));
-    }
-
-    @Override
-    public void setClipI(final Object clipArea) {
-        graphics.setClip((Shape) clipArea);
     }
 
     @Override

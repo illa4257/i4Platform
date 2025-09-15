@@ -26,6 +26,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
     public final Component component;
     public final EventListener[] listeners;
     public EventListener[] directListeners = null;
+    private volatile int offset = 0;
 
     private JFrame getFrame() {
         java.awt.Container c = getParent();
@@ -120,10 +121,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         });
 
         listeners = new EventListener[] {
-                component.addEventListener(RecalculateEvent.class, e -> {
-                    setLocation(component.startX.calcInt(), component.startY.calcInt());
-                    setSize(component.width.calcInt(), component.height.calcInt());
-                }),
+                component.addEventListener(RecalculateEvent.class, e -> updateLS()),
                 component.addEventListener(RepaintEvent.class, e -> repaint()),
                 component.addEventListener(FocusEvent.class, e -> {
                     if (e.value)
@@ -148,8 +146,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         }
 
         setVisible(component.isVisible());
-        setLocation(component.startX.calcInt(), component.startY.calcInt());
-        setSize(component.width.calcInt(), component.height.calcInt());
+        updateLS();
 
         component.subscribe("cursor", this::onCursorChange);
 
@@ -158,6 +155,13 @@ public class SwingComponent extends JComponent implements ISwingComponent {
             onCursorChange(s);
         else
             setCursor(getPredefinedCursor(DEFAULT_CURSOR));
+    }
+
+    private void updateLS() {
+        final int bw = component.getColor("border-color").alpha > 0 ? Math.round(Math.max(component.calcStyleNumber("border-width", Orientation.HORIZONTAL, 0), 0)) : 0;
+        setLocation(component.startX.calcInt() - bw, component.startY.calcInt() - bw);
+        setSize(component.width.calcInt() + bw * 2, component.height.calcInt() + bw * 2);
+        offset = bw;
     }
 
     private void onCursorChange(final StyleSetting s) {
@@ -194,6 +198,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
     protected void paintComponent(final Graphics graphics) {
         final Graphics2D g = (Graphics2D) graphics;
         g.setRenderingHints(SwingFramework.BEST);
+        g.translate(offset, offset);
         component.paint(new SwingContext(g));
     }
 
