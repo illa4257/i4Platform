@@ -3,19 +3,19 @@ package illa4257.i4Utils.io;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class I4EInputStream extends InputStream {
+public class CipherVeilInputStream extends InputStream {
     private final InputStream stream;
     private final byte[] sign;
     private int signIndex;
     private int status = 0, len = 0;
 
-    public I4EInputStream(final InputStream stream, final byte[] sign, final int signIndex) {
+    public CipherVeilInputStream(final InputStream stream, final byte[] sign, final int signIndex) {
         this.stream = stream;
         this.sign = sign;
         this.signIndex = signIndex;
     }
 
-    public I4EInputStream(final InputStream stream, final byte[] sign) { this(stream, sign, 0); }
+    public CipherVeilInputStream(final InputStream stream, final byte[] sign) { this(stream, sign, 0); }
 
     private int internalRead() throws IOException {
         if (signIndex >= sign.length)
@@ -34,8 +34,10 @@ public class I4EInputStream extends InputStream {
         if (status == 1) {
             if (len > 0)
                 return;
+            //noinspection ResultOfMethodCallIgnored
             stream.skip(readInt());
         }
+        //noinspection ResultOfMethodCallIgnored
         stream.skip(readInt());
         len = readInt();
         status = 1;

@@ -5,8 +5,8 @@ import java.io.OutputStream;
 import java.security.SecureRandom;
 import java.util.Random;
 
-public class I4EOutputStream extends OutputStream {
-    private final int dataMaxLength;
+public class CipherVeilOutputStream extends OutputStream {
+    private final int dataMaxLength, noiseMaxLength;
     private final Random randomizer;
     private final OutputStream stream;
     private final byte[] sign, randomData;
@@ -20,16 +20,17 @@ public class I4EOutputStream extends OutputStream {
      * @param signIndex
      * @param dataMaxLength
      */
-    public I4EOutputStream(final OutputStream stream, final Random randomizer, final byte[] sign, final int signIndex, final int dataMaxLength) {
+    public CipherVeilOutputStream(final OutputStream stream, final Random randomizer, final byte[] sign, final int signIndex, final int dataMaxLength, final int noiseMaxLength) {
         this.dataMaxLength = dataMaxLength + 1;
+        this.noiseMaxLength = noiseMaxLength + 1;
         this.stream = stream;
         this.randomizer = randomizer;
         this.sign = sign;
         this.signIndex = signIndex;
-        this.randomData = new byte[dataMaxLength];
+        this.randomData = new byte[Math.max(dataMaxLength, noiseMaxLength)];
     }
 
-    public I4EOutputStream(final OutputStream stream, final byte[] sign) { this(stream, new SecureRandom(), sign, 0, 128); }
+    public CipherVeilOutputStream(final OutputStream stream, final byte[] sign) { this(stream, new SecureRandom(), sign, 0, 128, 256); }
 
     private void internalWrite(int b) throws IOException {
         final byte by = (byte) b;
@@ -47,7 +48,7 @@ public class I4EOutputStream extends OutputStream {
 
     private void sendRandomPacket() throws IOException {
         randomizer.nextBytes(randomData);
-        final int l = randomizer.nextInt(dataMaxLength);
+        final int l = randomizer.nextInt(noiseMaxLength);
         writeInt(l);
         stream.write(randomData, 0, l);
     }
