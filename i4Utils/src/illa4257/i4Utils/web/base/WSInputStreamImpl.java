@@ -11,7 +11,6 @@ public class WSInputStreamImpl extends WSInputStream {
     public final InputStream inputStream;
     private int frameType;
     private long remaining = -1;
-    private boolean masking = false;
     private final byte[] mask = new byte[4];
     private final Consumer<byte[]> onPing;
 
@@ -28,7 +27,7 @@ public class WSInputStreamImpl extends WSInputStream {
         if (frameType != 0x00)
             this.frameType = frameType;
         b = IO.readByteI(inputStream);
-        masking = (b | 0x80) == b;
+        final boolean masking = (b | 0x80) == b;
         if (masking) {
             b ^= 0x80;
             IO.readByteArray(inputStream, mask);
@@ -36,7 +35,7 @@ public class WSInputStreamImpl extends WSInputStream {
         if (b < 0x7E)
             remaining = b;
         else if (b == 0x7E)
-            remaining = IO.readBEShort(inputStream);
+            remaining = IO.readBEShortI(inputStream);
         else
             remaining = IO.readBELong(inputStream);
         if (frameType == 0x08) {
@@ -52,6 +51,7 @@ public class WSInputStreamImpl extends WSInputStream {
     public void skipRestPacket() throws IOException {
         if (remaining <= 0)
             return;
+        //noinspection ResultOfMethodCallIgnored
         inputStream.skip(remaining);
         remaining = 0;
     }
