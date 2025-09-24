@@ -6,8 +6,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-import static illa4257.i4Utils.logger.Level.ERROR;
-import static illa4257.i4Utils.logger.Level.INFO;
+import static illa4257.i4Utils.logger.Level.*;
 
 public class i4Logger extends LogHandler {
     public static final i4Logger INSTANCE;
@@ -93,6 +92,18 @@ public class i4Logger extends LogHandler {
     public void i(final String message) { log(INFO, name, message); }
     public void i(final Object... objects) { log(INFO, name, objects); }
     public void i(final Object object) { log(INFO, name, object); }
+
+    public void w(final String message) { log(WARN, name, message); }
+    public void w(final Object... objects) { log(WARN, name, objects); }
+    public void w(final Object object) { log(WARN, name, object); }
+
+    public void e(final String message) { log(ERROR, name, message); }
+    public void e(final Object... objects) { log(ERROR, name, objects); }
+    public void e(final Object object) { log(ERROR, name, object); }
+
+    public void d(final String message) { log(DEBUG, name, message); }
+    public void d(final Object... objects) { log(DEBUG, name, objects); }
+    public void d(final Object object) { log(DEBUG, name, object); }
 
     public i4Logger inheritIO() {
         System.setOut(newPrintStream(INFO));
