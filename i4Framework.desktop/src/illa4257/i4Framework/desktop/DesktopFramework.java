@@ -15,8 +15,8 @@ import illa4257.i4Framework.desktop.win32.DwmAPI;
 import illa4257.i4Framework.desktop.win32.WinFileChooser;
 import illa4257.i4Framework.desktop.win32.WinThemeDetector;
 import illa4257.i4Utils.Arch;
-import illa4257.i4Utils.logger.Level;
 import illa4257.i4Utils.logger.i4Logger;
+import illa4257.i4Utils.runnables.Consumer2;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -37,24 +37,14 @@ public abstract class DesktopFramework extends Framework {
         return null;
     }
 
+    private final Object l = new Object();
+
     private final String appName;
+
+    private volatile boolean startThemeDetector = true;
 
     public DesktopFramework(final String appName) {
         this.appName = appName;
-        try {
-            if (Arch.REAL.IS_WINDOWS) {
-                if (Arch.REAL.osVer.major >= 10)
-                    new WinThemeDetector(this).start();
-            } else if (Arch.REAL.IS_LINUX) {
-                if (Arch.REAL.IS_CHEERPJ)
-                    new CheerpJThemeDetector(this).start();
-                else
-                    new GnomeThemeDetector(this).start();
-            }
-        } catch (final Exception ex) {
-            i4Logger.INSTANCE.log(Level.WARN, "Failed to initialize theme listener.");
-            i4Logger.INSTANCE.log(ex);
-        }
         Framework.registerFramework(this);
     }
 
@@ -85,6 +75,33 @@ public abstract class DesktopFramework extends Framework {
                 i4Logger.INSTANCE.log(ex);
             }
         return super.newFileChooser();
+    }
+
+    @Override
+    public boolean addThemeListener(final Consumer2<String, BaseTheme> listener) {
+        if (!super.addThemeListener(listener))
+            return false;
+        if (startThemeDetector)
+            synchronized (l) {
+                if (startThemeDetector)
+                    try {
+                        startThemeDetector = false;
+                        if (Arch.REAL.IS_WINDOWS) {
+                            if (Arch.REAL.osVer.major >= 10)
+                                new WinThemeDetector(this).start();
+                        } else if (Arch.REAL.IS_LINUX)
+                            if (Arch.REAL.IS_CHEERPJ)
+                                new CheerpJThemeDetector(this).start();
+                            else
+                                new GnomeThemeDetector(this).start();
+                        else
+                            i4Logger.INSTANCE.w("Unsupported environment.");
+                    } catch (final Throwable ex) {
+                        i4Logger.INSTANCE.w("Failed to initialize theme listener.");
+                        i4Logger.INSTANCE.w(ex);
+                    }
+            }
+        return true;
     }
 
     @Override public void onSystemThemeChange(final String theme, final BaseTheme baseTheme) { super.onSystemThemeChange(theme, baseTheme); }
