@@ -32,4 +32,8 @@ public class BufImgRef implements ImagePixelable {
             bufferedImage.setRGB(0, 0, img.width, img.height, img.directIntArray(), 0, img.width);
         return new BufImgRef(bufferedImage);
     }
+
+    public static BufferedImage get(final Image img) {
+        return ((BufImgRef) img.imageMap.computeIfAbsent(BufImgRef.class, ignored -> compute(img))).image;
+    }
 }
