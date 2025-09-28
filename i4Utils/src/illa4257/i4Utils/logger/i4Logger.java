@@ -90,18 +90,26 @@ public class i4Logger extends LogHandler {
     public void log(final Level level, final Object object) { log(level, name, object); }
 
     public void i(final String message) { log(INFO, name, message); }
+    public void i(final Throwable throwable) { log(INFO, name, throwable); }
+    public void i(final String message, final StackTraceElement[] stackTraceElements) { log(INFO, name, message, stackTraceElements); }
     public void i(final Object... objects) { log(INFO, name, objects); }
     public void i(final Object object) { log(INFO, name, object); }
 
     public void w(final String message) { log(WARN, name, message); }
+    public void w(final Throwable throwable) { log(WARN, name, throwable); }
+    public void w(final String message, final StackTraceElement[] stackTraceElements) { log(WARN, name, message, stackTraceElements); }
     public void w(final Object... objects) { log(WARN, name, objects); }
     public void w(final Object object) { log(WARN, name, object); }
 
     public void e(final String message) { log(ERROR, name, message); }
+    public void e(final Throwable throwable) { log(ERROR, name, throwable); }
+    public void e(final String message, final StackTraceElement[] stackTraceElements) { log(ERROR, name, message, stackTraceElements); }
     public void e(final Object... objects) { log(ERROR, name, objects); }
     public void e(final Object object) { log(ERROR, name, object); }
 
     public void d(final String message) { log(DEBUG, name, message); }
+    public void d(final Throwable throwable) { log(DEBUG, name, throwable); }
+    public void d(final String message, final StackTraceElement[] stackTraceElements) { log(DEBUG, name, message, stackTraceElements); }
     public void d(final Object... objects) { log(DEBUG, name, objects); }
     public void d(final Object object) { log(DEBUG, name, object); }
 
