@@ -90,10 +90,8 @@ public abstract class DesktopFramework extends Framework {
                             if (Arch.REAL.osVer.major >= 10)
                                 new WinThemeDetector(this).start();
                         } else if (Arch.REAL.IS_LINUX)
-                            if (Arch.REAL.IS_CHEERPJ)
-                                new CheerpJThemeDetector(this).start();
-                            else
-                                new GnomeThemeDetector(this).start();
+                            (Arch.REAL.IS_CHEERPJ ? new CheerpJThemeDetector(this) :
+                                    new GnomeThemeDetector(this)).start();
                         else
                             i4Logger.INSTANCE.w("Unsupported environment.");
                     } catch (final Throwable ex) {
