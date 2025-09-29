@@ -111,6 +111,12 @@ public class Container extends Component implements Iterable<Component> {
         }
     }
 
+    public Component getFocusedComponent() {
+        synchronized (locker) {
+            return focused instanceof Container ? ((Container) focused).getFocusedComponent() : focused;
+        }
+    }
+
     protected boolean childFocus(final Component targetChild, final Component target) {
         synchronized (locker) {
             if (!isVisible())
