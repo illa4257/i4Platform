@@ -5,6 +5,7 @@ import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.ChangeParentEvent;
 import illa4257.i4Framework.base.events.components.FocusEvent;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
+import illa4257.i4Framework.base.events.touchscreen.TouchDownEvent;
 import illa4257.i4Framework.base.points.PPointSubtract;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.math.Orientation;
@@ -26,6 +27,7 @@ public class ComboBox<T> extends TextField {
     public ComboBox() {
         optionsPane.classes.add("combobox-options");
         addEventListener(MouseDownEvent.class, e -> showOptions());
+        addEventListener(TouchDownEvent.class, e -> showOptions());
         addEventListener(ChangeParentEvent.class, e -> optionsPane.remove());
         addEventListener(FocusEvent.class, e -> {
             if (!e.value) {

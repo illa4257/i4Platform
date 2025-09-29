@@ -5,6 +5,7 @@ import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyPressEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyUpEvent;
+import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.events.mouse.MouseButton;
@@ -35,6 +36,11 @@ public class TextField extends Component {
             selectionIndex.set(-1);
             if (e.button == MouseButton.BUTTON0)
                 md.set(true);
+            repaint();
+        });
+        addEventListener(TouchUpEvent.class, e -> {
+            index.set(getIndex(e.x));
+            md.set(false);
             repaint();
         });
         addEventListener(MouseUpEvent.class, e -> {
