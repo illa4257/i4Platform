@@ -233,7 +233,7 @@ public class IO {
      * @return Integer
      * @throws IOException if any input stream throws IOException, or if it reaches the end.
      */
-    public static int readBEInteger(final InputStream stream) throws IOException {
+    public static int readBEInt(final InputStream stream) throws IOException {
         return (readByteI(stream) << 24) | (readByteI(stream) << 16) + (readByteI(stream) << 8) | readByteI(stream);
     }
 
@@ -297,6 +297,11 @@ public class IO {
         stream.write(number);
     }
 
+    public static void writeBEShort(final byte[] buff, int number, final int offset) {
+        buff[offset] = (byte) ((number >> 8) & 0xFF);
+        buff[offset + 1] = (byte) (number & 0xFF);
+    }
+
     /**
      * Writes in little-endian order.
      *
@@ -315,6 +320,11 @@ public class IO {
         stream.write((number >> 8)  & 0xFF);
     }
 
+    public static void writeLEShort(final byte[] buff, int number, final int offset) {
+        buff[offset] = (byte) number;
+        buff[offset + 1] = (byte) (number >> 8);
+    }
+
     /**
      * Writes in big-endian order.
      *
@@ -330,11 +340,18 @@ public class IO {
      * @param stream OutputStream
      * @param number Integer
      */
-    public static void writeBEInteger(final OutputStream stream, int number) throws IOException {
+    public static void writeBEInt(final OutputStream stream, int number) throws IOException {
         stream.write(number >> 24);
         stream.write(number >> 16);
         stream.write(number >> 8);
         stream.write(number);
+    }
+
+    public static void writeLEInt(final OutputStream stream, int number) throws IOException {
+        stream.write(number);
+        stream.write(number >> 8);
+        stream.write(number >> 16);
+        stream.write(number >> 24);
     }
 
     /**

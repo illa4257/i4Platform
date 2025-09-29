@@ -65,7 +65,7 @@ public class ClassFile {
     }
 
     public static ClassFile parse(final InputStream inputStream) throws IOException {
-        if (IO.readBEInteger(inputStream) != MAGIC)
+        if (IO.readBEInt(inputStream) != MAGIC)
             throw new UnsupportedOperationException("Not a class file");
 
         final ClassFile cls = new ClassFile();
@@ -113,13 +113,13 @@ public class ClassFile {
         for (short methodsCount = IO.readBEShort(inputStream); methodsCount != 0; methodsCount--) {
             final Method m = new Method(IO.readBEShort(inputStream), IO.readBEShort(inputStream), IO.readBEShort(inputStream));
             for (short attributesCount = IO.readBEShort(inputStream); attributesCount != 0; attributesCount--)
-                m.attributes.add(new Attr(IO.readBEShort(inputStream), IO.readByteArray(inputStream, IO.readBEInteger(inputStream))));
+                m.attributes.add(new Attr(IO.readBEShort(inputStream), IO.readByteArray(inputStream, IO.readBEInt(inputStream))));
             cls.methods.add(m);
         }
 
         for (short attributesCount = IO.readBEShort(inputStream); attributesCount != 0; attributesCount--) {
             final short nameIndex = IO.readBEShort(inputStream);
-            final int len = IO.readBEInteger(inputStream);
+            final int len = IO.readBEInt(inputStream);
             if ("SourceFile".equals(cls.constantPool.get(nameIndex - 1)))
                 cls.fileNameIndex = IO.readBEShort(inputStream);
             else

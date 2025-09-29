@@ -81,26 +81,34 @@ public abstract class DesktopFramework extends Framework {
     public boolean addThemeListener(final Consumer2<String, BaseTheme> listener) {
         if (!super.addThemeListener(listener))
             return false;
-        if (startThemeDetector)
+        if (startThemeDetector) {
+            final boolean s;
             synchronized (l) {
-                if (startThemeDetector)
-                    try {
-                        startThemeDetector = false;
-                        if (Arch.REAL.IS_WINDOWS) {
-                            if (Arch.REAL.osVer.major >= 10)
-                                new WinThemeDetector(this).start();
-                        } else if (Arch.REAL.IS_LINUX)
-                            (Arch.REAL.IS_CHEERPJ ? new CheerpJThemeDetector(this) :
-                                    new GnomeThemeDetector(this)).start();
-                        else
-                            i4Logger.INSTANCE.w("Unsupported environment.");
-                    } catch (final Throwable ex) {
-                        i4Logger.INSTANCE.w("Failed to initialize theme listener.");
-                        i4Logger.INSTANCE.w(ex);
-                    }
+                if (s = startThemeDetector)
+                    startThemeDetector = false;
             }
+            if (s) {
+                try {
+                    startThemeDetector = false;
+                    if (Arch.REAL.IS_WINDOWS) {
+                        if (Arch.REAL.osVer.major >= 10)
+                            new WinThemeDetector(this).start();
+                    } else if (Arch.REAL.IS_LINUX)
+                        (Arch.REAL.IS_CHEERPJ ? new CheerpJThemeDetector(this) :
+                                new GnomeThemeDetector(this)).start();
+                    else
+                        i4Logger.INSTANCE.w("Unsupported environment.");
+                } catch (final Throwable ex) {
+                    i4Logger.INSTANCE.w("Failed to initialize theme listener.");
+                    i4Logger.INSTANCE.w(ex);
+                }
+                onThemeDetectorInit();
+            }
+        }
         return true;
     }
+
+    protected void onThemeDetectorInit() {}
 
     @Override public void onSystemThemeChange(final String theme, final BaseTheme baseTheme) { super.onSystemThemeChange(theme, baseTheme); }
 

@@ -98,6 +98,10 @@ public class SwingFramework extends DesktopFramework {
 
     public SwingFramework(final String appName) {
         super(appName);
+    }
+
+    @Override
+    protected void onThemeDetectorInit() {
         addThemeListener((theme, baseTheme) -> {
             final boolean isDark = baseTheme == BaseTheme.DARK;
             for (final SwingWindow w : frames)

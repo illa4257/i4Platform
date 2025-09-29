@@ -26,7 +26,7 @@ public class MultiSocket implements Closeable {
             @Override
             public void write(byte[] b, int off, int len) throws IOException {
                 os.write(MultiSocketFactory.RAW);
-                IO.writeBEInteger(os, len);
+                IO.writeBEInt(os, len);
                 os.write(b, off, len);
             }
 
@@ -49,7 +49,7 @@ public class MultiSocket implements Closeable {
 
     public void setBufferSize(final int len) throws IOException {
         os.write(MultiSocketFactory.SET_BUFFER_SIZE);
-        IO.writeBEInteger(os, len);
+        IO.writeBEInt(os, len);
     }
 
     public InputStream getInputStream() { return inputStream; }

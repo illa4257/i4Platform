@@ -168,7 +168,7 @@ public class MultiSocketFactory implements Closeable {
                                                         if (clients.putIfAbsent(b, s) != null)
                                                             continue;
                                                         osm.write(0);
-                                                        illa4257.i4Utils.io.IO.writeBEInteger(osm, b);
+                                                        illa4257.i4Utils.io.IO.writeBEInt(osm, b);
                                                         osm.flush();
                                                         break;
                                                     }
@@ -176,7 +176,7 @@ public class MultiSocketFactory implements Closeable {
                                                 ac.preventClosing.set(true);
                                                 return;
                                             } else if (a == ACCEPT) {
-                                                try (final Socket client = clients.remove(illa4257.i4Utils.io.IO.readBEInteger(is))) {
+                                                try (final Socket client = clients.remove(illa4257.i4Utils.io.IO.readBEInt(is))) {
                                                     if (client == null)
                                                         return;
                                                     final InputStream clientIS = client.getInputStream();
@@ -254,7 +254,7 @@ public class MultiSocketFactory implements Closeable {
                         to.flush();
                         break;
                     case RAW:
-                        int length = illa4257.i4Utils.io.IO.readBEInteger(from);
+                        int length = illa4257.i4Utils.io.IO.readBEInt(from);
                         if (length == 0)
                             break;
                         if (autoSize) {
@@ -284,7 +284,7 @@ public class MultiSocketFactory implements Closeable {
                         break;
                     case SET_BUFFER_SIZE:
                         autoSize = false;
-                        d = new byte[IO.readBEInteger(from)];
+                        d = new byte[IO.readBEInt(from)];
                         break;
                 }
             }
