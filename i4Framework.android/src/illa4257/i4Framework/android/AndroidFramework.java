@@ -7,12 +7,13 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Handler;
+import android.view.KeyEvent;
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
-import illa4257.i4Utils.Arch;
+import illa4257.i4Framework.base.events.keyboard.KeyMapper;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Utils.logger.i4Logger;
@@ -26,6 +27,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class AndroidFramework extends Framework {
     static final ConcurrentLinkedQueue<Activity> activities = new ConcurrentLinkedQueue<>();
     private static int processing = 0;
+
+    public static final KeyMapper KEY_MAP = new KeyMapper()
+            .del(KeyEvent.KEYCODE_DEL, KeyEvent.KEYCODE_FORWARD_DEL)
+            .helpers(KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.KEYCODE_ALT_LEFT)
+            .arrows(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT)
+            .functional(KeyEvent.KEYCODE_COPY, KeyEvent.KEYCODE_PASTE, KeyEvent.KEYCODE_MENU);
 
     private boolean isNotEnabled = true;
     final ConcurrentLinkedQueue<AndroidWindow> windows = new ConcurrentLinkedQueue<AndroidWindow>() {
@@ -148,12 +155,10 @@ public class AndroidFramework extends Framework {
             final String s = uri.fullPath.startsWith("/") ? uri.fullPath.substring(1) :
                     uri.fullPath;
             try {
-                return context.getAssets().open(
-                        s.replaceAll("/", "\\\\"));
+                return context.getAssets().open(s.replaceAll("/", "\\\\"));
             } catch (final Exception ignored) {
                 try {
-                    return context.getAssets().open(
-                            s.replaceAll("\\\\", "/"));
+                    return context.getAssets().open(s.replaceAll("\\\\", "/"));
                 } catch (final Exception ex) {
                     i4Logger.INSTANCE.log(ex);
                 }

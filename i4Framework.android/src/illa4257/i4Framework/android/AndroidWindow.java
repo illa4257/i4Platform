@@ -12,6 +12,9 @@ import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.components.ChangePointEvent;
 import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
 import illa4257.i4Framework.base.events.components.VisibleEvent;
+import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
+import illa4257.i4Framework.base.events.keyboard.KeyPressEvent;
+import illa4257.i4Framework.base.events.keyboard.KeyUpEvent;
 import illa4257.i4Framework.base.events.mouse.*;
 import illa4257.i4Framework.base.events.touchscreen.TouchDownEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchMoveEvent;
@@ -23,6 +26,10 @@ import illa4257.i4Framework.base.points.numbers.NumberPointConstant;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.logger.i4Logger;
+
+import java.util.HashSet;
+
+import static illa4257.i4Framework.android.AndroidFramework.KEY_MAP;
 
 public class AndroidWindow implements FrameworkWindow {
     public final AndroidFramework framework;
@@ -155,6 +162,28 @@ public class AndroidWindow implements FrameworkWindow {
     @Override public Framework getFramework() { return framework; }
     @Override public Window getWindow() { return window; }
 
+    private final HashSet<Integer> heldKeys = new HashSet<>();
+    public boolean onDispatch(final KeyEvent e) {
+        final Component c = window.getFocusedComponent();
+        if (c != null) {
+            switch (e.getAction()) {
+                case KeyEvent.ACTION_DOWN:
+                    if (heldKeys.add(e.getKeyCode()))
+                        c.fire(new KeyDownEvent(KEY_MAP.get(e.getKeyCode()), (char) e.getUnicodeChar()));
+                    c.fire(new KeyPressEvent(KEY_MAP.get(e.getKeyCode()), (char) e.getUnicodeChar()));
+                    break;
+                case KeyEvent.ACTION_UP:
+                    heldKeys.remove(e.getKeyCode());
+                    c.fire(new KeyUpEvent(KEY_MAP.get(e.getKeyCode()), (char) e.getUnicodeChar()));
+                    break;
+                default:
+                    c.fire(new KeyPressEvent(KEY_MAP.get(e.getKeyCode()), (char) e.getUnicodeChar()));
+                    break;
+            }
+        }
+        return true;
+    }
+
     public boolean onDispatch(final MotionEvent e) {
         final int number = e.getPointerCount();
         final float[] pos = new float[2];
@@ -163,6 +192,8 @@ public class AndroidWindow implements FrameworkWindow {
             final Component c = window.find(gx, gy, pos);
             if (c == null)
                 continue;
+            if (c.isFocusable())
+                c.requestFocus();
             switch (e.getToolType(i)) {
                 case MotionEvent.TOOL_TYPE_FINGER:
                     switch (e.getAction()) {

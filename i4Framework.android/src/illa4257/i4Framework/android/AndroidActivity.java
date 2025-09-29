@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Utils.SyncVar;
@@ -36,5 +37,11 @@ public class AndroidActivity extends Activity {
     public boolean dispatchTouchEvent(final MotionEvent ev) {
         final AndroidWindow w = frameworkWindow.get();
         return w != null ? w.onDispatch(ev) : super.dispatchTouchEvent(ev);
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(final KeyEvent ev) {
+        final AndroidWindow w = frameworkWindow.get();
+        return w != null ? w.onDispatch(ev) : super.dispatchKeyEvent(ev);
     }
 }
