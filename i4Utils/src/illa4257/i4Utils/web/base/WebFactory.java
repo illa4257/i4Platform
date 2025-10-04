@@ -436,8 +436,14 @@ public class WebFactory implements IWebClientFactory {
                             }
                         });
                     }
-                } else if (req.hasContent && req.bodyOutput == null)
-                    req.outputStream = new WebOutputStream.Chunked(os, req);
+                } else if (req.hasContent)
+                    if (req.bodyOutput == null)
+                        req.outputStream = new WebOutputStream.Chunked(os, req);
+                    else
+                        os.write(req.bodyOutput);
+                else
+                    os.write("\r\n".getBytes(CHARSET));
+                os.flush();
                 return req;
             } catch (final Exception ex) {
                 throw new CompletionException(ex);
