@@ -1,5 +1,7 @@
 package illa4257.i4Utils.io;
 
+import illa4257.i4Utils.Recycler;
+
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -11,6 +13,9 @@ public class IO {
     public static final int BUFFER_SIZE = 1024 * 1024;
 
     private static final ThreadLocal<byte[]> BUFF = ThreadLocal.withInitial(() -> new byte[BUFFER_SIZE]);
+
+    public static final Recycler<ByteArrayOutputStream>
+            BYTE_ARRAY_OUTPUT_STREAM = new Recycler<>(ByteArrayOutputStream::new, ByteArrayOutputStream::reset);
 
     private interface IReader {
         byte[] run(final InputStream inputStream) throws IOException;
@@ -88,11 +93,15 @@ public class IO {
         return is -> {
             if (is == null)
                 throw new NullPointerException("InputStream is null!");
-            final ByteArrayOutputStream r = new ByteArrayOutputStream();
-            final byte[] buff = BUFF.get();
-            for (int len = is.read(buff, 0, buff.length); len > -1; len = is.read(buff, 0, buff.length))
-                r.write(buff, 0, len);
-            return r.toByteArray();
+            final ByteArrayOutputStream r = BYTE_ARRAY_OUTPUT_STREAM.get();
+            try {
+                final byte[] buff = BUFF.get();
+                for (int len = is.read(buff, 0, buff.length); len > -1; len = is.read(buff, 0, buff.length))
+                    r.write(buff, 0, len);
+                return r.toByteArray();
+            } finally {
+                BYTE_ARRAY_OUTPUT_STREAM.recycle(r);
+            }
         };
     }
 
