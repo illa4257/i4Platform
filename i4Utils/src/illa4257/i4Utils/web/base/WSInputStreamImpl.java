@@ -9,10 +9,11 @@ import java.util.function.Consumer;
 
 public class WSInputStreamImpl extends WSInputStream {
     public final InputStream inputStream;
-    private int frameType;
+    private int frameType, maskIndex = -1;
     private long remaining = -1;
     private final byte[] mask = new byte[4];
     private final Consumer<byte[]> onPing;
+    private boolean masking = false;
 
     public WSInputStreamImpl(final InputStream inputStream, final Consumer<byte[]> onPing) { this.inputStream = inputStream; this.onPing = onPing; }
 
@@ -27,10 +28,11 @@ public class WSInputStreamImpl extends WSInputStream {
         if (frameType != 0x00)
             this.frameType = frameType;
         b = IO.readByteI(inputStream);
-        final boolean masking = (b | 0x80) == b;
+        masking = (b | 0x80) == b;
         if (masking) {
             b ^= 0x80;
             IO.readByteArray(inputStream, mask);
+            maskIndex = 0;
         }
         if (b < 0x7E)
             remaining = b;
@@ -67,9 +69,14 @@ public class WSInputStreamImpl extends WSInputStream {
                     break;
                 if (t == 0x09) {
                     if (onPing != null) {
-                        if (remaining > Integer.MAX_VALUE)
+                        if (remaining > Integer.MAX_VALUE || remaining < 0)
                             throw new IOException("More than integer " + remaining); // TODO: implement streaming
-                        else
+                        else if (masking) {
+                            final byte[] payload = IO.readByteArray(inputStream, (int) remaining);
+                            for (; maskIndex < mask.length; maskIndex++)
+                                payload[maskIndex] ^= mask[maskIndex % mask.length];
+                            onPing.accept(payload);
+                        } else
                             onPing.accept(IO.readByteArray(inputStream, (int) remaining));
                     }
                     continue;
@@ -81,6 +88,10 @@ public class WSInputStreamImpl extends WSInputStream {
         if (remaining <= 0)
             return -1;
         remaining--;
+        if (masking) {
+            final int b = inputStream.read();
+            return b != -1 ? b ^ mask[(maskIndex++) % mask.length] : -1;
+        }
         return inputStream.read();
     }
 }
