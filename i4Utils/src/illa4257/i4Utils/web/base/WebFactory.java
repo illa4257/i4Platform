@@ -25,6 +25,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.*;
@@ -37,7 +38,13 @@ public class WebFactory implements IWebClientFactory {
     public static final ConcurrentHashMap<String, FuncIOEx<InputStream, InputStream>> DECOMPRESSORS = new ConcurrentHashMap<>();
     public static volatile String DECOMPRESSORS_VALUE;
     public static final Charset CHARSET = StandardCharsets.US_ASCII;
-    private static final MessageDigest SHA1;
+    private static final ThreadLocal<MessageDigest> SHA1 = ThreadLocal.withInitial(() -> {
+        try {
+            return MessageDigest.getInstance("SHA-1");
+        } catch (final NoSuchAlgorithmException ex) {
+            throw new RuntimeException(ex);
+        }
+    });
 
     public static final WebFactory INSTANCE = new WebFactory();
 
@@ -64,14 +71,6 @@ public class WebFactory implements IWebClientFactory {
         DECOMPRESSORS.put("deflate", InflaterInputStream::new);
         
         DECOMPRESSORS_VALUE = String.join(", ", DECOMPRESSORS.keySet());
-
-        MessageDigest digest = null;
-        try {
-            digest = MessageDigest.getInstance("SHA-1");
-        } catch (final Exception ex) {
-            i4Logger.INSTANCE.log(ex);
-        }
-        SHA1 = digest;
 
         try {
             if (Arch.JVM.IS_LINUX) {
@@ -350,7 +349,7 @@ public class WebFactory implements IWebClientFactory {
         throw new IOException("Reached the maximum number of characters.");
     }
 
-    public static WebRequest accept(final InputStream is, final String ip, final String scheme, final Runnable end) throws IOException {
+    public static WebRequest accept(final InputStream is, final OutputStream os, final String ip, final String scheme, final Runnable end) throws IOException {
         oldByte.set(-1);
         final WebRequest r = new WebRequest()
                 .setMethod(readStr(is, 8))
@@ -360,24 +359,39 @@ public class WebFactory implements IWebClientFactory {
                         readStr(is, 256)
                 ))
                 .setProtocol(readStrLn(is, 16));
+        r.isClient = false;
+        r.outputStream = os;
         readHeaders(is, r.clientHeaders);
 
         r.inputStream = null;
 
-        final String contentLength = WebRequest.getHeader(r.clientHeaders, "content-length");
-        if (contentLength != null)
-            try {
-                r.inputStream = new WebInputStream.LongPolling(is, end, Long.parseLong(contentLength));
-            } catch (final Exception ex) {
-                i4Logger.INSTANCE.log(ex);
-            }
-        else if ("chunked".equalsIgnoreCase(WebRequest.getHeader(r.clientHeaders, "transfer-encoding")))
-            r.inputStream = new WebInputStream.Chunked(is, end);
-
-        if (r.inputStream == null) {
-            r.inputStream = new NullInputStream();
-            return r;
+        if ("upgrade".equalsIgnoreCase(WebRequest.getHeader(r.clientHeaders, "Connection")) && "websocket".equalsIgnoreCase(WebRequest.getHeader(r.clientHeaders, "Upgrade"))) {
+            final String key = WebRequest.getHeader(r.clientHeaders, "Sec-WebSocket-Key");
+            if (key != null && !key.isEmpty())
+                r.setHeader("Sec-WebSocket-Accept", Base64.getEncoder().encodeToString(SHA1.get().digest(
+                        (key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes(CHARSET)
+                )));
+            r.uri = new i4URI("https".equalsIgnoreCase(scheme) ? "wss" : "ws", ip, r.uri.fullPath);
+            r.responseCode = 101;
+            r.responseStatus = "Switching Protocols";
+            r.setHeader("Upgrade", "websocket");
+            r.setHeader("Connection", "Upgrade");
+        } else {
+            r.responseCode = 200;
+            r.responseStatus = "OK";
+            final String contentLength = WebRequest.getHeader(r.clientHeaders, "content-length");
+            if (contentLength != null)
+                try {
+                    r.inputStream = new WebInputStream.LongPolling(is, end, Long.parseLong(contentLength));
+                } catch (final Exception ex) {
+                    i4Logger.INSTANCE.e(ex);
+                }
+            else if ("chunked".equalsIgnoreCase(WebRequest.getHeader(r.clientHeaders, "transfer-encoding")))
+                r.inputStream = new WebInputStream.Chunked(is, end);
         }
+
+        if (r.inputStream == null)
+            r.inputStream = new NullInputStream();
 
         final String contentEncoding = WebRequest.getHeader(r.clientHeaders, "content-encoding");
         if (contentEncoding != null) {
@@ -385,8 +399,52 @@ public class WebFactory implements IWebClientFactory {
             if (decompressor != null)
                 r.inputStream = decompressor.accept(r.inputStream);
             else
-                i4Logger.INSTANCE.log(WARN, "Unknown content encoding method: " + contentEncoding);
+                i4Logger.INSTANCE.w("Unknown content encoding method:", contentEncoding);
         }
+
+        r.setRunner(req -> CompletableFuture.supplyAsync(() -> {
+            final StringBuilder b = Str.builder();
+            try {
+                b.append(req.protocol).append(' ').append(r.responseCode).append(' ').append(r.responseStatus).append("\r\n");
+                os.write(b.toString().getBytes(CHARSET));
+                writeHeaders(os, req.serverHeaders);
+                if (!WebRequest.hasHeader(req.serverHeaders, "Content-Length") &&
+                        !WebRequest.hasHeader(req.serverHeaders, "Transfer-Encoding") && req.responseCode != 101) {
+                    if (req.hasContent) {
+                        if (req.bodyOutput != null) {
+                            b.setLength(0);
+                            b.append("Content-Length: ").append(req.bodyOutput.length).append("\r\n");
+                            os.write(b.toString().getBytes(CHARSET));
+                        } else
+                            os.write("Transfer-Encoding: chunked\r\n".getBytes(CHARSET));
+                    } else
+                        os.write("Content-Length: 0\r\n".getBytes(CHARSET));
+                }
+                if (!WebRequest.hasHeader(req.serverHeaders, "Connection"))
+                    os.write("Connection: closed\r\n".getBytes(CHARSET));
+                os.write("\r\n".getBytes(CHARSET));
+                if (req.responseCode == 101) {
+                    if (req.uri.scheme.startsWith("ws")) {
+                        final WSOutputStreamImpl wos = new WSOutputStreamImpl(os);
+                        wos.masking = false;
+                        req.outputStream = wos;
+                        req.inputStream = new WSInputStreamImpl(is, d -> {
+                            try {
+                                wos.ping(d);
+                            } catch (final Exception ex) {
+                                i4Logger.INSTANCE.e(ex);
+                            }
+                        });
+                    }
+                } else if (req.hasContent && req.bodyOutput == null)
+                    req.outputStream = new WebOutputStream.Chunked(os, req);
+                return req;
+            } catch (final Exception ex) {
+                throw new CompletionException(ex);
+            } finally {
+                Str.recycle(b);
+            }
+        }));
         return r;
     }
 
@@ -524,8 +582,8 @@ public class WebFactory implements IWebClientFactory {
                         if ("websocket".equalsIgnoreCase(upgrade)) {
                             if (r.reserved instanceof String) {
                                 if (!Base64.getEncoder()
-                                        .encodeToString(SHA1.digest((r.reserved + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
-                                                .getBytes(StandardCharsets.US_ASCII)))
+                                        .encodeToString(SHA1.get().digest((r.reserved + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
+                                                .getBytes(CHARSET)))
                                         .equals(WebRequest.getHeader(r.serverHeaders, "sec-websocket-accept"))) {
                                     r.reserved = null;
                                     throw new IOException("Failed validating");
