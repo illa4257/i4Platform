@@ -78,6 +78,11 @@ public class WebRequest {
         return this;
     }
 
+    public static boolean hasHeader(final Map<String, List<String>> headers, final String key) {
+        final List<String> l = headers.get(key);
+        return l != null && !l.isEmpty();
+    }
+
     public WebRequest setHeader(final String key, final String value) {
         setHeader(isClient ? clientHeaders : serverHeaders, key, value);
         return this;
