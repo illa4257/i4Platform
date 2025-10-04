@@ -1,5 +1,6 @@
 package illa4257.i4Utils.web.base;
 
+import illa4257.i4Utils.io.IO;
 import illa4257.i4Utils.web.WebRequest;
 
 import java.io.ByteArrayOutputStream;
@@ -12,7 +13,7 @@ public abstract class WebOutputStream extends OutputStream {
     public static class Chunked extends WebOutputStream {
         private boolean isClosed = false;
         public final OutputStream outputStream;
-        public final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        public final ByteArrayOutputStream buffer = IO.BYTE_ARRAY_OUTPUT_STREAM.get();
         public final WebRequest request;
 
         public Chunked(final OutputStream outputStream, final WebRequest request) {
@@ -55,6 +56,7 @@ public abstract class WebOutputStream extends OutputStream {
             outputStream.write("0\r\n\r\n".getBytes(CHARSET));
             outputStream.flush();
             request.lastWrittenData = System.currentTimeMillis();
+            IO.BYTE_ARRAY_OUTPUT_STREAM.recycle(buffer);
         }
     }
 }
