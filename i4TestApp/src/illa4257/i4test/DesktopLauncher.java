@@ -1,9 +1,7 @@
 package illa4257.i4test;
 
 import illa4257.i4Framework.swing.SwingFramework;
-import illa4257.i4Utils.Recycler;
 import illa4257.i4Utils.logger.AnsiColoredPrintStreamLogHandler;
-import illa4257.i4test.NioRunner.Session;
 
 import javax.net.ssl.*;
 import java.io.IOException;
@@ -12,7 +10,6 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
@@ -26,29 +23,6 @@ import java.util.concurrent.Executors;
 import static illa4257.i4test.i4Test.L;
 
 public class DesktopLauncher {
-    public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
-    public static final Recycler<ByteBuffer>
-            b1024 = new Recycler<>(() -> ByteBuffer.allocate(1024), Buffer::clear),
-            b32kb = new Recycler<>(() -> ByteBuffer.allocate(32768), Buffer::clear);
-
-    public static ByteBuffer nextTier(final ByteBuffer buffer) {
-        if (buffer.capacity() == 0)
-            return b1024.get();
-        if (buffer.capacity() == 1024)
-            return b32kb.get();
-        return buffer;
-    }
-
-    public static void recycle(final ByteBuffer buffer) {
-        switch (buffer.capacity()) {
-            case 1024:
-                b1024.recycle(buffer);
-                break;
-            case 32768:
-                b32kb.recycle(buffer);
-                break;
-        }
-    }
 
     public static ExecutorService sslPool = Executors.newFixedThreadPool(2);
 
@@ -71,14 +45,14 @@ public class DesktopLauncher {
                     socket1.connect(new InetSocketAddress("127.0.0.1", 1234));
                     new Thread(() -> {
                         try (final Socket s = socket; final Socket s1 = socket1) {
-                            final byte[] b = new byte[1024];
+                            final byte[] b = new byte[64];
                             final InputStream is = s.getInputStream();
                             final OutputStream os = s1.getOutputStream();
                             int d;
                             while ((d = is.read(b)) != -1) {
                                 os.write(b, 0, d);
                                 os.flush();
-                                Thread.sleep(1);
+                                Thread.sleep(100);
                             }
                         } catch (final Exception ex) {
                             L.e(ex);
@@ -125,102 +99,59 @@ public class DesktopLauncher {
                     s.engine = engine;
                     register(client).attach(s);
                 }
+
+                @Override
+                public void processData(final SelectionKey key) throws IOException {
+                    key.interestOps(SelectionKey.OP_READ);
+                    final SocketChannel client = (SocketChannel) key.channel();
+                    final Session s = (Session) key.attachment();
+                    ByteBuffer ai = s.appIn != null ? s.appIn : appIn;
+                    if (s.engine != null) {
+                        ByteBuffer ni = s.netIn != null ? s.netIn : netIn;
+                        final int l = client.read(ni);
+                        if (l == -1)
+                            throw new IOException("Closed");
+                        ni.flip();
+                        while (true) {
+                            final SSLEngineResult r = s.engine.unwrap(ni, ai);
+                            switch (r.getStatus()) {
+                                case OK:
+                                    if (ni.hasRemaining()) {
+                                        ni.compact();
+                                        if (ni == netIn)
+                                            netIn = mgr.get(s.engine.getSession().getPacketBufferSize());
+                                        s.netIn = ni;
+                                    } else
+                                        ni.clear();
+                                    break;
+                                case BUFFER_OVERFLOW:
+                                    final ByteBuffer nb = mgr.nextTier(ai, s.engine.getSession().getApplicationBufferSize());
+                                    ai.flip();
+                                    nb.put(ai);
+                                    if (ai == appIn)
+                                        ai.clear();
+                                    else
+                                        mgr.recycle(ai);
+                                    s.appIn = ai = nb;
+                                    continue;
+                                default:
+                                    throw new RuntimeException("Unknown unwrap status: " + r.getStatus());
+                            }
+                            break;
+                        }
+                    } else {
+                        client.read(ai);
+                    }
+                    ai.flip();
+
+                    final byte[] d = new byte[ai.remaining()];
+                    ai.get(d);
+                    System.out.println(new String(d));
+                }
             };
             runner.register(serverChannel);
             runner.run();
         }
-
-        /*if (key.isReadable() || key.isWritable()) {
-
-                        if (s.engine != null) {
-                            if (globalNetIn.capacity() < s.engine.getSession().getPacketBufferSize()) {
-                                globalNetIn = ByteBuffer.allocate(s.engine.getSession().getPacketBufferSize());
-                                globalNetOut = ByteBuffer.allocate(s.engine.getSession().getPacketBufferSize());
-                            }
-                            if (globalAppIn.capacity() < s.engine.getSession().getApplicationBufferSize())
-                                globalAppIn = ByteBuffer.allocate(s.engine.getSession().getApplicationBufferSize());
-
-                            ByteBuffer netIn  = globalNetIn, netOut = globalNetOut, appIn  = globalAppIn;
-
-                            if (!s.handshakeComplete) {
-                                boolean progress = true;
-                                while (progress) {
-                                    System.out.println(s.engine.getHandshakeStatus());
-                                    progress = false;
-                                    switch (s.engine.getHandshakeStatus()) {
-                                        case NEED_WRAP:
-                                            netOut.clear();
-                                            SSLEngineResult wrapResult = s.engine.wrap(EMPTY_BUFFER, netOut);
-                                            netOut.flip();
-                                            while (netOut.hasRemaining()) {
-                                                client.write(netOut);
-                                            }
-                                            progress = true;
-                                            break;
-
-                                        case NEED_UNWRAP:
-                                            int bytesRead = client.read(netIn);
-                                            if (bytesRead == -1) {
-                                                key.cancel();
-                                                client.close();
-                                                continue;
-                                            }
-                                            netIn.flip();
-                                            SSLEngineResult unwrapResult = s.engine.unwrap(netIn, appIn);
-                                            netIn.compact();
-                                            progress = true;
-                                            break;
-
-                                        case NEED_TASK:
-                                            Runnable task;
-                                            while ((task = s.engine.getDelegatedTask()) != null) task.run();
-                                            progress = true;
-                                            break;
-
-                                        case FINISHED:
-                                        case NOT_HANDSHAKING:
-                                            s.handshakeComplete = true;
-                                            key.interestOps(SelectionKey.OP_READ);
-                                            break;
-                                    }
-                                }
-                                continue;
-                            }
-
-                            int read = client.read(netIn);
-                            if (read == -1) {
-                                key.cancel();
-                                client.close();
-                                continue;
-                            }
-
-                            netIn.flip();
-                            while (netIn.hasRemaining()) {
-                                SSLEngineResult result = s.engine.unwrap(netIn, appIn);
-                                if (result.getStatus() == SSLEngineResult.Status.OK) {
-                                    appIn.flip();
-                                    process(s, appIn, result.bytesProduced());
-                                    appIn.compact();
-                                } else if (result.getStatus() == SSLEngineResult.Status.BUFFER_UNDERFLOW) {
-                                    System.out.println("UNDERFLOW");
-                                    break;
-                                }
-                            }
-                            netIn.compact();
-                        } else {
-                            final int read = client.read(globalAppIn);
-                            globalAppIn.flip();
-                            process(s, globalAppIn, read);
-                            globalAppIn.clear();
-                        }
-                    }*/
-    }
-
-    public static boolean process(final Session session, final ByteBuffer appIn, final int length) {
-        byte[] data = new byte[length];
-        appIn.get(data);
-        System.out.println("Received: " + new String(data));
-        return true;
     }
 
     protected static KeyManager[] createKeyManagers(String filepath, String keystorePassword, String keyPassword) throws Exception {

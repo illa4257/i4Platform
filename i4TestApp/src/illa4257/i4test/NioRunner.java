@@ -7,7 +7,6 @@ import javax.net.ssl.SSLEngineResult;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 
 import static illa4257.i4test.BuffMgr.EMPTY_BUFFER;
@@ -16,7 +15,6 @@ public abstract class NioRunner {
     public final ExecutorService sslPool;
     public final BuffMgr mgr;
     public final Selector selector;
-    public final ConcurrentLinkedQueue<SelectionKey> triggerKeys = new ConcurrentLinkedQueue<>();
 
     public ByteBuffer netIn = EMPTY_BUFFER, netOut = EMPTY_BUFFER, appIn = EMPTY_BUFFER, appOut = EMPTY_BUFFER;
 
@@ -28,7 +26,6 @@ public abstract class NioRunner {
 
     public void run() {
         try {
-            SelectionKey k;
             while (selector.isOpen()) {
                 selector.select();
                 for (final SelectionKey key : selector.selectedKeys()) {
@@ -40,21 +37,14 @@ public abstract class NioRunner {
                         process(key);
                     } catch (final Exception ex) {
                         i4Logger.INSTANCE.e(ex);
-                        key.cancel();
-                        key.channel().close();
                         close(key);
+                        netOut.clear();
+                        netIn.clear();
+                        appOut.clear();
+                        appIn.clear();
                     }
                 }
                 selector.selectedKeys().clear();
-                while ((k = triggerKeys.poll()) != null)
-                    try {
-                        process(k);
-                    } catch (final Exception ex) {
-                        i4Logger.INSTANCE.e(ex);
-                        k.cancel();
-                        k.channel().close();
-                        close(k);
-                    }
             }
         } catch (final ClosedSelectorException | IOException ex) {
             i4Logger.INSTANCE.e(ex);
@@ -69,11 +59,6 @@ public abstract class NioRunner {
         return channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
     }
 
-    public void wakeup(final SelectionKey key) {
-        triggerKeys.offer(key);
-        selector.wakeup();
-    }
-
     public void close() {
         try {
             selector.close();
@@ -85,7 +70,7 @@ public abstract class NioRunner {
     public abstract void accept(final SelectionKey key) throws IOException;
 
     public void process(SelectionKey key) throws IOException {
-        @SuppressWarnings("resource") final SocketChannel client = (SocketChannel) key.channel();
+        final SocketChannel client = (SocketChannel) key.channel();
         final Session s = (Session) key.attachment();
 
         if (s.netOut != null) {
@@ -98,143 +83,163 @@ public abstract class NioRunner {
                 key.interestOps(key.interestOps() | SelectionKey.OP_READ);
         }
 
-        ByteBuffer no = netOut, ni, ai;
-        no.clear();
-
-        if (s.netIn != null)
-            ni = s.netIn;
-        else
-            (ni = netIn).clear();
-        if (s.appIn != null)
-            ai = s.appIn;
-        else
-            (ai = appIn).clear();
-
-        if (s.engine != null) {
-            while (!s.handshakeComplete) {
+        if (s.engine != null)
+            while (s.handshaking) {
                 switch (s.engine.getHandshakeStatus()) {
-                    case NEED_WRAP:
-                        final SSLEngineResult wrapResult = s.engine.wrap(EMPTY_BUFFER, no);
-                        switch (wrapResult.getStatus()) {
-                            case OK:
-                                no.flip();
-                                client.write(no);
-                                if (no.hasRemaining()) {
-                                    key.interestOps((key.interestOps() & ~SelectionKey.OP_READ) | SelectionKey.OP_WRITE);
-                                    if (no == netOut)
-                                        netOut = mgr.get(s.engine.getSession().getPacketBufferSize());
-                                    s.netOut = no;
-                                    return;
-                                } else
-                                    no.clear();
-                                continue;
-                            case BUFFER_OVERFLOW:
-                                final ByteBuffer nb = mgr.nextTier(no, s.engine.getSession().getPacketBufferSize());
-                                no.flip();
-                                nb.put(no);
-                                if (no != netOut)
-                                    mgr.recycle(no);
-                                else
-                                    no.clear();
-                                no = nb;
-                                continue;
-                            default:
-                                throw new RuntimeException(wrapResult.toString());
-                        }
                     case NEED_UNWRAP:
-                        if (key.isReadable()) {
-                            if (client.read(ni) == -1)
+                        while (true) {
+                            final ByteBuffer ni = s.netIn != null ? s.netIn : netIn;
+                            final int l = client.read(ni);
+                            if (l == -1)
                                 throw new IOException("Closed");
-                            ni.flip();
-                            final SSLEngineResult unwrapResult = s.engine.unwrap(ni, ai);
-                            ni.compact();
-                            switch (unwrapResult.getStatus()) {
-                                case OK:
-                                    if (ni.position() != 0) {
-                                        netIn = mgr.get(s.engine.getSession().getPacketBufferSize());
-                                        s.netIn = ni;
-                                    }
-                                    if (ai.position() != 0) {
-                                        appIn = mgr.get(s.engine.getSession().getApplicationBufferSize());
-                                        s.appIn = ai;
-                                    }
-                                    continue;
-                                case BUFFER_OVERFLOW: {
-                                    final ByteBuffer nb = mgr.nextTier(ai, s.engine.getSession().getApplicationBufferSize());
-                                    ai.flip();
-                                    nb.put(ai);
-                                    if (ai != appIn)
-                                        mgr.recycle(ai);
-                                    else
-                                        ai.clear();
-                                    ai = nb;
-                                    continue;
-                                }
-                                case BUFFER_UNDERFLOW:
-                                    if (ni.position() == ni.capacity()) {
-                                        final ByteBuffer nb = mgr.nextTier(ni, s.engine.getSession().getPacketBufferSize());
-                                        ni.flip();
-                                        nb.put(ni);
-                                        if (ni != netIn)
-                                            mgr.recycle(ni);
-                                        else
-                                            ni.clear();
-                                        ni = nb;
-                                        continue;
-                                    }
-                                    s.netIn = ni;
-                                    if (ni == netIn)
-                                        netIn = mgr.get(s.engine.getSession().getPacketBufferSize());
-                                    return;
+                            if (l == 0 && ni.position() == ni.capacity()) {
+                                final ByteBuffer nb = mgr.nextTier(ni, s.engine.getSession().getPacketBufferSize());
+                                nb.put(ni);
+                                if (ni == netIn)
+                                    netIn = nb;
+                                else
+                                    s.netIn = nb;
+                                mgr.recycle(ni);
+                                continue;
                             }
-                            throw new IOException(unwrapResult.toString());
-                        } else if (ni.hasRemaining()) {
-                            ni.compact();
-                            s.netIn = ni;
-                            if (ni == netIn)
-                                netIn = mgr.get(s.engine.getSession().getPacketBufferSize());
-                        } else
-                            ni.clear();
-                        return;
+                            if (l == 0 && ni.position() == 0) {
+                                key.interestOps(SelectionKey.OP_READ);
+                                return;
+                            }
+                            ni.flip();
+                            final SSLEngineResult r = s.engine.unwrap(ni, EMPTY_BUFFER);
+                            switch (r.getStatus()) {
+                                case OK:
+                                    ni.compact();
+                                    if (r.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_UNWRAP)
+                                        continue;
+                                    if (ni.position() != 0 && ni == netIn) {
+                                        s.netIn = ni;
+                                        netIn = mgr.get(s.engine.getSession().getPacketBufferSize());
+                                    }
+                                    break;
+                                case BUFFER_UNDERFLOW:
+                                    if (ni.remaining() == ni.capacity()) {
+                                        final ByteBuffer nb = mgr.nextTier(ni, s.engine.getSession().getPacketBufferSize());
+                                        nb.put(ni);
+                                        if (ni == netIn)
+                                            ni.clear();
+                                        else
+                                            mgr.recycle(ni);
+                                        s.netIn = nb;
+                                    } else {
+                                        key.interestOps(SelectionKey.OP_READ);
+                                        ni.compact();
+                                        if (ni == netIn)
+                                            netIn = mgr.get(s.engine.getSession().getPacketBufferSize());
+                                        s.netIn = ni;
+                                        return;
+                                    }
+                                    continue;
+                                case CLOSED:
+                                    if (s.netIn == null)
+                                        netIn.clear();
+                                    close(key);
+                                    return;
+                                default:
+                                    throw new RuntimeException("Unknown unwrap result: " + r.getStatus());
+                            }
+                            break;
+                        }
+                        break;
+                    case NEED_WRAP:
+                        while (true) {
+                            final ByteBuffer no = s.netOut != null ? s.netOut : netOut;
+                            final SSLEngineResult r = s.engine.wrap(EMPTY_BUFFER, no);
+                            switch (r.getStatus()) {
+                                case OK:
+                                    no.flip();
+                                    client.write(no);
+                                    if (no.hasRemaining()) {
+                                        key.interestOps(SelectionKey.OP_WRITE);
+                                        s.netOut = no;
+                                        if (no == netOut)
+                                            netOut = mgr.get(s.engine.getSession().getPacketBufferSize());
+                                        return;
+                                    }
+                                    if (no == netOut)
+                                        no.clear();
+                                    else {
+                                        s.netOut = null;
+                                        mgr.recycle(no);
+                                    }
+                                    if (r.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_WRAP)
+                                        continue;
+                                    break;
+                                case BUFFER_OVERFLOW:
+                                    no.flip();
+                                    final ByteBuffer nb = mgr.nextTier(no, s.engine.getSession().getPacketBufferSize());
+                                    nb.put(no);
+                                    if (no == netOut)
+                                        no.clear();
+                                    else
+                                        mgr.recycle(no);
+                                    s.netOut = nb;
+                                    continue;
+                                case CLOSED:
+                                    if (s.netOut == null)
+                                        netOut.clear();
+                                    close(key);
+                                    return;
+                                default:
+                                    throw new IOException("Unknown wrap status: " + r.getStatus());
+                            }
+                            break;
+                        }
+                        break;
                     case NEED_TASK:
-                        final Runnable task = s.engine.getDelegatedTask();
-                        if (task != null)
-                            sslPool.submit(() -> {
-                                try {
-                                    task.run();
-                                } finally {
-                                    wakeup(key);
-                                }
-                            });
+                        key.interestOps(0);
+                        sslPool.submit(() -> {
+                            try {
+                                Runnable t;
+                                while ((t = s.engine.getDelegatedTask()) != null)
+                                    t.run();
+                                key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+                                selector.wakeup();
+                            } catch (final Exception ex) {
+                                i4Logger.INSTANCE.e(ex);
+                                close(key);
+                            }
+                        });
                         return;
                     case FINISHED:
                     case NOT_HANDSHAKING:
-                        s.handshakeComplete = true;
+                        s.handshaking = false;
                         break;
                     default:
-                        throw new IOException(s.engine.getHandshakeStatus().toString());
+                        throw new RuntimeException("Unknown handshake status: " + s.engine.getHandshakeStatus());
                 }
             }
-        }
 
-
-
-        throw new RuntimeException("Ready to process!");
+        processData(key);
     }
 
+    public abstract void processData(final SelectionKey key) throws IOException;
+
     public void close(final SelectionKey key) {
+        key.cancel();
+        try {
+            key.channel().close();
+        } catch (final Exception ex) {
+            i4Logger.INSTANCE.e(ex);
+        }
         final Session s = (Session) key.attachment();
         s.reset(mgr);
     }
 
     public static class Session {
         public SSLEngine engine = null;
-        public boolean handshakeComplete = false;
+        public boolean handshaking = true;
         public ByteBuffer netIn = null, appIn = null, netOut = null, appOut = null;
 
         public void reset(final BuffMgr mgr) {
             engine = null;
-            handshakeComplete = false;
+            handshaking = true;
             if (netIn != null) {
                 mgr.recycle(netIn);
                 netIn = null;
