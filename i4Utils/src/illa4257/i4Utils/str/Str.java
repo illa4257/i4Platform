@@ -1,4 +1,4 @@
-package illa4257.i4Utils;
+package illa4257.i4Utils.str;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -70,7 +70,7 @@ public class Str {
         }
     }
 
-    public static <T> StringBuilder join(final StringBuilder builder, final String delimiter, final Iterator<T> iter, Function<T, String> func) {
+    public static <T> StringBuilder join(final StringBuilder builder, final CharSequence delimiter, final Iterator<T> iter, final Function<T, CharSequence> func) {
         if (iter == null)
             return builder;
         if (!iter.hasNext())
@@ -81,7 +81,7 @@ public class Str {
         return builder;
     }
 
-    public static <T> StringBuilder join(final StringBuilder builder, final String delimiter, final Iterable<T> items, Function<T, String> func) {
+    public static <T> StringBuilder join(final StringBuilder builder, final CharSequence delimiter, final Iterable<T> items, final Function<T, CharSequence> func) {
         if (items == null)
             return builder;
         final Iterator<T> iter = items.iterator();
@@ -93,7 +93,7 @@ public class Str {
         return builder;
     }
 
-    public static <T> String join(final String delimiter, final Iterator<T> items, Function<T, String> func) {
+    public static <T> String join(final CharSequence delimiter, final Iterator<T> items, final Function<T, CharSequence> func) {
         final StringBuilder b = builder();
         try {
             return join(b, delimiter, items, func).toString();
@@ -102,7 +102,7 @@ public class Str {
         }
     }
 
-    public static <T> String join(final String delimiter, final Iterable<T> items, Function<T, String> func) {
+    public static <T> String join(final CharSequence delimiter, final Iterable<T> items, final Function<T, CharSequence> func) {
         final StringBuilder b = builder();
         try {
             return join(b, delimiter, items, func).toString();

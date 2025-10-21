@@ -4,7 +4,7 @@ import illa4257.i4Utils.Arch;
 import illa4257.i4Utils.CloseableSyncVar;
 import illa4257.i4Utils.io.IO;
 import illa4257.i4Utils.io.NullInputStream;
-import illa4257.i4Utils.Str;
+import illa4257.i4Utils.str.Str;
 import illa4257.i4Utils.io.NullOutputStream;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.runnables.FuncIOEx;

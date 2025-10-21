@@ -1,5 +1,7 @@
 package illa4257.i4Utils;
 
+import illa4257.i4Utils.str.Str;
+
 import java.io.Serializable;
 
 public class SemVer implements Comparable<SemVer>, Serializable {

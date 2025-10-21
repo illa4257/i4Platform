@@ -1,6 +1,6 @@
 package illa4257.i4Utils.logger;
 
-import illa4257.i4Utils.Str;
+import illa4257.i4Utils.str.Str;
 import illa4257.i4Utils.lists.ArrIterable;
 
 import java.lang.reflect.InvocationTargetException;
