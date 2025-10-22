@@ -8,6 +8,7 @@ import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.math.Vector2D;
 
 import java.awt.*;
+import java.io.InputStream;
 
 public class SwingContext implements Context {
     public final Graphics2D graphics;
@@ -16,6 +17,26 @@ public class SwingContext implements Context {
         graphics = g;
         g.setRenderingHints(SwingFramework.current);
         g.setFont(SwingFramework.font);
+    }
+
+    @Override
+    public Object font(final InputStream is, final float sz) {
+        try {
+            return Font.createFont(Font.PLAIN, is).deriveFont(sz);
+        } catch (final Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    public void setFont(Object font) {
+        graphics.setFont((Font) font);
+    }
+
+    @Override
+    public void blur(boolean blur) {
+        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, blur ? RenderingHints.VALUE_INTERPOLATION_BILINEAR :
+                RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
     }
 
     @Override

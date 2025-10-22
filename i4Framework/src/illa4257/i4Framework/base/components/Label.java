@@ -8,7 +8,7 @@ import illa4257.i4Framework.base.math.Vector2D;
 import java.util.Objects;
 
 public class Label extends Component {
-    public volatile Object text;
+    public volatile Object text, font = null;
     private String old = null;
     private String[] lines = null;
 
@@ -34,6 +34,9 @@ public class Label extends Component {
         if (tc.alpha <= 0)
             return;
         ctx.setColor(tc);
+        final Object f = font;
+        if (f != null)
+            ctx.setFont(font);
         final Vector2D[] v2d = new Vector2D[lines.length];
         float h = 0, y;
         for (int i = 0; i < lines.length; i++) {

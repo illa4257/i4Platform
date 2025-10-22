@@ -5,7 +5,13 @@ import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.math.Vector2D;
 
+import java.io.InputStream;
+
 public interface Context {
+    default Object font(final InputStream inputStream, final float sz) { return null; }
+    default void blur(final boolean blur) {}
+    default void setFont(final Object font) {}
+
     @SuppressWarnings("unused")
     default Context sub(final float x, final float y, final float w, final float h) { return this; }
     default void dispose() {}

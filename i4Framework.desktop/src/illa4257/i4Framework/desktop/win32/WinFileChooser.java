@@ -6,7 +6,7 @@ import illa4257.i4Framework.base.FileChooserFilter;
 import illa4257.i4Framework.base.IFileChooser;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.desktop.DesktopFramework;
-import illa4257.i4Utils.Str;
+import illa4257.i4Utils.str.Str;
 import illa4257.i4Utils.logger.Level;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.runnables.Consumer2;

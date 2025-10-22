@@ -19,6 +19,7 @@ import static illa4257.i4Framework.base.math.HorizontalAlign.LEFT;
 public class Button extends Component {
     private final Object textLocker = new Object();
     private volatile Object text;
+    public volatile Object font = null;
 
     public Button() { this(null); }
     public Button(final Object text) {
@@ -55,6 +56,9 @@ public class Button extends Component {
             return;
         final String t = String.valueOf(te);
         ctx.setColor(c);
+        final Object f = font;
+        if (f != null)
+            ctx.setFont(f);
         final Vector2D s = ctx.bounds(t);
         final HorizontalAlign a = getEnumValue("text-align", HorizontalAlign.class, LEFT);
         ctx.drawString(t, a == LEFT ? 0 :
