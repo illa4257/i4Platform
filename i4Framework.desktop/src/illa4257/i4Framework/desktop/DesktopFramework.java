@@ -20,6 +20,9 @@ import illa4257.i4Utils.runnables.Consumer2;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -71,7 +74,7 @@ public abstract class DesktopFramework extends Framework {
         if (Arch.REAL.IS_WINDOWS)
             try {
                 return new WinFileChooser();
-            } catch (final Exception ex) {
+            } catch (final Throwable ex) {
                 i4Logger.INSTANCE.log(ex);
             }
         return super.newFileChooser();
@@ -140,4 +143,25 @@ public abstract class DesktopFramework extends Framework {
 
     @Override
     public File getAppDir() { return MiniUtil.getPath(DesktopFramework.class); }
+
+    @Override
+    public String getClipboardText() {
+        try {
+            return (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+        } catch (final Exception ex) {
+            i4Logger.INSTANCE.e(ex);
+            return null;
+        }
+    }
+
+    @Override
+    public boolean setClipboardText(final CharSequence seq) {
+        try {
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(seq instanceof String ? (String) seq : String.valueOf(seq)), null);
+            return true;
+        } catch (final Exception ex) {
+            i4Logger.INSTANCE.e(ex);
+            return false;
+        }
+    }
 }
