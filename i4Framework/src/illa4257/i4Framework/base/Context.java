@@ -1,9 +1,9 @@
 package illa4257.i4Framework.base;
 
+import illa4257.i4Utils.math.Vector2;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Utils.media.Image;
-import illa4257.i4Framework.base.math.Vector2D;
 
 import java.io.InputStream;
 
@@ -17,8 +17,8 @@ public interface Context {
     default void dispose() {}
 
     float charWidth(final char ch);
-    Vector2D bounds(final String string);
-    Vector2D bounds(final char[] string);
+    Vector2 bounds(final String string);
+    Vector2 bounds(final char[] string);
 
     void setColor(final Color color);
     float getStrokeWidth();

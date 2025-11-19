@@ -1,11 +1,11 @@
 package illa4257.i4Framework.swing;
 
+import illa4257.i4Utils.math.Vector2;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.desktop.BufImgRef;
 import illa4257.i4Utils.media.Image;
-import illa4257.i4Framework.base.math.Vector2D;
 
 import java.awt.*;
 import java.io.InputStream;
@@ -45,13 +45,13 @@ public class SwingContext implements Context {
     }
 
     @Override
-    public Vector2D bounds(final String string) {
-        return Vector2D.fromSize(graphics.getFontMetrics().getStringBounds(string, graphics));
+    public Vector2 bounds(final String string) {
+        return SwingFramework.rectToV2(graphics.getFontMetrics().getStringBounds(string, graphics));
     }
 
     @Override
-    public Vector2D bounds(char[] string) {
-        return Vector2D.fromSize(graphics.getFontMetrics().getStringBounds(string, 0, string.length, graphics));
+    public Vector2 bounds(char[] string) {
+        return SwingFramework.rectToV2(graphics.getFontMetrics().getStringBounds(string, 0, string.length, graphics));
     }
 
     @Override

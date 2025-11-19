@@ -3,10 +3,10 @@ package illa4257.i4Framework.base.components;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.IMoveableInputEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
+import illa4257.i4Utils.math.Vector2;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.math.HorizontalAlign;
-import illa4257.i4Framework.base.math.Vector2D;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.ChangeTextEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
@@ -59,7 +59,7 @@ public class Button extends Component {
         final Object f = font;
         if (f != null)
             ctx.setFont(f);
-        final Vector2D s = ctx.bounds(t);
+        final Vector2 s = ctx.bounds(t);
         final HorizontalAlign a = getEnumValue("text-align", HorizontalAlign.class, LEFT);
         ctx.drawString(t, a == LEFT ? 0 :
                         a == CENTER ? (width.calcFloat() - s.x) / 2 :

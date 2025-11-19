@@ -1,9 +1,9 @@
 package illa4257.i4Framework.base.components;
 
+import illa4257.i4Utils.math.Vector2;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.math.HorizontalAlign;
-import illa4257.i4Framework.base.math.Vector2D;
 
 import java.util.Objects;
 
@@ -37,7 +37,7 @@ public class Label extends Component {
         final Object f = font;
         if (f != null)
             ctx.setFont(font);
-        final Vector2D[] v2d = new Vector2D[lines.length];
+        final Vector2[] v2d = new Vector2[lines.length];
         float h = 0, y;
         for (int i = 0; i < lines.length; i++) {
             v2d[i] = ctx.bounds(lines[i]);
