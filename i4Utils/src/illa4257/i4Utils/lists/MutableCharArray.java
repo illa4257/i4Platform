@@ -5,7 +5,7 @@ import illa4257.i4Utils.io.IO;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-public class MutableCharArray {
+public class MutableCharArray implements CharSequence {
     private final Object locker = new Object();
     public final int pageSize;
 
@@ -64,7 +64,29 @@ public class MutableCharArray {
     public MutableCharArray() { this.pageSize = 8; }
     public MutableCharArray(final int pageSize) { this.pageSize = pageSize; }
 
+    @Override
+    public int length() {
+        return size();
+    }
+
+    /**
+     * Retrieves a character at a specific index.
+     * @param i index
+     * @return char
+     */
+    @Override
+    public char charAt(final int i) {
+        return getChar(i);
+    }
+
+    @SuppressWarnings("Since15")
     public boolean isEmpty() { synchronized (locker) { return page == null; } }
+
+    @Override
+    public CharSequence subSequence(int i, int i1) {
+        return toString().subSequence(i, i1);
+    }
+
     public int size() {
         synchronized (locker) {
             if (page == null)
@@ -433,6 +455,7 @@ public class MutableCharArray {
      * Retrieves a character at a specific index.
      * @param index index
      * @return char
+     * @deprecated
      */
     public char getChar(final int index) {
         if (index < 0)
@@ -484,11 +507,11 @@ public class MutableCharArray {
      * </p>
      *
      * @return String
+     * @deprecated
      */
     public String getString() { return new String(getChars()); }
 
-    @Override
-    public String toString() {
+    public String dbg() {
         final StringBuilder b = new StringBuilder(super.toString() + " [");
         synchronized (locker) {
             CharArrayPage p = page;
@@ -499,5 +522,20 @@ public class MutableCharArray {
                 b.append(" | ").append(p.charArray.length).append(", ").append(p.offset).append('-').append(p.length);
         }
         return b.append(']').toString();
+    }
+
+    /**
+     * Returns the text contained in this MutableCharArray.
+     * <p>
+     *     Note: Not recommended for sensitive information because you can’t clear String.
+     *     For sensitive information, use the {@link #getChars()} method.
+     * </p>
+     *
+     * @return String
+     */
+    @SuppressWarnings("NullableProblems")
+    @Override
+    public String toString() {
+        return new String(getChars());
     }
 }
