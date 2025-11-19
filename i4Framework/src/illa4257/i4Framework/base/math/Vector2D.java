@@ -2,9 +2,12 @@ package illa4257.i4Framework.base.math;
 
 import java.awt.geom.Rectangle2D;
 
+@Deprecated
+/// Use {@link illa4257.i4Utils.math.Vector2}
 public class Vector2D {
     public final float x, y;
 
+    /// Use {@link illa4257.i4Utils.math.Vector2}
     public Vector2D(final float x, final float y) {
         this.x = x;
         this.y = y;
