@@ -73,7 +73,7 @@ public class FileChooser implements IFileChooser {
         window.setSize(600, 440);
         window.center();
 
-        window.addEventListener(VisibleEvent.class, e -> {
+        window.addDirectEventListener(VisibleEvent.class, e -> {
             if (e.value)
                 return;
             final Consumer2<IFileChooser, Boolean> l = listener;
@@ -124,6 +124,11 @@ public class FileChooser implements IFileChooser {
         confirm.setEndX(new PPointSubtract(window.safeEndX, offset));
         confirm.setEndY(new PPointSubtract(window.safeEndY, offset));
         window.add(confirm);
+    }
+
+    @Override
+    public void requestFocus() {
+        window.requestFocus();
     }
 
     @Override public void setOpen(final boolean open) { this.open = open; }
@@ -215,6 +220,11 @@ public class FileChooser implements IFileChooser {
             return;
         window.setVisible(true);
         forceRefresh();
+    }
+
+    @Override
+    public List<File> getFiles() {
+        return files;
     }
 
     @Override public Iterator<File> iterator() { return files.iterator(); }

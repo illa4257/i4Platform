@@ -135,7 +135,7 @@ public class TextArea extends Container {
                 if (ch == null)
                     break;
             }
-            if (ch != null && i > 0 && cx < x - ctx.charWidth(arr.getChar(i - 1)) / 2)
+            if (ch != null && i > 0 && cx < x - ctx.charWidth(arr.charAt(i - 1)) / 2)
                 i--;
         }
         return i;
@@ -192,6 +192,11 @@ public class TextArea extends Container {
     }
 
     private static class ReCalc implements SingleEvent {
+        @Override
+        public boolean isSystem() {
+            return false;
+        }
+
         @Override
         public boolean isPrevented() {
             return false;
