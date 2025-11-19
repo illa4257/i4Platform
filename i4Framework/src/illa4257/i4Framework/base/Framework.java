@@ -141,4 +141,7 @@ public abstract class Framework implements ResourceProvider {
     public ContextMenuBuilder newContextMenu() { return new ContextMenuBuilder(this); }
 
     public void dispose() {}
+
+    public String getClipboardText() { return null; }
+    public boolean setClipboardText(final CharSequence seq) { return false; }
 }
