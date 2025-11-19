@@ -4,9 +4,12 @@ import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Utils.runnables.Consumer2;
 
 import java.io.File;
+import java.util.List;
 import java.util.function.Consumer;
 
 public interface IFileChooser extends Iterable<File> {
+    default void requestFocus() {}
+
     ///  Default: true
     void setOpen(final boolean open);
 
@@ -23,4 +26,6 @@ public interface IFileChooser extends Iterable<File> {
     void setOnFinish(final Consumer2<IFileChooser, Boolean> listener);
     default void setOnFinish(final Consumer<Boolean> listener) { setOnFinish((ignored, v) -> listener.accept(v)); }
     void start();
+
+    List<File> getFiles();
 }
