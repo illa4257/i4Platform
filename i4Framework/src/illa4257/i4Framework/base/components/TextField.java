@@ -32,6 +32,14 @@ public class TextField extends Component {
     public TextField() {
         setFocusable(true);
         addEventListener(MouseDownEvent.class, e -> {
+            if (e.button == MouseButton.BUTTON2) {
+                getFramework().newContextMenu()
+                        .addButton("Select All", () -> fire(new KeyPressEvent(0, (char) 1)))
+                        .addButton("Copy", () -> fire(new KeyPressEvent(0, (char) 3)))
+                        .addButton("Paste", () -> fire(new KeyPressEvent(0, (char) 22)))
+                        .build();
+                return;
+            }
             index.set(getIndex(e.x));
             selectionIndex.set(-1);
             if (e.button == MouseButton.BUTTON0)
@@ -44,6 +52,8 @@ public class TextField extends Component {
             repaint();
         });
         addEventListener(MouseUpEvent.class, e -> {
+            if (e.button == MouseButton.BUTTON2)
+                return;
             index.set(getIndex(e.x));
             if (e.button == MouseButton.BUTTON0)
                 md.set(false);
@@ -199,6 +209,60 @@ public class TextField extends Component {
                 selectionIndex.set(0);
                 index.set(l);
                 repaint();
+                return;
+            }
+            if (e.keyChar == 3) {
+                int i = index.get();
+                int si = selectionIndex.get();
+                if (si == -1)
+                    return;
+                getFramework().setClipboardText(si > i ? text.subSequence(i, si) : text.subSequence(si, i));
+                return;
+            }
+            if (e.keyChar == 22) {
+                final String clipboardText = getFramework().getClipboardText();
+                if (clipboardText == null)
+                    return;
+                int i = index.get();
+                int si = selectionIndex.get();
+                if (si != -1) {
+                    if (si > i) {
+                        text.removeRange(i, si);
+                    } else {
+                        text.removeRange(si, i);
+                        i = si;
+                        if (index.get() < position.get())
+                            position.set(index.get());
+                    }
+                    selectionIndex.set(-1);
+                    index.set(i + clipboardText.length());
+                } else
+                    i = index.getAndAdd(clipboardText.length());
+                if (i < 0) {
+                    index.set(i = 0);
+                    position.set(0);
+                    text.add(clipboardText);
+                } else
+                    text.addDirect(clipboardText.toCharArray(), i);
+                final Context c = lastContext;
+                if (c != null) {
+                    float w = width.calcFloat() - areaSize, cw;
+                    final char[] arr = new char[1];
+                    int p = position.get();
+                    while (true) {
+                        final Character ch = text.getChar(p, null);
+                        if (ch == null)
+                            break;
+                        arr[0] = ch;
+                        cw = c.bounds(arr).x;
+                        if (w < cw)
+                            position.incrementAndGet();
+                        if (i < p)
+                            break;
+                        w -= cw;
+                        p++;
+                    }
+                }
                 return;
             }
             if (e.keyChar >= 2 && e.keyChar <= 26)
