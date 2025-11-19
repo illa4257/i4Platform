@@ -31,7 +31,7 @@ public class Button extends Component {
                             e.y() < 0 || e.y() > height.calcFloat()
             )
                 return;
-            fire(new ActionEvent());
+            fire(new ActionEvent(e.isSystem()));
         };
         addEventListener(MouseUpEvent.class, ml::run);
         addEventListener(TouchUpEvent.class, ml::run);
