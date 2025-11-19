@@ -6,6 +6,7 @@ import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.components.*;
+import illa4257.i4Framework.base.events.components.FocusEvent;
 import illa4257.i4Framework.base.events.mouse.MouseButton;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
@@ -39,6 +40,19 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
                 SwingWindow.this.window.unlink();
                 framework.remove(SwingWindow.this);
                 setVisible(false);
+            }
+        });
+        addWindowFocusListener(new WindowFocusListener() {
+            @Override
+            public void windowGainedFocus(final WindowEvent windowEvent) {
+                if (!SwingWindow.this.window.isFocused())
+                    SwingWindow.this.window.fire(new FocusEvent(true, true));
+            }
+
+            @Override
+            public void windowLostFocus(WindowEvent windowEvent) {
+                if (SwingWindow.this.window.isFocused())
+                    SwingWindow.this.window.fire(new FocusEvent(false, true));
             }
         });
         setBackground(Color.BLACK);
@@ -122,6 +136,12 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
             setSize(window.width.calcInt(), window.height.calcInt());
         });
         return new EventListener[] {
+                window.addEventListener(FocusEvent.class, e -> {
+                    if (e.value && !isFocused()) {
+                        toFront();
+                        requestFocus();
+                    }
+                }),
                 window.addEventListener(RepaintEvent.class, e -> repaint()),
                 window.addDirectEventListener(CenterWindowEvent.class, event -> {
                     if (isVisible())

@@ -62,41 +62,41 @@ public class SwingComponent extends JComponent implements ISwingComponent {
             @Override
             public void mousePressed(final MouseEvent event) {
                 component.fire(new MouseDownEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(),
-                        MouseButton.fromCode(event.getButton() - 1)));
+                        true, -1, MouseButton.fromCode(event.getButton() - 1)));
             }
 
             @Override
             public void mouseReleased(final MouseEvent event) {
                 component.fire(new MouseUpEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(),
-                        MouseButton.fromCode(event.getButton() - 1)));
+                        true, -1, MouseButton.fromCode(event.getButton() - 1)));
             }
 
             @Override
             public void mouseEntered(final MouseEvent event) {
-                component.fire(new MouseEnterEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY()));
+                component.fire(new MouseEnterEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), true));
             }
 
             @Override
             public void mouseExited(final MouseEvent event) {
-                component.fire(new MouseLeaveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY()));
+                component.fire(new MouseLeaveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), true));
             }
         });
         addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseMoved(final MouseEvent event) {
-                component.fire(new MouseMoveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY()));
+                component.fire(new MouseMoveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), true, -1));
             }
 
             @Override
             public void mouseDragged(final MouseEvent event) {
-                component.fire(new MouseMoveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY()));
+                component.fire(new MouseMoveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), true, -1));
             }
         });
         addMouseWheelListener(event -> {
             if (event.getUnitsToScroll() == 0)
                 return;
             component.fire(new MouseScrollEvent(getGlobalX(event),
-                    getGlobalY(event), event.getX(), event.getY(), event.getUnitsToScroll(), !event.isShiftDown() ?
+                    getGlobalY(event), event.getX(), event.getY(), true, event.getUnitsToScroll(), !event.isShiftDown() ?
                     Orientation.VERTICAL : Orientation.HORIZONTAL).parentPrevent(false));
         });
         addKeyListener(new KeyListener() {
@@ -108,15 +108,15 @@ public class SwingComponent extends JComponent implements ISwingComponent {
             public void keyPressed(final KeyEvent e) {
                 if (!pressed.contains(e.getKeyCode())) {
                     pressed.add(e.getKeyCode());
-                    component.fire(new KeyDownEvent(e.getKeyCode(), e.getKeyChar()));
+                    component.fire(new KeyDownEvent(e.getKeyCode(), e.getKeyChar(), true));
                 }
-                component.fire(new KeyPressEvent(e.getKeyCode(), e.getKeyChar()));
+                component.fire(new KeyPressEvent(e.getKeyCode(), e.getKeyChar(), true));
             }
 
             @Override
             public void keyReleased(final KeyEvent e) {
                 pressed.remove((Object) e.getKeyCode());
-                component.fire(new KeyUpEvent(e.getKeyCode(), e.getKeyChar()));
+                component.fire(new KeyUpEvent(e.getKeyCode(), e.getKeyChar(), true));
             }
         });
 
@@ -149,6 +149,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         component.subscribe("border-color", this::updateLS);
         component.subscribe("cursor", this::onCursorChange);
 
+        setDropTarget(ISwingComponent.wrapDropTarget(component));
         setVisible(component.isVisible());
         updateLS(null);
         StyleSetting s = component.getStyle("cursor");
