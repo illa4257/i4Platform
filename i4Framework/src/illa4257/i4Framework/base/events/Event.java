@@ -5,7 +5,7 @@ public class Event implements IEvent {
     public final int pointerId;
     public final float globalX, globalY, x, y;
 
-    public boolean isPrevented = false, isParentPrevented = true;
+    public boolean isPrevented = false, isParentPrevented = false;
 
     public Event() { isSystem = false; x = y = globalX = globalY = pointerId = -1; }
     public Event(final boolean isSystem) { this.isSystem = isSystem; x = y = globalX = globalY = pointerId = -1; }
@@ -19,6 +19,7 @@ public class Event implements IEvent {
         this.x = x; this.y = y;
     }
 
+    @Override public boolean isSystem() { return isSystem; }
     @Override public boolean isPrevented() { return isPrevented; }
     @Override public boolean isParentPrevented() { return isParentPrevented || isPrevented; }
     public int id() { return pointerId; }

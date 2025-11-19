@@ -8,4 +8,8 @@ public class MouseLeaveEvent extends MouseEvent {
     public MouseLeaveEvent(final int x, final int y, final int localX, final int localY) {
         super(x, y, localX, localY);
     }
+
+    public MouseLeaveEvent(final int x, final int y, final int localX, final int localY, final boolean isSystem) {
+        super(x, y, localX, localY, isSystem);
+    }
 }

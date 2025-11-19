@@ -7,4 +7,5 @@ public class FocusEvent extends Event implements SingleEvent {
     public final boolean value;
 
     public FocusEvent(final boolean newValue) { value = newValue; }
+    public FocusEvent(final boolean newValue, final boolean isSystem) { super(isSystem); value = newValue; }
 }

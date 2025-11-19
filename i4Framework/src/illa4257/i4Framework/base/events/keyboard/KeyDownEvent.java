@@ -4,4 +4,8 @@ public class KeyDownEvent extends KeyEvent {
     public KeyDownEvent(int keyCode, char keyChar) {
         super(keyCode, keyChar);
     }
+
+    public KeyDownEvent(int keyCode, char keyChar, final boolean isSystem) {
+        super(keyCode, keyChar, isSystem);
+    }
 }

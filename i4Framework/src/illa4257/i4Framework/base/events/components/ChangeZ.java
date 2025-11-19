@@ -8,6 +8,11 @@ public class ChangeZ implements SingleEvent {
 
     public ChangeZ(final int z) { this.z = z; }
 
+    @Override
+    public boolean isSystem() {
+        return false;
+    }
+
     @Override public boolean isPrevented() { return isPrevented; }
     @Override public boolean isParentPrevented() { return isParentPrevented || isPrevented; }
 

@@ -17,4 +17,10 @@ public class MouseScrollEvent extends MouseEvent {
         this.orientation = orientation;
         this.scroll = unitsToScroll;
     }
+
+    public MouseScrollEvent(final int x, final int y, final int localX, final int localY, final boolean isSystem, final int unitsToScroll, final Orientation orientation) {
+        super(x, y, localX, localY, isSystem);
+        this.orientation = orientation;
+        this.scroll = unitsToScroll;
+    }
 }
