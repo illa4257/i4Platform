@@ -54,6 +54,25 @@ public class Window extends Container {
         }
     }
 
+    @Override
+    public boolean requestFocus() {
+        if (isFocused())
+            return true;
+        if (!isVisible())
+            return false;
+        synchronized (locker) {
+            final FrameworkWindow fw = frameworkWindow.get();
+            if (fw != null) {
+                fire(new FocusEvent(true));
+                return true;
+            }
+        }
+        final Container p = getParent();
+        if (p == null)
+            return false;
+        return p.childFocus(this, this);
+    }
+
     public void center() { fire(new CenterWindowEvent(this)); }
 
     public void setTitle(final String newTitle) { fire(new ChangeTextEvent(title.getAndSet(newTitle), newTitle)); }
