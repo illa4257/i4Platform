@@ -9,7 +9,6 @@
     border-radius: 0;
 }
 
-
 Window {
     background-color: #fff;
 }
@@ -79,4 +78,10 @@ ScrollPane {
 ScrollBar {
     background-color: #a0a0a0;
     thumb-color: #f0f0f0;
+}
+
+ProgressBar {
+    background-color: #DDF;
+    color: #77F;
+    border-radius: 4dp;
 }

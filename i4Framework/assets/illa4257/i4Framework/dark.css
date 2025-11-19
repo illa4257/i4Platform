@@ -78,3 +78,9 @@ ScrollBar {
     background-color: #30303B;
     thumb-color: #404049;
 }
+
+ProgressBar {
+    background-color: #224;
+    color: #55B;
+    border-radius: 4dp;
+}
