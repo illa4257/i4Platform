@@ -84,6 +84,9 @@ public class StyleSetting {
 
     public Color color(final Color defaultColor) {
         return computeIfAbsentP(Color.class, () -> {
+            final Color c = get(Color.class);
+            if (c != null)
+                return c;
             final String v = get(String.class);
             if (v != null)
                 try {
