@@ -81,6 +81,7 @@ public class WinFileChooser implements IFileChooser {
     }
 
     @Override public void setOnFinish(final Consumer2<IFileChooser, Boolean> listener) { this.listener = listener; }
+    @SuppressWarnings("NullableProblems")
     @Override public Iterator<File> iterator() { return files.iterator(); }
 
     @Override
@@ -152,5 +153,10 @@ public class WinFileChooser implements IFileChooser {
             } catch (final Exception ex) {
                 i4Logger.INSTANCE.log(ex);
             }
+    }
+
+    @Override
+    public List<File> getFiles() {
+        return files;
     }
 }
