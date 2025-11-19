@@ -5,9 +5,14 @@ import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.components.*;
 import illa4257.i4Framework.base.events.IEvent;
 import illa4257.i4Framework.base.events.SingleEvent;
+import illa4257.i4Framework.base.events.dnd.DropEvent;
+import illa4257.i4Framework.base.events.keyboard.KeyEvent;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseEnterEvent;
 import illa4257.i4Framework.base.events.mouse.MouseLeaveEvent;
+import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
+import illa4257.i4Framework.base.events.touchscreen.TouchDownEvent;
+import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.base.utils.Geom;
@@ -38,6 +43,8 @@ public class Component extends Destructor {
     protected final Object locker = new Object();
     volatile boolean isFocusable = false, visible = true;
     private final Runnable[] listeners;
+
+    public volatile Object redirectFocus = null;
 
     protected final SyncVar<Container> parent = new SyncVar<>();
 
@@ -192,7 +199,12 @@ public class Component extends Destructor {
         if (pc1 != 0 || pc2 != 0)
             return pc2 >= pc1;
 
-        return true;
+        /* Extended
+        if (selector1.tag.get() != null && selector2.tag.get() == null)
+            return false;
+        return true;*/
+
+        return selector1.tag.get() == null || selector2.tag.get() != null;
     }
 
     public void setPseudoClass(final String pseudoClass, final boolean en) {
@@ -490,10 +502,31 @@ public class Component extends Destructor {
         return false;
     }
 
+    public Object getRedirectFocus() {
+        final Object o = redirectFocus;
+        if (o != null)
+            return o;
+        final Container p = getParent();
+        return p != null ? p.getRedirectFocus() : null;
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void fire(final IEvent event) {
         if (event == null)
             return;
+        if (event.isSystem() && (event instanceof MouseDownEvent || event instanceof MouseUpEvent ||
+                event instanceof TouchDownEvent || event instanceof TouchUpEvent ||
+                (event instanceof FocusEvent && ((FocusEvent) event).value) || event instanceof DropEvent ||
+                event instanceof KeyEvent)) {
+            final Object r = getRedirectFocus();
+            if (r != null) {
+                if (r instanceof Component)
+                    ((Component) r).requestFocus();
+                else if (r instanceof IFileChooser)
+                    ((IFileChooser) r).requestFocus();
+                return;
+            }
+        }
         final Class<? extends IEvent> c = event.getClass();
         for (final Map.Entry<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> e : directEventListeners.entrySet())
             if (c.isAssignableFrom(e.getKey()))
