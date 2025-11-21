@@ -12,10 +12,7 @@ public class BufImgRef implements ImagePixelable {
 
     public static int[] getPixels(final BufferedImage image) { return image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth()); }
 
-    @Override
-    public int[] getPixels() {
-        return getPixels(image);
-    }
+    @Override public int[] getPixels() { return getPixels(image); }
 
     public static BufImgRef compute(final Image img) {
         final BufferedImage bufferedImage = new BufferedImage(img.width, img.height, BufferedImage.TYPE_INT_ARGB);
@@ -35,5 +32,9 @@ public class BufImgRef implements ImagePixelable {
 
     public static BufferedImage get(final Image img) {
         return ((BufImgRef) img.imageMap.computeIfAbsent(BufImgRef.class, ignored -> compute(img))).image;
+    }
+
+    public static Image toImage(final BufferedImage img) {
+        return new Image(img.getWidth(), img.getHeight(), BufImgRef.class, new BufImgRef(img));
     }
 }
