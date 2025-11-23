@@ -42,11 +42,11 @@ public class Container extends Component implements Iterable<Component> {
         if (getLinkNumber() > 0)
             while ((c = components.poll()) != null) {
                 c.unlink();
-                fire(new RemoveComponentEvent(c));
+                fire(new RemoveComponentEvent(this, c));
             }
         else
             while ((c = components.poll()) != null)
-                fire(new RemoveComponentEvent(c));
+                fire(new RemoveComponentEvent(this, c));
     }
 
     public boolean add(final Component component) {
@@ -59,7 +59,7 @@ public class Container extends Component implements Iterable<Component> {
             if (c != null && c != this)
                 c.remove(c);
             component.fire(new ChangeParentEvent());
-            fire(new AddComponentEvent(component));
+            fire(new AddComponentEvent(this, component));
             updated();
             if (component.isRepeated())
                 repeated(true);
@@ -74,7 +74,7 @@ public class Container extends Component implements Iterable<Component> {
                 component.unlink();
             component.parent.setIfEquals(null, this);
             component.fire(new ChangeParentEvent());
-            fire(new RemoveComponentEvent(component));
+            fire(new RemoveComponentEvent(this, component));
             updated();
         }
         return r;

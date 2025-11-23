@@ -31,13 +31,15 @@ public interface ISwingComponent {
     static EventListener[] registerContainer(final java.awt.Container t, Container c) {
         return new EventListener[] {
             c.addEventListener(AddComponentEvent.class, e -> {
-                if (getComponent(t, e.child) != null)
+                if (e.container != c || getComponent(t, e.child) != null)
                     return;
                 final SwingComponent co = new SwingComponent(e.child);
                 t.add(co, 0);
                 co.repaint();
             }),
             c.addEventListener(RemoveComponentEvent.class, e -> {
+                if (e.container != c)
+                    return;
                 final SwingComponent co = getComponent(t, e.child);
                 if (co == null)
                     return;
