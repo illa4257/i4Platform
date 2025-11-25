@@ -70,8 +70,8 @@ ComboBox:focus {
 
 TabPane {
     --tabs-background-color: #212128;
-    --tab-background-color: #404049;
-    --tab-selected-background-color: #41414a;
+    --tab-background-color: #292939;
+    --tab-selected-background-color: #30304a;
 }
 
 ScrollBar {
