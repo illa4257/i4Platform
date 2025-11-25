@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Function;
 
 public abstract class Framework implements ResourceProvider {
     private static final ConcurrentLinkedQueue<Framework> frameworks = new ConcurrentLinkedQueue<>();
@@ -91,7 +92,7 @@ public abstract class Framework implements ResourceProvider {
             }
     }
 
-    public abstract void fireAllWindows(final Event event);
+    public abstract void fireAllWindows(final Function<Window, Event> event);
 
     public boolean addThemeListener(final Consumer2<String, BaseTheme> listener) { return themeListeners.add(listener); }
     public boolean removeThemeListener(final Consumer2<String, BaseTheme> listener) { return themeListeners.remove(listener); }

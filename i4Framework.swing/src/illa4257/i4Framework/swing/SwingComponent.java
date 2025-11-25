@@ -61,41 +61,41 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(final MouseEvent event) {
-                component.fire(new MouseDownEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(),
+                component.fire(new MouseDownEvent(component, getGlobalX(event), getGlobalY(event), event.getX(), event.getY(),
                         true, -1, MouseButton.fromCode(event.getButton() - 1)));
             }
 
             @Override
             public void mouseReleased(final MouseEvent event) {
-                component.fire(new MouseUpEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(),
+                component.fire(new MouseUpEvent(component, getGlobalX(event), getGlobalY(event), event.getX(), event.getY(),
                         true, -1, MouseButton.fromCode(event.getButton() - 1)));
             }
 
             @Override
             public void mouseEntered(final MouseEvent event) {
-                component.fire(new MouseEnterEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), true));
+                component.fire(new MouseEnterEvent(component, getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), true));
             }
 
             @Override
             public void mouseExited(final MouseEvent event) {
-                component.fire(new MouseLeaveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), true));
+                component.fire(new MouseLeaveEvent(component, getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), true));
             }
         });
         addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseMoved(final MouseEvent event) {
-                component.fire(new MouseMoveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), true, -1));
+                component.fire(new MouseMoveEvent(component, getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), true, -1));
             }
 
             @Override
             public void mouseDragged(final MouseEvent event) {
-                component.fire(new MouseMoveEvent(getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), true, -1));
+                component.fire(new MouseMoveEvent(component, getGlobalX(event), getGlobalY(event), event.getX(), event.getY(), true, -1));
             }
         });
         addMouseWheelListener(event -> {
             if (event.getUnitsToScroll() == 0)
                 return;
-            component.fire(new MouseScrollEvent(getGlobalX(event),
+            component.fire(new MouseScrollEvent(component, getGlobalX(event),
                     getGlobalY(event), event.getX(), event.getY(), true, event.getUnitsToScroll(), !event.isShiftDown() ?
                     Orientation.VERTICAL : Orientation.HORIZONTAL).parentPrevent(false));
         });
@@ -108,15 +108,15 @@ public class SwingComponent extends JComponent implements ISwingComponent {
             public void keyPressed(final KeyEvent e) {
                 if (!pressed.contains(e.getKeyCode())) {
                     pressed.add(e.getKeyCode());
-                    component.fire(new KeyDownEvent(e.getKeyCode(), e.getKeyChar(), true));
+                    component.fire(new KeyDownEvent(component, e.getKeyCode(), e.getKeyChar(), true));
                 }
-                component.fire(new KeyPressEvent(e.getKeyCode(), e.getKeyChar(), true));
+                component.fire(new KeyPressEvent(component, e.getKeyCode(), e.getKeyChar(), true));
             }
 
             @Override
             public void keyReleased(final KeyEvent e) {
                 pressed.remove((Object) e.getKeyCode());
-                component.fire(new KeyUpEvent(e.getKeyCode(), e.getKeyChar(), true));
+                component.fire(new KeyUpEvent(component, e.getKeyCode(), e.getKeyChar(), true));
             }
         });
 

@@ -46,13 +46,13 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
             @Override
             public void windowGainedFocus(final WindowEvent windowEvent) {
                 if (!SwingWindow.this.window.isFocused())
-                    SwingWindow.this.window.fire(new FocusEvent(true, true));
+                    SwingWindow.this.window.fire(new FocusEvent(SwingWindow.this.window, true, true));
             }
 
             @Override
             public void windowLostFocus(WindowEvent windowEvent) {
                 if (SwingWindow.this.window.isFocused())
-                    SwingWindow.this.window.fire(new FocusEvent(false, true));
+                    SwingWindow.this.window.fire(new FocusEvent(SwingWindow.this.window, false, true));
             }
         });
         setBackground(Color.BLACK);
@@ -64,12 +64,12 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(final MouseEvent mouseEvent) {
-                SwingWindow.this.window.fire(new MouseDownEvent(mouseEvent.getX(), mouseEvent.getY(), MouseButton.fromCode(mouseEvent.getButton() - 1)));
+                SwingWindow.this.window.fire(new MouseDownEvent(SwingWindow.this.window, mouseEvent.getX(), mouseEvent.getY(), MouseButton.fromCode(mouseEvent.getButton() - 1)));
             }
 
             @Override
             public void mouseReleased(final MouseEvent mouseEvent) {
-                SwingWindow.this.window.fire(new MouseUpEvent(mouseEvent.getX(), mouseEvent.getY(), MouseButton.fromCode(mouseEvent.getButton() - 1)));
+                SwingWindow.this.window.fire(new MouseUpEvent(SwingWindow.this.window, mouseEvent.getX(), mouseEvent.getY(), MouseButton.fromCode(mouseEvent.getButton() - 1)));
             }
         });
         l = registerListeners();

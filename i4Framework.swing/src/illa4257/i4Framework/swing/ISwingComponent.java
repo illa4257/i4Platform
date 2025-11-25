@@ -80,7 +80,7 @@ public interface ISwingComponent {
                     if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
                         //noinspection unchecked
                         l.addAll((List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor));
-                    component.fire(new DroppedEvent(true, 0, dropTargetDropEvent.getLocation().x, dropTargetDropEvent.getLocation().y, dropTargetDropEvent.getLocation().x, dropTargetDropEvent.getLocation().y, l));
+                    component.fire(new DroppedEvent(component, true, 0, dropTargetDropEvent.getLocation().x, dropTargetDropEvent.getLocation().y, dropTargetDropEvent.getLocation().x, dropTargetDropEvent.getLocation().y, l));
                     dropTargetDropEvent.dropComplete(true);
                 } catch (final Exception ex) {
                     i4Logger.INSTANCE.e(ex);

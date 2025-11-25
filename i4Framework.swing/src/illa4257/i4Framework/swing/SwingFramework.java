@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.function.Function;
 
 import static java.awt.RenderingHints.*;
 
@@ -119,7 +120,7 @@ public class SwingFramework extends DesktopFramework {
             if (frames.add(frame) && isEmpty) {
                 timer.computeIfAbsentP(Instance::new);
                 setDarkMode(frame.window, getBaseTheme() == BaseTheme.DARK);
-                frame.window.fire(new StyleUpdateEvent());
+                frame.window.fire(new StyleUpdateEvent(frame.window));
             }
         }
     }
@@ -143,9 +144,9 @@ public class SwingFramework extends DesktopFramework {
     @Override public void invokeLater(final Runnable runnable) { SwingUtilities.invokeLater(runnable); }
 
     @Override
-    public void fireAllWindows(final Event event) {
+    public void fireAllWindows(final Function<Window, Event> event) {
         for (final SwingWindow w : frames)
-            w.window.fire(event);
+            w.window.fire(event.apply(w.window));
     }
 
     @Override public FrameworkWindow newWindow(final Window window) { return new SwingWindow(this, window); }

@@ -17,7 +17,7 @@ public class TabPane extends Container {
 
     public SyncVar<Tab> current = new SyncVar<>();
 
-    private Context lastContext = null;
+    private volatile Context lastContext = null;
 
     public static class Tab {
         public final AtomicBoolean isCloseable;
@@ -41,7 +41,7 @@ public class TabPane extends Container {
         setFocusable(true);
         addEventListener(MouseUpEvent.class, e -> {
             final Context ctx = lastContext;
-            if (e.y > tabHeight.calcInt() || e.x < 8 || ctx == null)
+            if (e.component != this || e.y > tabHeight.calcInt() || e.x < 8 || ctx == null)
                 return;
             final float xw = ctx.bounds("x").x + 16;
             float x = e.x - 8;

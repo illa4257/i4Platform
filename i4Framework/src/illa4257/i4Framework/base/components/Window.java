@@ -47,7 +47,7 @@ public class Window extends Container {
                     unfocus(false);
                 focused = targetChild;
                 if (targetChild == target)
-                    focused.fire(new FocusEvent(true));
+                    focused.fire(new FocusEvent(focused, true));
                 return true;
             }
             return super.childFocus(targetChild, target);
@@ -63,7 +63,7 @@ public class Window extends Container {
         synchronized (locker) {
             final FrameworkWindow fw = frameworkWindow.get();
             if (fw != null) {
-                fire(new FocusEvent(true));
+                fire(new FocusEvent(this, true));
                 return true;
             }
         }
@@ -75,6 +75,6 @@ public class Window extends Container {
 
     public void center() { fire(new CenterWindowEvent(this)); }
 
-    public void setTitle(final String newTitle) { fire(new ChangeTextEvent(title.getAndSet(newTitle), newTitle)); }
+    public void setTitle(final String newTitle) { fire(new ChangeTextEvent(this, title.getAndSet(newTitle), newTitle)); }
     public String getTitle() { return title.get(); }
 }

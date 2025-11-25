@@ -12,7 +12,8 @@ public class ScrollBar extends Component {
     public static class ScrollEvent extends Event {
         public final int oldValue, newValue, delta;
 
-        public ScrollEvent(final int oldValue, final int newValue) {
+        public ScrollEvent(final Component component, final int oldValue, final int newValue) {
+            super(component);
             this.oldValue = oldValue;
             this.newValue = newValue;
             delta = newValue - oldValue;
@@ -36,8 +37,8 @@ public class ScrollBar extends Component {
                 return;
             reCalc();
             event.parentPrevent(true);
-            fire(new ScrollEvent(old, scroll));
-            fire(new RepaintEvent());
+            fire(new ScrollEvent(this, old, scroll));
+            fire(new RepaintEvent(this));
         });
     }
 

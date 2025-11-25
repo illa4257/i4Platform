@@ -1,5 +1,6 @@
 package illa4257.i4Framework.base.events.keyboard;
 
+import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.events.Event;
 
 @SuppressWarnings("unused")
@@ -42,13 +43,14 @@ public class KeyEvent extends Event {
     public final int keyCode;
     public final char keyChar;
 
-    public KeyEvent(final int keyCode, final char keyChar) {
+    public KeyEvent(final Component component, final int keyCode, final char keyChar) {
+        super(component);
         this.keyCode = keyCode;
         this.keyChar = keyChar;
     }
 
-    public KeyEvent(final int keyCode, final char keyChar, final boolean isSystem) {
-        super(isSystem);
+    public KeyEvent(final Component component, final int keyCode, final char keyChar, final boolean isSystem) {
+        super(component, isSystem);
         this.keyCode = keyCode;
         this.keyChar = keyChar;
     }

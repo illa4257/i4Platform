@@ -58,7 +58,7 @@ public class Container extends Component implements Iterable<Component> {
                 component.link();
             if (c != null && c != this)
                 c.remove(c);
-            component.fire(new ChangeParentEvent());
+            component.fire(new ChangeParentEvent(component));
             fire(new AddComponentEvent(this, component));
             updated();
             if (component.isRepeated())
@@ -73,7 +73,7 @@ public class Container extends Component implements Iterable<Component> {
             if (getLinkNumber() > 0)
                 component.unlink();
             component.parent.setIfEquals(null, this);
-            component.fire(new ChangeParentEvent());
+            component.fire(new ChangeParentEvent(component));
             fire(new RemoveComponentEvent(this, component));
             updated();
         }
@@ -104,7 +104,7 @@ public class Container extends Component implements Iterable<Component> {
             if (focused.isFocused()) {
                 focused.setPseudoClass("focus-within", false);
                 focused.setPseudoClass("focus", false);
-                focused.fire(new FocusEvent(false));
+                focused.fire(new FocusEvent(focused, false));
             }
             if (u)
                 focused = null;
@@ -133,7 +133,7 @@ public class Container extends Component implements Iterable<Component> {
                     unfocus(false);
                 focused = targetChild;
                 if (targetChild == target)
-                    focused.fire(new FocusEvent(true));
+                    focused.fire(new FocusEvent(focused, true));
                 return true;
             }
             return false;
@@ -159,17 +159,17 @@ public class Container extends Component implements Iterable<Component> {
             }
             if (focused instanceof Container && ((Container) focused).focusNextElement()) {
                 if (focused.pseudoClasses.contains("focus"))
-                    focused.fire(new FocusEvent(false));
+                    focused.fire(new FocusEvent(focused, false));
                 return true;
             }
-            focused.fire(new FocusEvent(false));
+            focused.fire(new FocusEvent(focused, false));
             boolean line = false;
             for (final Component c : components) {
                 if (line) {
                     if (!c.isVisible())
                         continue;
                     if (c.isFocusable()) {
-                        (focused = c).fire(new FocusEvent(true));
+                        (focused = c).fire(new FocusEvent(focused, true));
                         return true;
                     }
                     if (c instanceof Container && ((Container) c).focusNextElement()) {

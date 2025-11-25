@@ -96,7 +96,7 @@ public class Component extends Destructor {
             c = c.getSuperclass();
         tag.set(c.getSimpleName());
         listeners = new Runnable[] {
-                () -> fire(new RecalculateEvent())
+                () -> fire(new RecalculateEvent(this))
         };
         addEventListener(ChangeParentEvent.class, e -> {
             final Container co = getParent();
@@ -106,7 +106,7 @@ public class Component extends Destructor {
                 ((PPointAdd) windowEndX).setPoint2(co.windowStartX);
                 ((PPointAdd) windowEndY).setPoint2(co.windowStartY);
             }
-            fire(new StyleUpdateEvent());
+            fire(new StyleUpdateEvent(this));
         });
         addEventListener(StyleUpdateEvent.class, e -> {
             synchronized (cache) {
@@ -138,8 +138,8 @@ public class Component extends Destructor {
         });
         addEventListener(HoverEvent.class, e -> setPseudoClass("hover", e.value));
         addEventListener(FocusEvent.class, e -> setPseudoClass("focus", e.value));
-        addEventListener(MouseEnterEvent.class, e -> fire(new HoverEvent(true)));
-        addEventListener(MouseLeaveEvent.class, e -> fire(new HoverEvent(false)));
+        addEventListener(MouseEnterEvent.class, e -> fire(new HoverEvent(this, true)));
+        addEventListener(MouseLeaveEvent.class, e -> fire(new HoverEvent(this, false)));
     }
 
     public boolean isVisible() { return visible; }
@@ -549,7 +549,7 @@ public class Component extends Destructor {
 
     public void fireLater(final IEvent event) { invokeLater(() -> fire(event)); }
 
-    public void repaint() { fire(new RepaintEvent()); }
+    public void repaint() { fire(new RepaintEvent(this)); }
 
     public void setVisible(final boolean visible) {
         synchronized (locker) {
@@ -557,7 +557,7 @@ public class Component extends Destructor {
                 return;
             this.visible = visible;
         }
-        fire(new VisibleEvent(visible));
+        fire(new VisibleEvent(this, visible));
     }
 
     private boolean aSet(final PointSet set, final float offset, final Point target) {
@@ -570,22 +570,22 @@ public class Component extends Destructor {
 
     public void setStartX(final Point point) {
         startX.set(point);
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setStartY(final Point point) {
         startY.set(point);
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setEndX(final Point point) {
         endX.set(point);
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setEndY(final Point point) {
         endY.set(point);
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setX(final float x, final Unit unit) {
@@ -593,12 +593,12 @@ public class Component extends Destructor {
             startX.set(new NumberPointMultiplier(densityMultiplier, x));
         else
             startX.set(new PointAttach(x, null));
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setX(final float x) {
         startX.set(new PointAttach(x, null));
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setY(final float y, final Unit unit) {
@@ -606,23 +606,23 @@ public class Component extends Destructor {
             startY.set(new NumberPointMultiplier(densityMultiplier, y));
         else
             startY.set(new PointAttach(y, null));
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setY(final float y) {
         startY.set(new PointAttach(y, null));
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setLocation(final float x, final float y) {
         startX.set(new PointAttach(x, null));
         startY.set(new PointAttach(y, null));
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setWidth(final Point width) {
         endX.set(new PPointAdd(startX, width));
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setWidth(final float width, final Unit unit) {
@@ -630,17 +630,17 @@ public class Component extends Destructor {
             endX.set(new PPointAdd(new NumberPointMultiplier(densityMultiplier, width), startX));
         else
             endX.set(new PointAttach(width, startX));
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setWidth(final float width) {
         endX.set(new PointAttach(width, startX));
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setHeight(final Point height) {
         endY.set(new PPointAdd(startY, height));
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setHeight(final float height, final Unit unit) {
@@ -648,12 +648,12 @@ public class Component extends Destructor {
             endY.set(new PPointAdd(new NumberPointMultiplier(densityMultiplier, height), startY));
         else
             endY.set(new PointAttach(height, startY));
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setHeight(final float height) {
         endY.set(new PointAttach(height, startY));
-        fire(new ChangePointEvent());
+        fire(new ChangePointEvent(this));
     }
 
     public void setSize(final float width, final float height) {
@@ -668,7 +668,7 @@ public class Component extends Destructor {
         if (y = aSet(endY, height, startY))
             endY.set(new PointAttach(height, startY));
         if (x || y)
-            fire(new ChangePointEvent(isSystem));
+            fire(new ChangePointEvent(this, isSystem));
     }
 
     public void paint(final Context context) {

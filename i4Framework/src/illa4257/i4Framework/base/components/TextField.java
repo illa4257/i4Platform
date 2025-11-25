@@ -34,9 +34,9 @@ public class TextField extends Component {
         addEventListener(MouseDownEvent.class, e -> {
             if (e.button == MouseButton.BUTTON2) {
                 getFramework().newContextMenu()
-                        .addButton("Select All", () -> fire(new KeyPressEvent(0, (char) 1)))
-                        .addButton("Copy", () -> fire(new KeyPressEvent(0, (char) 3)))
-                        .addButton("Paste", () -> fire(new KeyPressEvent(0, (char) 22)))
+                        .addButton("Select All", () -> fire(new KeyPressEvent(this, 0, (char) 1)))
+                        .addButton("Copy", () -> fire(new KeyPressEvent(this, 0, (char) 3)))
+                        .addButton("Paste", () -> fire(new KeyPressEvent(this, 0, (char) 22)))
                         .build();
                 return;
             }

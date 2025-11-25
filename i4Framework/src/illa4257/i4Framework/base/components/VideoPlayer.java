@@ -4,7 +4,6 @@ import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.graphics.IFrameGrabber;
 import illa4257.i4Utils.media.Image;
-import illa4257.i4Framework.base.events.components.RepaintEvent;
 import illa4257.i4Utils.logger.i4Logger;
 
 public class VideoPlayer extends Component {
@@ -12,8 +11,6 @@ public class VideoPlayer extends Component {
     private int index = 0;
     private IFrameGrabber frameGrabber = null;
     private Image lastFrame = null;
-
-    private final Runnable repaint = () -> fire(new RepaintEvent());
 
     public void setFrameGrabber(final IFrameGrabber grabber) {
         synchronized (locker) {
@@ -30,9 +27,9 @@ public class VideoPlayer extends Component {
                 return;
             this.isPlaying = isPlaying;
             if (isPlaying)
-                onTick(repaint);
+                onTick(this::repaint);
             else
-                offTick(repaint);
+                offTick(this::repaint);
         }
     }
 
@@ -48,7 +45,7 @@ public class VideoPlayer extends Component {
                 st = e;
                 if (newFrame == null) {
                     isPlaying = false;
-                    offTick(repaint);
+                    offTick(this::repaint);
                 } else {
                     if (lastFrame != null)
                         try {

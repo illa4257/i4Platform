@@ -19,9 +19,9 @@ public class ScrollPane extends Container {
     private static class ReCalcBars extends Event implements SingleEvent {
         private final boolean first;
 
-        public ReCalcBars(final boolean isFirst) { first = isFirst; }
+        public ReCalcBars(final Component component, final boolean isFirst) { super(component); first = isFirst; }
     }
-    private final Runnable reCalcRequest = () -> fire(new ReCalcBars(true));
+    private final Runnable reCalcRequest = () -> fire(new ReCalcBars(this, true));
 
     public final Point viewableWidth = new NumberPoint(), viewableHeight = new NumberPoint();
 
@@ -51,7 +51,7 @@ public class ScrollPane extends Container {
             if (e.first) {
                 ((NumberPoint) viewableWidth).set(w - scrollBarWidth);
                 ((NumberPoint) viewableHeight).set(h - scrollBarWidth);
-                fire(new ReCalcBars(false));
+                fire(new ReCalcBars(this, false));
                 return;
             }
 
@@ -97,7 +97,7 @@ public class ScrollPane extends Container {
             c.setX(-event.newValue);
         });
 
-        addEventListener(StyleUpdateEvent.class, ignored -> fire(new ReCalcBars(true)));
+        addEventListener(StyleUpdateEvent.class, ignored -> fire(new ReCalcBars(this, true)));
         addEventListener(MouseScrollEvent.class, e -> {
             final ScrollBar bar = e.orientation == Orientation.VERTICAL ? vBar : hBar;
             if (
@@ -108,10 +108,10 @@ public class ScrollPane extends Container {
                 return;
             bar.fire(e);
         });
-        addEventListener(RecalculateEvent.class, e -> fire(new ReCalcBars(true)));
+        addEventListener(RecalculateEvent.class, e -> fire(new ReCalcBars(this, true)));
     }
 
-    private final EventListener<ChangePointEvent> l = e -> fire(new ReCalcBars(true));
+    private final EventListener<ChangePointEvent> l = e -> fire(new ReCalcBars(this, true));
 
     public void setContent(final Container container) {
         synchronized (locker) {
@@ -123,7 +123,7 @@ public class ScrollPane extends Container {
                 container.addEventListener(ChangePointEvent.class, l);
             vBar.setScroll(0);
             hBar.setScroll(0);
-            fire(new ReCalcBars(true));
+            fire(new ReCalcBars(this, true));
         }
     }
 
