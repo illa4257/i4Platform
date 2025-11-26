@@ -25,7 +25,7 @@ import static java.awt.Cursor.*;
 public class SwingComponent extends JComponent implements ISwingComponent {
     public final Component component;
     public final EventListener[] listeners;
-    public EventListener[] directListeners = null;
+    public EventListener[] listeners2 = null;
     private volatile int offset = 0;
 
     private JFrame getFrame() {
@@ -145,7 +145,24 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         };
 
         if (component instanceof Container) {
-           directListeners = ISwingComponent.registerContainer(this, (Container) component);
+           listeners2 = new EventListener[] {
+                   component.addEventListener(AddComponentEvent.class, e -> {
+                       if (e.container != component || ISwingComponent.getComponent(this, e.child) != null)
+                           return;
+                       final SwingComponent co = new SwingComponent(e.child);
+                       add(co, 0);
+                       co.repaint();
+                   }),
+                   component.addEventListener(RemoveComponentEvent.class, e -> {
+                       if (e.container != component)
+                           return;
+                       final SwingComponent co = ISwingComponent.getComponent(this, e.child);
+                       if (co == null)
+                           return;
+                       remove(co);
+                       co.dispose();
+                   })
+           };
            for (final Component co : (Container) component) {
                final SwingComponent c = new SwingComponent(co);
                add(c, 0);
@@ -168,8 +185,9 @@ public class SwingComponent extends JComponent implements ISwingComponent {
     }
 
     private void updateLS(final StyleSetting ignored) {
-        final int bw = component.getColor("border-color").alpha > 0 ? Math.round(Math.max(component.calcStyleNumber("border-width", Orientation.HORIZONTAL, 0), 0)) : 0;
-        setLocation(component.startX.calcInt() - bw, component.startY.calcInt() - bw);
+        final java.awt.Container p = getParent();
+        final int bw = component.getColor("border-color").alpha > 0 ? Math.round(Math.max(component.calcStyleNumber("border-width", Orientation.HORIZONTAL, 0), 0)) : 0, o = p instanceof SwingComponent ? ((SwingComponent) p).offset : 0;
+        setLocation(component.startX.calcInt() - bw + o, component.startY.calcInt() - bw + o);
         setSize(component.width.calcInt() + bw * 2, component.height.calcInt() + bw * 2);
         offset = bw;
     }
@@ -199,14 +217,14 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         if (listeners != null)
             for (final EventListener li : listeners)
                 component.removeEventListener(li);
-        if (directListeners != null)
-            for (final EventListener li : directListeners)
-                component.removeDirectEventListener(li);
+        if (listeners2 != null)
+            for (final EventListener li : listeners2)
+                component.removeEventListener(li);
     }
 
     @Override
     protected void paintComponent(final Graphics graphics) {
-        final Graphics2D g = (Graphics2D) graphics;
+        final Graphics2D g = (Graphics2D) graphics.create();
         g.setRenderingHints(SwingFramework.BEST);
         g.translate(offset, offset);
         component.paint(new SwingContext(g));

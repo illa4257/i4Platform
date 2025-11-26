@@ -1,10 +1,6 @@
 package illa4257.i4Framework.swing;
 
-import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.components.Component;
-import illa4257.i4Framework.base.components.Container;
-import illa4257.i4Framework.base.events.components.AddComponentEvent;
-import illa4257.i4Framework.base.events.components.RemoveComponentEvent;
 import illa4257.i4Framework.base.events.dnd.DroppedEvent;
 import illa4257.i4Utils.logger.i4Logger;
 
@@ -25,28 +21,6 @@ public interface ISwingComponent {
             if (co instanceof SwingComponent && ((SwingComponent) co).getComponent() == c)
                 return (SwingComponent) co;
         return null;
-    }
-
-    @SuppressWarnings("rawtypes")
-    static EventListener[] registerContainer(final java.awt.Container t, Container c) {
-        return new EventListener[] {
-            c.addEventListener(AddComponentEvent.class, e -> {
-                if (e.container != c || getComponent(t, e.child) != null)
-                    return;
-                final SwingComponent co = new SwingComponent(e.child);
-                t.add(co, 0);
-                co.repaint();
-            }),
-            c.addEventListener(RemoveComponentEvent.class, e -> {
-                if (e.container != c)
-                    return;
-                final SwingComponent co = getComponent(t, e.child);
-                if (co == null)
-                    return;
-                t.remove(co);
-                co.dispose();
-            })
-        };
     }
 
     static DropTarget wrapDropTarget(final Component component) {
