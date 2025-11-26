@@ -144,8 +144,20 @@ public class Component extends Destructor {
             if (e.component == this)
                 setPseudoClass("focus", e.value);
         });
-        addEventListener(MouseEnterEvent.class, e -> fire(new HoverEvent(this, true)));
-        addEventListener(MouseLeaveEvent.class, e -> fire(new HoverEvent(this, false)));
+        addEventListener(MouseEnterEvent.class, e -> {
+            if (e.component == this) {
+                setPseudoClass("hover", true);
+                fire(new HoverEvent(this, true));
+            }
+            setPseudoClass("hover-within", true);
+        });
+        addEventListener(MouseLeaveEvent.class, e -> {
+            if (e.component == this) {
+                setPseudoClass("hover", false);
+                fire(new HoverEvent(this, false));
+            }
+            setPseudoClass("hover-within", pseudoClasses.contains("hover"));
+        });
     }
 
     public boolean isVisible() { return visible; }
