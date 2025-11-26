@@ -107,7 +107,7 @@ public class WindowFrame extends Container {
             cx = startX.calcFloat();
             cy = startY.calcFloat();
             notHolding = false;
-            fire(new ChangeZ(0));
+            fire(new ChangeZ(this, 0));
             repaint();
         });
         titleBar.addEventListener(MouseMoveEvent.class, e -> {

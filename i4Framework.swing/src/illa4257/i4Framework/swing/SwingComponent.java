@@ -121,19 +121,27 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         });
 
         listeners = new EventListener[] {
-                component.addEventListener(RecalculateEvent.class, e -> updateLS(null)),
+                component.addEventListener(RecalculateEvent.class, e -> {
+                    if (e.component == component)
+                        updateLS(null);
+                }),
                 component.addEventListener(RepaintEvent.class, e -> repaint()),
                 component.addEventListener(FocusEvent.class, e -> {
-                    if (e.value)
+                    if (e.component == component && e.value)
                         requestFocus();
                 }),
                 component.addEventListener(ChangeZ.class, e -> {
+                    if (e.component != component)
+                        return;
                     final java.awt.Container p = getParent();
                     if (p == null)
                         return;
                     p.setComponentZOrder(this, e.z);
                 }),
-                component.addEventListener(VisibleEvent.class, e -> setVisible(e.value))
+                component.addEventListener(VisibleEvent.class, e -> {
+                    if (e.component == component)
+                        setVisible(e.value);
+                })
         };
 
         if (component instanceof Container) {

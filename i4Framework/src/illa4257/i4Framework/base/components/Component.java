@@ -136,8 +136,14 @@ public class Component extends Destructor {
                 cons.getValue().accept(getStyle(cons.getKey()));
             repaint();
         });
-        addEventListener(HoverEvent.class, e -> setPseudoClass("hover", e.value));
-        addEventListener(FocusEvent.class, e -> setPseudoClass("focus", e.value));
+        addEventListener(HoverEvent.class, e -> {
+            if (e.component == this)
+                setPseudoClass("hover", e.value);
+        });
+        addEventListener(FocusEvent.class, e -> {
+            if (e.component == this)
+                setPseudoClass("focus", e.value);
+        });
         addEventListener(MouseEnterEvent.class, e -> fire(new HoverEvent(this, true)));
         addEventListener(MouseLeaveEvent.class, e -> fire(new HoverEvent(this, false)));
     }
@@ -332,7 +338,10 @@ public class Component extends Destructor {
             if (isFocusable == newValue)
                 return;
             if (newValue)
-                focusListeners.add(addEventListener(MouseDownEvent.class, e -> requestFocus()));
+                focusListeners.add(addEventListener(MouseDownEvent.class, e -> {
+                    if (e.component == this)
+                        requestFocus();
+                }));
             else {
                 removeEventListeners(focusListeners);
                 focusListeners.clear();

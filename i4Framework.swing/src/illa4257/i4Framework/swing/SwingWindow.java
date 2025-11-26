@@ -125,25 +125,33 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
 
     @SuppressWarnings("rawtypes")
     private EventListener[] registerListeners() {
-        window.addDirectEventListener(ChangeTextEvent.class, e -> setTitle(String.valueOf(e.newValue)));
+        window.addDirectEventListener(ChangeTextEvent.class, e -> {
+            if (e.component == SwingWindow.this.window)
+                setTitle(String.valueOf(e.newValue));
+        });
         window.addDirectEventListener(VisibleEvent.class, e -> {
-            if (isVisible() != e.value)
+            if (e.component == SwingWindow.this.window && isVisible() != e.value)
                 setVisible(e.value);
         });
         window.addDirectEventListener(ChangePointEvent.class, e -> {
-            if (e.isSystem)
+            if (e.component != SwingWindow.this.window || e.isSystem)
                 return;
             setSize(window.width.calcInt(), window.height.calcInt());
         });
         return new EventListener[] {
                 window.addEventListener(FocusEvent.class, e -> {
-                    if (e.value && !isFocused()) {
+                    if (e.component == SwingWindow.this.window && e.value && !isFocused()) {
                         toFront();
                         requestFocus();
                     }
                 }),
-                window.addEventListener(RepaintEvent.class, e -> repaint()),
-                window.addDirectEventListener(CenterWindowEvent.class, event -> {
+                window.addEventListener(RepaintEvent.class, e -> {
+                    if (e.component == SwingWindow.this.window)
+                        repaint();
+                }),
+                window.addDirectEventListener(CenterWindowEvent.class, e -> {
+                    if (e.component != SwingWindow.this.window)
+                        return;
                     if (isVisible())
                         setLocationRelativeTo(null);
                     else

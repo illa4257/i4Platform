@@ -5,6 +5,6 @@ import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.SingleEvent;
 
 public class StyleUpdateEvent extends Event implements SingleEvent {
-    public StyleUpdateEvent(final Component component) { super(component); }
-    public StyleUpdateEvent(final Component component, final boolean isSystem) { super(component, isSystem); }
+    public StyleUpdateEvent(final Component component) { super(component); isParentPrevented = true; }
+    public StyleUpdateEvent(final Component component, final boolean isSystem) { super(component, isSystem); isParentPrevented = true; }
 }

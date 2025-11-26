@@ -5,6 +5,6 @@ import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.SingleEvent;
 
 public class RepaintEvent extends Event implements SingleEvent {
-    public RepaintEvent(final Component component) { super(component); }
-    public RepaintEvent(final Component component, final boolean isSystem) { super(component, isSystem); }
+    public RepaintEvent(final Component component) { super(component); isParentPrevented = true; }
+    public RepaintEvent(final Component component, final boolean isSystem) { super(component, isSystem); isParentPrevented = true; }
 }

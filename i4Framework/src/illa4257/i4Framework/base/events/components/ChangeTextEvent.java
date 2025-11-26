@@ -9,12 +9,14 @@ public class ChangeTextEvent extends Event implements SingleEvent {
 
     public ChangeTextEvent(final Component component, final Object oldValue, final Object newValue) {
         super(component);
+        isParentPrevented = true;
         this.oldValue = oldValue;
         this.newValue = newValue;
     }
 
     public ChangeTextEvent(final Component component, final Object oldValue, final Object newValue, final boolean isSystem) {
         super(component, isSystem);
+        isParentPrevented = true;
         this.oldValue = oldValue;
         this.newValue = newValue;
     }

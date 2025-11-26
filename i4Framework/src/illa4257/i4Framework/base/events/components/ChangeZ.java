@@ -1,21 +1,10 @@
 package illa4257.i4Framework.base.events.components;
 
+import illa4257.i4Framework.base.components.Component;
+import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.SingleEvent;
 
-public class ChangeZ implements SingleEvent {
-    public boolean isPrevented = false, isParentPrevented = true;
+public class ChangeZ extends Event implements SingleEvent {
     public final int z;
-
-    public ChangeZ(final int z) { this.z = z; }
-
-    @Override
-    public boolean isSystem() {
-        return false;
-    }
-
-    @Override public boolean isPrevented() { return isPrevented; }
-    @Override public boolean isParentPrevented() { return isParentPrevented || isPrevented; }
-
-    public ChangeZ prevent(final boolean prevent) { isPrevented = prevent; return this; }
-    public ChangeZ parentPrevent(final boolean prevent) { isParentPrevented = prevent; return this; }
+    public ChangeZ(final Component component, final int z) { super(component); isParentPrevented = true; this.z = z; }
 }

@@ -7,5 +7,5 @@ import illa4257.i4Framework.base.events.SingleEvent;
 public class VisibleEvent extends Event implements SingleEvent {
     public final boolean value;
 
-    public VisibleEvent(final Component component, final boolean newValue) { super(component); value = newValue; }
+    public VisibleEvent(final Component component, final boolean newValue) { super(component); isParentPrevented = true; value = newValue; }
 }
