@@ -14,12 +14,15 @@ import illa4257.i4Framework.base.points.PointAttach;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.points.ops.PPointMin;
 
+import java.util.function.Function;
+
 import static illa4257.i4Framework.base.math.Unit.DP;
 
 public class ComboBox<T> extends TextField {
     private final ScrollPane optionsPane = new ScrollPane();
     private volatile Context ctx;
     public volatile Iterable<T> options = null;
+    public volatile Function<T, String> formatter = String::valueOf;
     private volatile T selected = null;
 
     private final Point contextHeight = new NumberPointMultiplier(256, densityMultiplier);
@@ -46,6 +49,9 @@ public class ComboBox<T> extends TextField {
         final Iterable<T> iter = options;
         if (w == null || c == null)
             return;
+        Function<T, String> f = formatter;
+        if (formatter == null)
+            f = String::valueOf;
         optionsPane.setStartX(windowStartX);
         optionsPane.setWidth(width);
 
@@ -53,15 +59,16 @@ public class ComboBox<T> extends TextField {
         op.setWidth(optionsPane.viewableWidth);
         boolean hasOptions = false;
         if (iter != null) {
+            final Function<T, String> format = f;
             Point ly = null;
             for (final T o : iter) {
-                final Button btn = new Button(o);
+                final Button btn = new Button(format.apply(o));
                 btn.setStartY(ly);
                 btn.setEndX(op.width);
                 btn.setHeight(24, DP);
                 btn.addEventListener(ActionEvent.class, e -> {
                     text.clear();
-                    text.add(String.valueOf(o));
+                    text.add(format.apply(o));
                     optionsPane.remove();
                     selected = o;
                     index.set(text.size());
