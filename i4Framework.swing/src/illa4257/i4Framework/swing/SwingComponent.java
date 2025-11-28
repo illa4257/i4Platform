@@ -141,6 +141,9 @@ public class SwingComponent extends JComponent implements ISwingComponent {
                 component.addEventListener(VisibleEvent.class, e -> {
                     if (e.component == component)
                         setVisible(e.value);
+                }),
+                component.addEventListener(StyleUpdateEvent.class, e -> {
+                    updateLS(null);
                 })
         };
 
@@ -184,9 +187,13 @@ public class SwingComponent extends JComponent implements ISwingComponent {
             setCursor(getPredefinedCursor(DEFAULT_CURSOR));
     }
 
+    private int getBorderWidth() {
+        return component.getColor("border-color").alpha > 0 ? Math.round(Math.max(component.calcStyleNumber("border-width", Orientation.HORIZONTAL, 0), 0)) : 0;
+    }
+
     private void updateLS(final StyleSetting ignored) {
         final java.awt.Container p = getParent();
-        final int bw = component.getColor("border-color").alpha > 0 ? Math.round(Math.max(component.calcStyleNumber("border-width", Orientation.HORIZONTAL, 0), 0)) : 0, o = p instanceof SwingComponent ? ((SwingComponent) p).offset : 0;
+        final int bw = getBorderWidth(), o = p instanceof SwingComponent ? ((SwingComponent) p).getBorderWidth() : 0;
         setLocation(component.startX.calcInt() - bw + o, component.startY.calcInt() - bw + o);
         setSize(component.width.calcInt() + bw * 2, component.height.calcInt() + bw * 2);
         offset = bw;

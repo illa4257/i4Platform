@@ -12,9 +12,11 @@ import java.io.InputStream;
 
 public class SwingContext implements Context {
     public final Graphics2D graphics;
+    public final Shape clip;
 
     public SwingContext(final Graphics2D g) {
         graphics = g;
+        clip = g.getClip();
         g.setRenderingHints(SwingFramework.current);
         g.setFont(SwingFramework.font);
     }
@@ -73,6 +75,8 @@ public class SwingContext implements Context {
     @Override
     public void setClip(final IPath path) {
         graphics.setClip(((SwingPath) path).path);
+        if (clip != null)
+            graphics.clip(clip);
     }
 
     @Override
