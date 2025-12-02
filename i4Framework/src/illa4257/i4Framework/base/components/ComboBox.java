@@ -59,6 +59,16 @@ public class ComboBox<T> extends TextField {
         repaint();
     }
 
+    public void select(final T element) {
+        selected = element;
+        final Iterable<T> opts = options;
+        selectionIndex.set(element != null && opts != null ? MiniUtil.indexOf(element, opts) : 0);
+        final Function<T, String> format = formatter;
+        text.clear();
+        text.add(format != null ? format.apply(element) : String.valueOf(element));
+        repaint();
+    }
+
     private void showOptions() {
         final Window w = getWindow();
         final Context c = ctx;
