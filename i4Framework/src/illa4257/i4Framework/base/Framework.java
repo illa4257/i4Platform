@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
 public abstract class Framework implements ResourceProvider {
+    private static final boolean IS_DEV = "dev".equals(System.getProperty("env", "production"));
     private static final ConcurrentLinkedQueue<Framework> frameworks = new ConcurrentLinkedQueue<>();
 
     public static void registerFramework(final Framework framework) {
@@ -145,4 +146,6 @@ public abstract class Framework implements ResourceProvider {
 
     public String getClipboardText() { return null; }
     public boolean setClipboardText(final CharSequence seq) { return false; }
+
+    public boolean isDev() { return IS_DEV; }
 }
