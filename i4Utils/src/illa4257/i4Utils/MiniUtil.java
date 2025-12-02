@@ -7,10 +7,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 
 public class MiniUtil {
@@ -79,8 +76,28 @@ public class MiniUtil {
         return map;
     }
 
+    public static <T> int indexOf(final T element, final Iterator<T> iterator) {
+        int i = 0;
+        while (iterator.hasNext()) {
+            if (Objects.equals(iterator.next(), element))
+                return i;
+            i++;
+        }
+        return -1;
+    }
+
+    public static <T> int indexOf(final T element, final Iterable<T> iterable) {
+        int i = 0;
+        for (final T e : iterable) {
+            if (Objects.equals(element, e))
+                return i;
+            i++;
+        }
+        return -1;
+    }
+
     @SafeVarargs
-    public static <T> int indexOf(final T element, T... elements) {
+    public static <T> int indexOfVarArgs(final T element, T... elements) {
         int i = 0;
         for (final T e : elements) {
             if (Objects.equals(element, e))
@@ -88,5 +105,26 @@ public class MiniUtil {
             i++;
         }
         return -1;
+    }
+
+    public static <T> T get(final Iterator<T> iter, final int index) {
+        if (index < 0)
+            throw new IndexOutOfBoundsException("Index out of range: " + index);
+        int i = 0;
+        for (; i < index; i++)
+            if (!iter.hasNext())
+                throw new IndexOutOfBoundsException("Index out of range: " + index + ", max: " + i);
+        if (!iter.hasNext())
+            throw new IndexOutOfBoundsException("Index out of range: " + index + ", max: " + i);
+        return iter.next();
+    }
+
+    public static <T> T get(final Iterable<T> iter, final int index) { return get(iter.iterator(), index); }
+
+    public static boolean inRange(final float x, final float y, float range) {
+        if (range < 0)
+            range = -range;
+        final float d = x - y;
+        return d < 0 ? -d < range : d < range;
     }
 }
