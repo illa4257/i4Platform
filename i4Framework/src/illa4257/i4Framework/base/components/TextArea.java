@@ -12,6 +12,7 @@ import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.points.PointAttach;
 import illa4257.i4Utils.lists.MutableCharArray;
+import illa4257.i4Utils.str.Str;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -300,5 +301,14 @@ public class TextArea extends Container {
     public void onDestruct() {
         super.onDestruct();
         densityMultiplier.unsubscribe(this::reCalcRequest);
+    }
+
+    public String getText() {
+        final StringBuilder b = Str.builder();
+        try {
+            return Str.join(b, System.lineSeparator(), lines, s -> s).toString();
+        } finally {
+            Str.recycle(b);
+        }
     }
 }
