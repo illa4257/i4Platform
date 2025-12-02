@@ -581,35 +581,34 @@ public class Component extends Destructor {
         fire(new VisibleEvent(this, visible));
     }
 
-    private boolean aSet(final PointSet set, final float offset, final Point target) {
-        final Point p = set.get();
-        if (!(p instanceof PointAttach))
-            return true;
-        final PointAttach a = (PointAttach) p;
-        return a.value != offset || a.getPoint() != target;
-    }
+    private volatile boolean lastX = false, lastY = false;
 
     public void setStartX(final Point point) {
+        lastX = false;
         startX.set(point);
         fire(new ChangePointEvent(this));
     }
 
     public void setStartY(final Point point) {
+        lastY = false;
         startY.set(point);
         fire(new ChangePointEvent(this));
     }
 
     public void setEndX(final Point point) {
+        lastX = true;
         endX.set(point);
         fire(new ChangePointEvent(this));
     }
 
     public void setEndY(final Point point) {
+        lastY = true;
         endY.set(point);
         fire(new ChangePointEvent(this));
     }
 
     public void setX(final float x, final Unit unit) {
+        lastX = false;
         if (unit == Unit.DP)
             startX.set(new NumberPointMultiplier(densityMultiplier, x));
         else
@@ -618,11 +617,13 @@ public class Component extends Destructor {
     }
 
     public void setX(final float x) {
+        lastX = false;
         startX.set(new PointAttach(x, null));
         fire(new ChangePointEvent(this));
     }
 
     public void setY(final float y, final Unit unit) {
+        lastY = false;
         if (unit == Unit.DP)
             startY.set(new NumberPointMultiplier(densityMultiplier, y));
         else
@@ -631,49 +632,70 @@ public class Component extends Destructor {
     }
 
     public void setY(final float y) {
+        lastY = false;
         startY.set(new PointAttach(y, null));
         fire(new ChangePointEvent(this));
     }
 
     public void setLocation(final float x, final float y) {
+        lastX = false;
+        lastY = false;
         startX.set(new PointAttach(x, null));
         startY.set(new PointAttach(y, null));
         fire(new ChangePointEvent(this));
     }
 
     public void setWidth(final Point width) {
-        endX.set(new PPointAdd(startX, width));
+        if (lastX)
+            startX.set(new PPointSubtract(endX, width));
+        else
+            endX.set(new PPointAdd(startX, width));
         fire(new ChangePointEvent(this));
     }
 
     public void setWidth(final float width, final Unit unit) {
-        if (unit == Unit.DP)
-            endX.set(new PPointAdd(new NumberPointMultiplier(densityMultiplier, width), startX));
+        if (lastX)
+            startX.set(
+                    unit == Unit.DP ? new PPointSubtract(endX, new NumberPointMultiplier(densityMultiplier, width)) :
+                            new PointAttach(-width, endX)
+            );
+        else
+            endX.set(
+                    unit == Unit.DP ? new PPointAdd(startX, new NumberPointMultiplier(densityMultiplier, width)) :
+                            new PointAttach(width, startX)
+            );
+        fire(new ChangePointEvent(this));
+    }
+
+    public void setWidth(final float width) {
+        if (lastX)
+            startX.set(new PointAttach(-width, endX));
         else
             endX.set(new PointAttach(width, startX));
         fire(new ChangePointEvent(this));
     }
 
-    public void setWidth(final float width) {
-        endX.set(new PointAttach(width, startX));
-        fire(new ChangePointEvent(this));
-    }
-
     public void setHeight(final Point height) {
-        endY.set(new PPointAdd(startY, height));
+        if (lastY)
+            startY.set(new PPointSubtract(endY, height));
+        else
+            endY.set(new PPointAdd(startY, height));
         fire(new ChangePointEvent(this));
     }
 
     public void setHeight(final float height, final Unit unit) {
-        if (unit == Unit.DP)
-            endY.set(new PPointAdd(new NumberPointMultiplier(densityMultiplier, height), startY));
+        if (lastY)
+            startY.set(unit == Unit.DP ? new PPointAdd(endY, new NumberPointMultiplier(densityMultiplier, height)) : new PointAttach(-height, endY));
         else
-            endY.set(new PointAttach(height, startY));
+            endY.set(unit == Unit.DP ? new PPointAdd(new NumberPointMultiplier(densityMultiplier, height), startY) : new PointAttach(height, startY));
         fire(new ChangePointEvent(this));
     }
 
     public void setHeight(final float height) {
-        endY.set(new PointAttach(height, startY));
+        if (lastY)
+            startY.set(new PointAttach(-height, endY));
+        else
+            endY.set(new PointAttach(height, startY));
         fire(new ChangePointEvent(this));
     }
 
@@ -681,12 +703,26 @@ public class Component extends Destructor {
         setSize(width, height, false);
     }
 
+    private boolean aSet(final PointSet set, final float offset, final Point target) {
+        final Point p = set.get();
+        if (!(p instanceof PointAttach))
+            return true;
+        final PointAttach a = (PointAttach) p;
+        return a.value != offset || a.getPoint() != target;
+    }
+
     @SuppressWarnings("AssignmentUsedAsCondition")
     public void setSize(final float width, final float height, final boolean isSystem) {
         final boolean x, y;
-        if (x = aSet(endX, width, startX))
+        if (lastX) {
+            if (x = aSet(startX, -width, endX))
+                startX.set(new PointAttach(-width, endX));
+        } else if (x = aSet(endX, width, startX))
             endX.set(new PointAttach(width, startX));
-        if (y = aSet(endY, height, startY))
+        if (lastY) {
+            if (y = aSet(startY, -height, endY))
+                startY.set(new PointAttach(-height, endY));
+        } else if (y = aSet(endY, height, startY))
             endY.set(new PointAttach(height, startY));
         if (x || y)
             fire(new ChangePointEvent(this, isSystem));
