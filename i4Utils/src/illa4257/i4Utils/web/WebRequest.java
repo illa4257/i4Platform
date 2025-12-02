@@ -123,6 +123,11 @@ public class WebRequest {
         return this;
     }
 
+    public WebRequest setBody(final FormDataBuilder formData) {
+        setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+        return setBody(formData.toBytes());
+    }
+
     public WebRequest chunked() {
         hasContent = true;
         bodyOutput = null;
