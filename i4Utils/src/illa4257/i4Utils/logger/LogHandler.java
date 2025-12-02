@@ -7,6 +7,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.CompletionException;
+import java.util.function.Function;
 
 public abstract class LogHandler implements ILogHandler {
     public final ThreadLocal<StringBuilder> stringBuilder = ThreadLocal.withInitial(StringBuilder::new);
@@ -35,7 +36,7 @@ public abstract class LogHandler implements ILogHandler {
 
     @Override
     public void log(final Level level, final String prefix, final Object... objects) {
-        log(level, prefix, objects == null ? "null" : Str.join(" ", new ArrIterable<>(objects), Objects::toString));
+        log(level, prefix, objects == null ? "null" : Str.join(" ", new ArrIterable<>(objects), (Function<Object, CharSequence>) Objects::toString));
     }
 
     @Override
