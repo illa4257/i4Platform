@@ -123,6 +123,14 @@ public class Color {
         return Math.round(alpha * 255) << 24 | Math.round(red * 255) << 16 | Math.round(green * 255) << 8 | Math.round(blue * 255);
     }
 
+    public String toHexRGB() {
+        return String.format("#%02X%02X%02X", (int) (red * 255), (int) (green * 255), (int) (blue * 255));
+    }
+
+    public String toHexRGBA() {
+        return String.format("#%02X%02X%02X%02X", (int) (red * 255), (int) (green * 255), (int) (blue * 255), (int) (alpha * 255));
+    }
+
     public java.awt.Color toAwtColor() {
         return new java.awt.Color(
                 Math.round(red * 255),
