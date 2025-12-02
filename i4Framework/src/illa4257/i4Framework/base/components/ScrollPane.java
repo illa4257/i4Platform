@@ -7,7 +7,6 @@ import illa4257.i4Framework.base.events.components.RecalculateEvent;
 import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
 import illa4257.i4Framework.base.events.mouse.MouseScrollEvent;
 import illa4257.i4Framework.base.math.Orientation;
-import illa4257.i4Framework.base.events.components.ChangePointEvent;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.numbers.NumberPoint;
 
@@ -111,7 +110,7 @@ public class ScrollPane extends Container {
         addEventListener(RecalculateEvent.class, e -> fire(new ReCalcBars(this, true)));
     }
 
-    private final EventListener<ChangePointEvent> l = e -> fire(new ReCalcBars(this, true));
+    private final EventListener<RecalculateEvent> l = e -> fire(new ReCalcBars(this, true));
 
     public void setContent(final Container container) {
         synchronized (locker) {
@@ -120,7 +119,7 @@ public class ScrollPane extends Container {
                 remove(c);
             }
             if (add(c = container))
-                container.addEventListener(ChangePointEvent.class, l);
+                container.addEventListener(RecalculateEvent.class, l);
             vBar.setScroll(0);
             hBar.setScroll(0);
             fire(new ReCalcBars(this, true));
