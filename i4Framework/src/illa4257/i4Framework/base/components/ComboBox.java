@@ -7,6 +7,7 @@ import illa4257.i4Framework.base.events.components.FocusEvent;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchDownEvent;
 import illa4257.i4Framework.base.points.PPointSubtract;
+import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.points.Point;
@@ -43,6 +44,21 @@ public class ComboBox<T> extends TextField {
 
     public T getSelected() { return selected; }
 
+    public void select(final int index) {
+        final Iterable<T> opts = options;
+        T s = null;
+        if (opts != null)
+            try {
+                s = MiniUtil.get(opts, index);
+            } catch (final IndexOutOfBoundsException ignored) {}
+        selected = s;
+        selectionIndex.set(s != null ? index : 0);
+        final Function<T, String> format = formatter;
+        text.clear();
+        text.add(format != null ? format.apply(s) : String.valueOf(s));
+        repaint();
+    }
+
     private void showOptions() {
         final Window w = getWindow();
         final Context c = ctx;
@@ -74,6 +90,7 @@ public class ComboBox<T> extends TextField {
                     index.set(text.size());
                     requestFocus();
                     repaint();
+                    fire(new ActionEvent(this));
                 });
                 op.add(btn);
                 ly = btn.endY;
