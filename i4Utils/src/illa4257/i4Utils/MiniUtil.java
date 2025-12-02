@@ -114,6 +114,8 @@ public class MiniUtil {
         for (; i < index; i++)
             if (!iter.hasNext())
                 throw new IndexOutOfBoundsException("Index out of range: " + index + ", max: " + i);
+            else
+                iter.next();
         if (!iter.hasNext())
             throw new IndexOutOfBoundsException("Index out of range: " + index + ", max: " + i);
         return iter.next();
