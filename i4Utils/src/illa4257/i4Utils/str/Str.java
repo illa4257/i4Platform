@@ -5,6 +5,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public class Str {
@@ -81,6 +82,17 @@ public class Str {
         return builder;
     }
 
+    public static <T> StringBuilder join(final StringBuilder builder, final CharSequence delimiter, final Iterator<T> iter, final BiConsumer<T, StringBuilder> func) {
+        if (iter == null)
+            return builder;
+        if (!iter.hasNext())
+            return builder;
+        func.accept(iter.next(), builder);
+        while (iter.hasNext())
+            func.accept(iter.next(), builder.append(delimiter));
+        return builder;
+    }
+
     public static <T> StringBuilder join(final StringBuilder builder, final CharSequence delimiter, final Iterable<T> items, final Function<T, CharSequence> func) {
         if (items == null)
             return builder;
@@ -93,6 +105,18 @@ public class Str {
         return builder;
     }
 
+    public static <T> StringBuilder join(final StringBuilder builder, final CharSequence delimiter, final Iterable<T> items, final BiConsumer<T, StringBuilder> func) {
+        if (items == null)
+            return builder;
+        final Iterator<T> iter = items.iterator();
+        if (!iter.hasNext())
+            return builder;
+        func.accept(iter.next(), builder);
+        while (iter.hasNext())
+            func.accept(iter.next(), builder.append(delimiter));
+        return builder;
+    }
+
     public static <T> String join(final CharSequence delimiter, final Iterator<T> items, final Function<T, CharSequence> func) {
         final StringBuilder b = builder();
         try {
@@ -102,7 +126,25 @@ public class Str {
         }
     }
 
+    public static <T> String join(final CharSequence delimiter, final Iterator<T> items, final BiConsumer<T, StringBuilder> func) {
+        final StringBuilder b = builder();
+        try {
+            return join(b, delimiter, items, func).toString();
+        } finally {
+            recycle(b);
+        }
+    }
+
     public static <T> String join(final CharSequence delimiter, final Iterable<T> items, final Function<T, CharSequence> func) {
+        final StringBuilder b = builder();
+        try {
+            return join(b, delimiter, items, func).toString();
+        } finally {
+            recycle(b);
+        }
+    }
+
+    public static <T> String join(final CharSequence delimiter, final Iterable<T> items, final BiConsumer<T, StringBuilder> func) {
         final StringBuilder b = builder();
         try {
             return join(b, delimiter, items, func).toString();
