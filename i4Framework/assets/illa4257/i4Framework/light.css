@@ -85,3 +85,9 @@ ProgressBar {
     color: #77F;
     border-radius: 4dp;
 }
+
+CheckBox {
+    cursor: pointer;
+    --check-background-color: #fff;
+    --check-color: #CCF;
+}
