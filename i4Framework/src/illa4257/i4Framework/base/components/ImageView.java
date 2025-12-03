@@ -17,7 +17,7 @@ public class ImageView extends Component {
             return;
         final float w = width.calcFloat(), h = height.calcFloat(),
                 s = Math.min(w / img.width, h / img.height),
-                sw = s * w, sh = s * h;
+                sw = s * img.width, sh = s * img.height;
         ctx.drawImage(img, (w - sw) / 2, (h - sh) / 2, sw, sh);
     }
 }
