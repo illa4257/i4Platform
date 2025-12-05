@@ -66,6 +66,7 @@ public class FileChooser implements IFileChooser {
     private volatile Consumer2<IFileChooser, Boolean> listener = null;
     private volatile List<File> files = Collections.emptyList();
     private volatile File current = null;
+    private volatile Window parentWindow = null;
 
     public FileChooser(final Framework framework) {
         this.framework = framework;
@@ -76,6 +77,9 @@ public class FileChooser implements IFileChooser {
         window.addDirectEventListener(VisibleEvent.class, e -> {
             if (e.value)
                 return;
+            final Window p = parentWindow;
+            if (p != null)
+                p.redirectFocus = null;
             final Consumer2<IFileChooser, Boolean> l = listener;
             if (l != null)
                 l.accept(this, !files.isEmpty());
@@ -213,12 +217,20 @@ public class FileChooser implements IFileChooser {
         pane.repaint();
     }
 
+    @Override
+    public void setParent(final Window parent) {
+        parentWindow = parent;
+    }
+
     @Override public void setOnFinish(final Consumer2<IFileChooser, Boolean> listener) { this.listener = listener; }
 
     public void start() {
         if (window.isVisible())
             return;
         window.setVisible(true);
+        final Window p = parentWindow;
+        if (p != null)
+            p.redirectFocus = window;
         forceRefresh();
     }
 
