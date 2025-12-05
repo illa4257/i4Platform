@@ -263,6 +263,7 @@ public class TextField extends Component {
                         p++;
                     }
                 }
+                repaint();
                 return;
             }
             if (e.keyChar >= 2 && e.keyChar <= 26)
