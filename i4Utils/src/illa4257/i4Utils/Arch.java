@@ -28,7 +28,7 @@ public class Arch {
             } finally {
                 p.destroyForcibly();
             }
-        } catch (final Exception ex) {
+        } catch (final Throwable ex) {
             i4Logger.INSTANCE.log(ex);
         }
         return null;
@@ -38,7 +38,24 @@ public class Arch {
         if (JVM.IS_WINDOWS) {
             String ver = JVM.osVersion;
             if (ver.indexOf('.') == ver.lastIndexOf('.') && ver.indexOf('.') != -1) {
-                final String buildNumber = wmicGet("OS", "BuildNumber");
+                String buildNumber = null;
+                try (final Scanner s = new Scanner(new ProcessBuilder("powershell.exe", "[System.Environment]::OSVersion.Version.Build").redirectErrorStream(true).start().getInputStream())) {
+                    while (s.hasNextLine()) {
+                        final String l = s.nextLine().trim();
+                        if (l.isEmpty() || l.contains(" "))
+                            continue;
+                        try {
+                            Integer.parseInt(l);
+                        } catch (final NumberFormatException ignored) {
+                             continue;
+                        }
+                        buildNumber = l;
+                    }
+                } catch (final Throwable ex) {
+                    i4Logger.INSTANCE.e(ex);
+                }
+                if (buildNumber == null)
+                    buildNumber = wmicGet("OS", "BuildNumber");
                 if (buildNumber != null)
                     ver += '+' + buildNumber;
             }
