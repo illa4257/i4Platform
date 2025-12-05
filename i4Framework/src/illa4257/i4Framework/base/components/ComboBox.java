@@ -65,7 +65,8 @@ public class ComboBox<T> extends TextField {
         selectionIndex.set(element != null && opts != null ? MiniUtil.indexOf(element, opts) : 0);
         final Function<T, String> format = formatter;
         text.clear();
-        text.add(format != null ? format.apply(element) : String.valueOf(element));
+        if (element != null)
+            text.add(format != null ? format.apply(element) : String.valueOf(element));
         repaint();
     }
 
