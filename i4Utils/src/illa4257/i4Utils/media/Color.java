@@ -112,6 +112,19 @@ public class Color {
     public static Color fromRGB(final int rgb) { return new Color(rgb >> 16, rgb >> 8, rgb); }
     public static Color fromARGB(final int argb) { return new Color(argb >> 16, argb >> 8, argb, argb >> 24); }
 
+    /// if ratio is 0 then it returns this color.<br>
+    /// if ratio is 1 then it returns another color.
+    public Color mix(final Color another, float ratio) {
+        ratio = Math.max(0, Math.min(ratio, 1));
+        final float inv = 1 - ratio;
+        return new Color(
+                red * inv + another.red * ratio,
+                green * inv + another.green * ratio,
+                blue * inv + another.blue * ratio,
+                alpha * inv + another.alpha * ratio
+        );
+    }
+
     public Color withAlpha(final float newAlpha) { return new Color(red, green, blue, newAlpha); }
 
     public int redInt() { return Math.round(red * 255); }
