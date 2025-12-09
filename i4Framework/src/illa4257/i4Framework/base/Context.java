@@ -10,6 +10,7 @@ import java.io.InputStream;
 public interface Context {
     default Object font(final InputStream inputStream, final float sz) { return null; }
     default void blur(final boolean blur) {}
+    default void antialiasing(final boolean antialiasing) {}
     default void setFont(final Object font) {}
 
     @SuppressWarnings("unused")

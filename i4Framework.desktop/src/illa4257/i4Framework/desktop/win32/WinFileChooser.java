@@ -3,7 +3,7 @@ package illa4257.i4Framework.desktop.win32;
 import com.sun.jna.Memory;
 import com.sun.jna.WString;
 import illa4257.i4Framework.base.FileChooserFilter;
-import illa4257.i4Framework.base.IFileChooser;
+import illa4257.i4Framework.base.FileChooser;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.desktop.DesktopFramework;
 import illa4257.i4Utils.str.Str;
@@ -17,13 +17,13 @@ import java.util.*;
 
 import static illa4257.i4Framework.desktop.win32.OpenFileNameW.*;
 
-public class WinFileChooser implements IFileChooser {
+public class WinFileChooser implements FileChooser {
     private static final int MAX_PATH = 512, MAX_FILES = 1000, LEN = MAX_FILES * MAX_PATH, BUFF_SZ = LEN * 4 + 1;
 
     private final OpenFileNameW session = new OpenFileNameW();
 
     private volatile boolean isVisible = false, open = true;
-    public volatile Consumer2<IFileChooser, Boolean> listener = null;
+    public volatile Consumer2<FileChooser, Boolean> listener = null;
     private volatile List<File> files = Collections.emptyList();
 
     public WinFileChooser() {
@@ -80,7 +80,7 @@ public class WinFileChooser implements IFileChooser {
             session.lpstrFile.setWideString(0, new File(dir, "*").getAbsolutePath());
     }
 
-    @Override public void setOnFinish(final Consumer2<IFileChooser, Boolean> listener) { this.listener = listener; }
+    @Override public void setOnFinish(final Consumer2<FileChooser, Boolean> listener) { this.listener = listener; }
     @SuppressWarnings("NullableProblems")
     @Override public Iterator<File> iterator() { return files.iterator(); }
 
@@ -111,7 +111,7 @@ public class WinFileChooser implements IFileChooser {
             if (filePaths.isEmpty()) {
                 files = Collections.emptyList();
                 isVisible = false;
-                final Consumer2<IFileChooser, Boolean> listener1 = listener;
+                final Consumer2<FileChooser, Boolean> listener1 = listener;
                 if (listener1 != null)
                     try {
                         listener1.accept(this, false);
@@ -132,7 +132,7 @@ public class WinFileChooser implements IFileChooser {
                 files = fl;
             }
             isVisible = false;
-            final Consumer2<IFileChooser, Boolean> listener1 = listener;
+            final Consumer2<FileChooser, Boolean> listener1 = listener;
             if (listener1 != null)
                 try {
                     listener1.accept(this, true);
@@ -146,17 +146,12 @@ public class WinFileChooser implements IFileChooser {
             i4Logger.INSTANCE.log(Level.ERROR, "WinFileChooser Error: " + err, Thread.currentThread().getStackTrace());
         files = Collections.emptyList();
         isVisible = false;
-        final Consumer2<IFileChooser, Boolean> listener1 = listener;
+        final Consumer2<FileChooser, Boolean> listener1 = listener;
         if (listener1 != null)
             try {
                 listener1.accept(this, false);
             } catch (final Exception ex) {
                 i4Logger.INSTANCE.log(ex);
             }
-    }
-
-    @Override
-    public List<File> getFiles() {
-        return files;
     }
 }

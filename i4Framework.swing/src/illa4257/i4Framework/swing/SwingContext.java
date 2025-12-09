@@ -42,6 +42,11 @@ public class SwingContext implements Context {
     }
 
     @Override
+    public void antialiasing(boolean antialiasing) {
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, antialiasing ? RenderingHints.VALUE_ANTIALIAS_ON : RenderingHints.VALUE_ANTIALIAS_OFF);
+    }
+
+    @Override
     public float charWidth(final char ch) {
         return graphics.getFontMetrics().charWidth(ch);
     }

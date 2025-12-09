@@ -5,7 +5,7 @@ import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.WinDef;
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
-import illa4257.i4Framework.base.IFileChooser;
+import illa4257.i4Framework.base.FileChooser;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Utils.media.Image;
@@ -70,7 +70,7 @@ public abstract class DesktopFramework extends Framework {
     }
 
     @Override
-    public IFileChooser newFileChooser() {
+    public FileChooser newFileChooser() {
         if (Arch.REAL.IS_WINDOWS)
             try {
                 return new WinFileChooser();

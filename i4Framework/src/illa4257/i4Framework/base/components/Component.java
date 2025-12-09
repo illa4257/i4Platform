@@ -543,8 +543,8 @@ public class Component extends Destructor {
             if (r != null) {
                 if (r instanceof Component)
                     ((Component) r).requestFocus();
-                else if (r instanceof IFileChooser)
-                    ((IFileChooser) r).requestFocus();
+                else if (r instanceof FileChooser)
+                    ((FileChooser) r).requestFocus();
                 return;
             }
         }
@@ -741,21 +741,28 @@ public class Component extends Destructor {
             context.setColor(borderColor);
 
             if (borderRadius >= 0.5f) {
-                final int offset = Math.round(borderWidth) % 2 == 1 ? (int) Math.floor(borderWidth / 2) : Math.round(borderWidth / 2);
+                //final int offset = Math.round(borderWidth) % 2 == 1 ? (int) Math.floor(borderWidth / 2) : Math.round(borderWidth / 2);
+                final int offset = Math.round(borderWidth / 2), offset2 = (int) Math.floor(borderWidth / 2);
 
                 context.setStrokeWidth(borderWidth);
 
                 final IPath p = context.newPath();
-                p.begin(borderRadius - offset, -offset); // Start top line
-                p.lineTo(w - borderRadius + offset, -offset); // top line
-                p.arcTo(w + offset, borderRadius - offset, Geom.hPI, 0); // top right
-                p.lineTo(w + offset, h - borderRadius); // right line
-                p.arcTo(w - borderRadius, h + offset, Geom.hPI, 0); // bottom right
-                p.lineTo(borderRadius, h + offset); // bottom line
+                p.begin(borderRadius, -offset); // Start top line
+                p.lineTo(w - borderRadius, -offset); // top line
+                p.arcTo(w + offset2, borderRadius, Geom.hPI, 0); // top right
+
+                p.lineTo(w + offset2, h - borderRadius); // right line
+                p.arcTo(w - borderRadius, h + offset2, Geom.hPI, 0); // bottom right
+
+                p.lineTo(borderRadius, h + offset2); // bottom line
                 p.arcTo(-offset, h - borderRadius, Geom.hPI, 0); // bottom left
-                p.lineTo(-offset, borderRadius - offset); // left line
-                p.arcTo(borderRadius - offset, -offset, Geom.hPI, 0); // top left
+
+                p.lineTo(-offset, borderRadius); // left line
+                p.arcTo(borderRadius, -offset, Geom.hPI, 0); // top left
+
+                context.antialiasing(false);
                 context.draw(p);
+                context.antialiasing(true);
 
                 context.setStrokeWidth(1);
             } else {

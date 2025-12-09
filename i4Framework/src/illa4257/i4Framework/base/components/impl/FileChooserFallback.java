@@ -1,9 +1,10 @@
-package illa4257.i4Framework.base.components;
+package illa4257.i4Framework.base.components.impl;
 
 import illa4257.i4Framework.base.FileChooserFilter;
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
-import illa4257.i4Framework.base.IFileChooser;
+import illa4257.i4Framework.base.FileChooser;
+import illa4257.i4Framework.base.components.*;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.VisibleEvent;
 import illa4257.i4Framework.base.math.Unit;
@@ -20,7 +21,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class FileChooser implements IFileChooser {
+public class FileChooserFallback implements FileChooser {
     private static final int ITEM_HEIGHT = 24;
     private static final Object fileSystemView;
     static {
@@ -40,7 +41,6 @@ public class FileChooser implements IFileChooser {
         return fileSystemView != null ?
                 ((FileSystemView) fileSystemView).getSystemDisplayName(file) : file.getName();
     }
-
 
     public final Framework framework;
     public final FrameworkWindow frameworkWindow;
@@ -63,16 +63,14 @@ public class FileChooser implements IFileChooser {
 
     private volatile boolean open = true, multiSelection = false;
     private volatile String defaultExtension = null;
-    private volatile Consumer2<IFileChooser, Boolean> listener = null;
+    private volatile Consumer2<FileChooser, Boolean> listener = null;
     private volatile List<File> files = Collections.emptyList();
     private volatile File current = null;
     private volatile Window parentWindow = null;
 
-    public FileChooser(final Framework framework) {
+    public FileChooserFallback(final Framework framework) {
         this.framework = framework;
         frameworkWindow = framework.newWindow(window);
-        window.setSize(600, 440);
-        window.center();
 
         window.addDirectEventListener(VisibleEvent.class, e -> {
             if (e.value)
@@ -80,7 +78,7 @@ public class FileChooser implements IFileChooser {
             final Window p = parentWindow;
             if (p != null)
                 p.redirectFocus = null;
-            final Consumer2<IFileChooser, Boolean> l = listener;
+            final Consumer2<FileChooser, Boolean> l = listener;
             if (l != null)
                 l.accept(this, !files.isEmpty());
         });
@@ -128,12 +126,12 @@ public class FileChooser implements IFileChooser {
         confirm.setEndX(new PPointSubtract(window.safeEndX, offset));
         confirm.setEndY(new PPointSubtract(window.safeEndY, offset));
         window.add(confirm);
+
+        window.setSize(600, 440);
+        window.center();
     }
 
-    @Override
-    public void requestFocus() {
-        window.requestFocus();
-    }
+    @Override public void requestFocus() { window.requestFocus(); }
 
     @Override public void setOpen(final boolean open) { this.open = open; }
     @Override public void setMultiSelectionEnabled(final boolean allow) { this.multiSelection = true; }
@@ -211,7 +209,7 @@ public class FileChooser implements IFileChooser {
     }
 
     private void resize() {
-        int y = container.components.isEmpty() ? 0 : container.components.size() * container.components.peek().height.calcInt();
+        int y = container.getComponentCount() == 0 ? 0 : container.getComponentCount() * container.getComponent(0).height.calcInt();
         container.setHeight(y);
         pane.setScroll(0, 0);
         pane.repaint();
@@ -222,7 +220,7 @@ public class FileChooser implements IFileChooser {
         parentWindow = parent;
     }
 
-    @Override public void setOnFinish(final Consumer2<IFileChooser, Boolean> listener) { this.listener = listener; }
+    @Override public void setOnFinish(final Consumer2<FileChooser, Boolean> listener) { this.listener = listener; }
 
     public void start() {
         if (window.isVisible())
@@ -234,10 +232,6 @@ public class FileChooser implements IFileChooser {
         forceRefresh();
     }
 
-    @Override
-    public List<File> getFiles() {
-        return files;
-    }
-
+    @SuppressWarnings("NullableProblems")
     @Override public Iterator<File> iterator() { return files.iterator(); }
 }
