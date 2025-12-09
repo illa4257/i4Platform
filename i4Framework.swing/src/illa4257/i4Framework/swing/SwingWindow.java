@@ -94,6 +94,7 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
                 if (!window.frameworkWindow.setIfNull(this))
                     return;
                 window.link();
+                window.fire(new StyleUpdateEvent(window));
                 pack();
                 framework.add(this);
                 if (center) {
