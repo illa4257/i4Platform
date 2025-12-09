@@ -1,13 +1,16 @@
 package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Framework.base.events.components.RecalculateEvent;
+import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
+import illa4257.i4Framework.base.events.mouse.MouseMoveEvent;
+import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.math.Orientation;
-import illa4257.i4Framework.base.events.components.ChangePointEvent;
 import illa4257.i4Framework.base.events.mouse.MouseScrollEvent;
-import illa4257.i4Framework.base.events.components.RepaintEvent;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ScrollBar extends Component {
@@ -24,24 +27,40 @@ public class ScrollBar extends Component {
 
     private final AtomicBoolean u = new AtomicBoolean(true);
     private final Orientation orientation;
-    private int unitIncrement = 1, min = 0, max = 0, scroll = 0, thumbOffset = 0, thumbLength = 0;
+    private volatile int unitIncrement = 1, min = 0, max = 0, scroll = 0, thumbOffset = 0, thumbLength = 0;
 
     public ScrollBar() { this(Orientation.VERTICAL); }
 
     public ScrollBar(final Orientation orientation) {
         this.orientation = orientation;
-        addEventListener(ChangePointEvent.class, event -> u.set(true));
+        addEventListener(RecalculateEvent.class, event -> u.set(true));
         addEventListener(MouseScrollEvent.class, event -> {
             if (event.orientation != orientation)
                 return;
             final int old = scroll, min = Math.min(this.min, this.max), max = Math.max(this.max, this.min);
+            //noinspection NonAtomicOperationOnVolatileField
             scroll = Math.max(Math.min(scroll + event.scroll * unitIncrement, max), min);
             if (old == scroll)
                 return;
             u.set(true);
             event.parentPrevent(true);
             fire(new ScrollEvent(this, old, scroll));
-            fire(new RepaintEvent(this));
+            repaint();
+        });
+        final ConcurrentHashMap<Integer, Integer> h = new ConcurrentHashMap<>();
+        addEventListener(MouseDownEvent.class, e -> h.put(e.parentPrevent(true).id(), Math.round(orientation == Orientation.HORIZONTAL ? e.x() : e.y())));
+        addEventListener(MouseUpEvent.class, e -> h.remove(e.parentPrevent(true).id()));
+        addEventListener(MouseMoveEvent.class, e -> {
+            final Integer p = h.get(e.id());
+            if (p == null)
+                return;
+            e.parentPrevent(true);
+            final int np = Math.round(orientation == Orientation.HORIZONTAL ? e.x() : e.y()), old = scroll;
+            final float l = (orientation == Orientation.HORIZONTAL ? width : height).calcFloat();
+            scroll = Math.max(min, Math.min(max, old + Math.round((np - p) / (l - thumbLength) * (max - min))));
+            h.computeIfPresent(e.id(), (ignored, ignored1) -> np);
+            fire(new ScrollEvent(this, old, scroll));
+            repaint();
         });
     }
 
