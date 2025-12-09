@@ -1,7 +1,7 @@
 package illa4257.i4Framework.base;
 
 import illa4257.i4Framework.base.components.Component;
-import illa4257.i4Framework.base.components.FileChooser;
+import illa4257.i4Framework.base.components.impl.FileChooserFallback;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Utils.media.Image;
@@ -134,9 +134,9 @@ public abstract class Framework implements ResourceProvider {
     }
 
     public abstract FrameworkWindow newWindow(final Window window);
-    public IFileChooser newFileChooser() { return new FileChooser(this); }
-    public IFileChooser newFileChooser(final Window parent) {
-        final IFileChooser fc = newFileChooser();
+    public FileChooser newFileChooser() { return new FileChooserFallback(this); }
+    public FileChooser newFileChooser(final Window parent) {
+        final FileChooser fc = newFileChooser();
         fc.setParent(parent);
         return fc;
     }
