@@ -129,4 +129,18 @@ public class MiniUtil {
         final float d = x - y;
         return d < 0 ? -d < range : d < range;
     }
+
+    public static <K, V> K getKeyByValue(final Map<K, V> map, final V value) {
+        for (final Map.Entry<K, V> e : map.entrySet())
+            if (value.equals(e.getValue()))
+                return e.getKey();
+        return null;
+    }
+
+    public static <K, V> K getKeyF(final Map<K, V> map, final Function<Map.Entry<K, V>, Boolean> cons) {
+        for (final Map.Entry<K, V> e : map.entrySet())
+            if (cons.apply(e))
+                return e.getKey();
+        return null;
+    }
 }
