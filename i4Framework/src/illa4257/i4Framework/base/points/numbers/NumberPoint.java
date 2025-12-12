@@ -9,6 +9,8 @@ public class NumberPoint extends Point {
     public NumberPoint(final float number) { this.number = number; }
 
     public void set(final float newValue) {
+        if (number == newValue)
+            return;
         number = newValue;
         reset();
     }

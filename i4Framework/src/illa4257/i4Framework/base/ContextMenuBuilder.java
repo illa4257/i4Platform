@@ -4,7 +4,7 @@ import illa4257.i4Framework.base.components.*;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.math.Unit;
 import illa4257.i4Framework.base.points.Point;
-import illa4257.i4Framework.base.points.layout.PointByContent;
+import illa4257.i4Framework.base.points.layout.HeightByContent;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -45,7 +45,7 @@ public class ContextMenuBuilder {
                 window.add(btn);
             }
         window.setWidth(256, Unit.DP);
-        window.setHeight(new PointByContent(0, window));
+        window.setHeight(new HeightByContent(0, window));
         window.setFocusable(true);
         fw.asContextMenu();
         window.setVisible(true);

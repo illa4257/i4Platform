@@ -7,13 +7,13 @@ import illa4257.i4Framework.base.events.components.AddComponentEvent;
 import illa4257.i4Framework.base.events.components.RemoveComponentEvent;
 import illa4257.i4Framework.base.points.Point;
 
-public class PointByContent extends Point {
-    public static final PointByContent ZERO = new PointByContent(0, null);
+public class HeightByContent extends Point {
+    public static final HeightByContent ZERO = new HeightByContent(0, null);
 
     public final float value;
     public final Container container;
 
-    public PointByContent(final float value, final Container container) {
+    public HeightByContent(final float value, final Container container) {
         this.value = value;
         this.container = container;
     }
