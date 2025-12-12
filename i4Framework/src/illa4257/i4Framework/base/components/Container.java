@@ -80,6 +80,11 @@ public class Container extends Component implements Iterable<Component> {
         return r;
     }
 
+    public void toFront(final Component component) {
+        if (components.remove(component))
+            components.offer(component);
+    }
+
     @Override public boolean isFocusable() { return false; }
 
     public Component getComponent(int i) {
