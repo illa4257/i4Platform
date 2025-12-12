@@ -36,13 +36,13 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 @SuppressWarnings("UnusedReturnValue")
 public class Component extends Destructor {
     protected final Object locker = new Object();
     volatile boolean isFocusable = false, visible = true;
-    private final Runnable[] listeners;
 
     public volatile Object redirectFocus = null;
 
@@ -90,14 +90,20 @@ public class Component extends Destructor {
     private final ConcurrentHashMap<String, ConcurrentLinkedQueue<Consumer<StyleSetting>>> subscribedProperties = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Consumer<StyleSetting>> subscribers = new ConcurrentHashMap<>();
 
+    private final AtomicInteger lsx = new AtomicInteger(), lsy = new  AtomicInteger(),
+            lex = new AtomicInteger(), ley = new  AtomicInteger();
+
     public Component() {
         Class<?> c = getClass();
         while ((c.isAnonymousClass() || c.isLocalClass()) && c.getSuperclass() != null)
             c = c.getSuperclass();
         tag.set(c.getSimpleName());
-        listeners = new Runnable[] {
-                () -> fire(new RecalculateEvent(this))
-        };
+        addEventListener(ReCalcCheckEvent.class, e -> {
+            final int sx = Float.floatToIntBits(startX.calcFloat()), sy = Float.floatToIntBits(startY.calcFloat()),
+                    ex = Float.floatToIntBits(endX.calcFloat()), ey = Float.floatToIntBits(endY.calcFloat());
+            if (lsx.getAndSet(sx) != sx || lsy.getAndSet(sy) != sy || lex.getAndSet(ex) != ex || ley.getAndSet(ey) != ey)
+                fire(new RecalculateEvent(Component.this));
+        });
         addEventListener(ChangeParentEvent.class, e -> {
             final Container co = getParent();
             if (co != null) {
@@ -373,16 +379,18 @@ public class Component extends Destructor {
         return p.childFocus(this, this);
     }
 
+    private final Runnable recalcCheck = () -> fire(new ReCalcCheckEvent(Component.this));
+
     @Override
     public void onConstruct() {
-        width.subscribe(listeners[0]);
-        height.subscribe(listeners[0]);
+        width.subscribe(recalcCheck);
+        height.subscribe(recalcCheck);
     }
 
     @Override
     public void onDestruct() {
-        width.unsubscribe(listeners[0]);
-        height.unsubscribe(listeners[0]);
+        width.unsubscribe(recalcCheck);
+        height.unsubscribe(recalcCheck);
     }
 
     public Object getLocker() { return locker; }
@@ -697,6 +705,14 @@ public class Component extends Destructor {
         else
             endY.set(new PointAttach(height, startY));
         fire(new ChangePointEvent(this));
+    }
+
+    public void toFront() {
+        final Container c = getParent();
+        if (c == null)
+            return;
+        if (c.components.remove(this))
+            c.components.offer(this);
     }
 
     public void setSize(final float width, final float height) {
