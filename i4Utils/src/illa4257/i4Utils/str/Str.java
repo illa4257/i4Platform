@@ -185,4 +185,12 @@ public class Str {
                 return true;
         return false;
     }
+
+    public static String sub(final String str, final int beginIndex) {
+        return beginIndex != -1 ? str.substring(beginIndex) : "";
+    }
+
+    public static String sub(final String str, final int beginIndex, final int endIndex) {
+        return endIndex == -1 ? str.substring(beginIndex) : str.substring(beginIndex, endIndex);
+    }
 }
