@@ -8,6 +8,7 @@ import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.FileChooser;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Utils.MiniUtil;
+import illa4257.i4Utils.math.Vector2;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Framework.desktop.cheerpj.CheerpJThemeDetector;
@@ -23,6 +24,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -163,5 +165,9 @@ public abstract class DesktopFramework extends Framework {
             i4Logger.INSTANCE.e(ex);
             return false;
         }
+    }
+
+    public static Vector2 rectToV2(final Rectangle2D rect) {
+        return new Vector2((float) rect.getWidth(), (float) rect.getHeight());
     }
 }

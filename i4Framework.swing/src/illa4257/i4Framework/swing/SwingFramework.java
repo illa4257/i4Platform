@@ -9,11 +9,9 @@ import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Framework.desktop.DesktopFramework;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.logger.i4Logger;
-import illa4257.i4Utils.math.Vector2;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.geom.Rectangle2D;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -155,9 +153,5 @@ public class SwingFramework extends DesktopFramework {
     public void dispose() {
         super.dispose();
         stop();
-    }
-
-    public static Vector2 rectToV2(final Rectangle2D rect) {
-        return new Vector2((float) rect.getWidth(), (float) rect.getHeight());
     }
 }
