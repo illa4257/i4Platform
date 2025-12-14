@@ -14,8 +14,6 @@ import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchDownEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
 import illa4257.i4Utils.media.Color;
-import illa4257.i4Framework.base.graphics.IPath;
-import illa4257.i4Framework.base.utils.Geom;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.math.Unit;
@@ -757,29 +755,9 @@ public class Component extends Destructor {
             context.setColor(borderColor);
 
             if (borderRadius >= 0.5f) {
-                //final int offset = Math.round(borderWidth) % 2 == 1 ? (int) Math.floor(borderWidth / 2) : Math.round(borderWidth / 2);
-                final int offset = Math.round(borderWidth / 2), offset2 = (int) Math.floor(borderWidth / 2);
-
+                final float offset = borderWidth / 2;
                 context.setStrokeWidth(borderWidth);
-
-                final IPath p = context.newPath();
-                p.begin(borderRadius, -offset); // Start top line
-                p.lineTo(w - borderRadius, -offset); // top line
-                p.arcTo(w + offset2, borderRadius, Geom.hPI, 0); // top right
-
-                p.lineTo(w + offset2, h - borderRadius); // right line
-                p.arcTo(w - borderRadius, h + offset2, Geom.hPI, 0); // bottom right
-
-                p.lineTo(borderRadius, h + offset2); // bottom line
-                p.arcTo(-offset, h - borderRadius, Geom.hPI, 0); // bottom left
-
-                p.lineTo(-offset, borderRadius); // left line
-                p.arcTo(borderRadius, -offset, Geom.hPI, 0); // top left
-
-                context.antialiasing(false);
-                context.draw(p);
-                context.antialiasing(true);
-
+                context.draw(context.newRoundShape(-offset, -offset, w + borderWidth, h + borderWidth, borderRadius + borderWidth));
                 context.setStrokeWidth(1);
             } else {
                 context.drawRect(-borderWidth, -borderWidth, w + borderWidth * 2, borderWidth);
@@ -789,23 +767,8 @@ public class Component extends Destructor {
             }
         }
 
-        if (borderRadius >= 0.5f) {
-            final IPath p = context.newPath();
-            final float ew = w - borderRadius, eh = h - borderRadius;
-
-            p.begin(borderRadius, 0);
-            p.lineTo(ew, 0); // Top Line
-            p.arcTo(w, borderRadius, Geom.hPI, borderRadius);
-            p.lineTo(w, eh); // Right line
-            p.arcTo(ew, h, Geom.hPI, borderRadius);
-            p.lineTo(borderRadius, h); // Bottom line
-            p.arcTo(0, eh, Geom.hPI, borderRadius);
-            p.lineTo(0, borderRadius); // Left line
-            p.arcTo(borderRadius, 0, Geom.hPI, borderRadius);
-
-            p.close();
-            context.setClip(p);
-        }
+        if (borderRadius >= 0.5f)
+            context.setClip(context.newRoundShape(0, 0, w, h, borderRadius));
 
         if (bg.alpha > 0) {
             context.setColor(bg);
