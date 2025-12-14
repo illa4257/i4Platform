@@ -1,13 +1,15 @@
 package illa4257.i4Framework.swing;
 
+import illa4257.i4Framework.desktop.DesktopFramework;
+import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.math.Vector2;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.Context;
-import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.desktop.BufImgRef;
 import illa4257.i4Utils.media.Image;
 
 import java.awt.*;
+import java.awt.geom.RoundRectangle2D;
 import java.io.InputStream;
 
 public class SwingContext implements Context {
@@ -53,12 +55,12 @@ public class SwingContext implements Context {
 
     @Override
     public Vector2 bounds(final String string) {
-        return SwingFramework.rectToV2(graphics.getFontMetrics().getStringBounds(string, graphics));
+        return DesktopFramework.rectToV2(graphics.getFontMetrics().getStringBounds(string, graphics));
     }
 
     @Override
     public Vector2 bounds(char[] string) {
-        return SwingFramework.rectToV2(graphics.getFontMetrics().getStringBounds(string, 0, string.length, graphics));
+        return DesktopFramework.rectToV2(graphics.getFontMetrics().getStringBounds(string, 0, string.length, graphics));
     }
 
     @Override
@@ -77,9 +79,19 @@ public class SwingContext implements Context {
         graphics.setStroke(new BasicStroke(newWidth));
     }
 
+    private static Shape unify(final Object shape) {
+        if (shape instanceof SwingPath)
+            return ((SwingPath) shape).path;
+        else if (shape instanceof Shape)
+            return (Shape) shape;
+        else
+            i4Logger.INSTANCE.e("Unknown shape class:", shape.getClass());
+        return null;
+    }
+
     @Override
-    public void setClip(final IPath path) {
-        graphics.setClip(((SwingPath) path).path);
+    public void setClip(final Object path) {
+        graphics.setClip(unify(path));
         if (clip != null)
             graphics.clip(clip);
     }
@@ -90,8 +102,13 @@ public class SwingContext implements Context {
     }
 
     @Override
-    public void draw(final IPath path) {
-        graphics.draw(((SwingPath) path).path);
+    public Object newRoundShape(final float x, final float y, final float w, final float h, final float borderRadius) {
+        return new RoundRectangle2D.Float(x, y, w, h, borderRadius * 2, borderRadius * 2);
+    }
+
+    @Override
+    public void draw(final Object path) {
+        graphics.draw(unify(path));
     }
 
     @Override public void translate(float x, float y) { graphics.translate(x, y); }

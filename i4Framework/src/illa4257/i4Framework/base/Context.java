@@ -1,5 +1,6 @@
 package illa4257.i4Framework.base;
 
+import illa4257.i4Framework.base.utils.Geom;
 import illa4257.i4Utils.math.Vector2;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.graphics.IPath;
@@ -24,13 +25,31 @@ public interface Context {
     void setColor(final Color color);
     float getStrokeWidth();
     void setStrokeWidth(final float newWidth);
-    void setClip(final IPath path);
+    void setClip(final Object path);
     void translate(final float x, final float y);
     void scale(final float x, final float y);
 
     IPath newPath();
 
-    void draw(final IPath path);
+    default Object newRoundShape(final float x, final float y, final float w, final float h, final float borderRadius) {
+        final IPath p = newPath();
+        final float ew = w - borderRadius, eh = h - borderRadius;
+
+        p.begin(borderRadius + x, y);
+        p.lineTo(ew + x, y); // Top Line
+        p.arcTo(w + x, borderRadius + y, Geom.hPI, borderRadius);
+        p.lineTo(w + x, eh + y); // Right line
+        p.arcTo(ew + x, h + y, Geom.hPI, borderRadius);
+        p.lineTo(borderRadius + x, h + y); // Bottom line
+        p.arcTo(x, eh + y, Geom.hPI, borderRadius);
+        p.lineTo(x, borderRadius + y); // Left line
+        p.arcTo(borderRadius + x, y, Geom.hPI, borderRadius);
+
+        p.close();
+        return p;
+    }
+
+    void draw(final Object path);
 
     void drawLine(final float x1, final float y1, final float x2, final float y2);
 
