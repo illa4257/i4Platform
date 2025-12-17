@@ -82,6 +82,7 @@ public class MutableCharArray implements CharSequence {
     @SuppressWarnings("Since15")
     public boolean isEmpty() { synchronized (locker) { return page == null; } }
 
+    @SuppressWarnings("NullableProblems")
     @Override
     public CharSequence subSequence(int i, int i1) {
         return toString().subSequence(i, i1);
@@ -313,8 +314,8 @@ public class MutableCharArray implements CharSequence {
         }
     }
 
-    public void add(final String str) { if (str != null) addDirect(str.toCharArray()); }
-    public void add(final char[] charArray) { addDirect(charArray.clone()); }
+    public void add(final String str) { if (str != null && !str.isEmpty()) addDirect(str.toCharArray()); }
+    public void add(final char[] charArray) { if (charArray.length > 0) addDirect(charArray.clone()); }
     public void addDirect(final char[] charArray) {
         synchronized (locker) {
             if (page == null) {
