@@ -23,6 +23,8 @@ public class PPointAdd extends Point {
             newPoint.subscribe(this::reset);
     }
 
+    public Point getPoint1() { return point1; }
+
     public void setPoint2(final Point newPoint) {
         final Point o = point2;
         if (o != null)
@@ -31,6 +33,8 @@ public class PPointAdd extends Point {
         if (newPoint != null && getLinkNumber() > 0)
             newPoint.subscribe(this::reset);
     }
+
+    public Point getPoint2() { return point2; }
 
     @Override
     public void onConstruct() {
