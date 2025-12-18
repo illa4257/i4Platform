@@ -1,5 +1,6 @@
 package illa4257.i4Framework.base.components;
 
+import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
@@ -18,6 +19,8 @@ public class TabPane extends Container {
     public SyncVar<Tab> current = new SyncVar<>();
 
     private volatile Context lastContext = null;
+
+    public int getSelectedIndex() { return MiniUtil.indexOf(current.get(), tabs); }
 
     public static class Tab {
         public final AtomicBoolean isCloseable;
