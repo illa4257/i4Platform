@@ -7,6 +7,7 @@ import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.FileChooser;
 import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.desktop.awt.AWTFileChooser;
 import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Utils.math.Vector2;
 import illa4257.i4Utils.media.Image;
@@ -37,7 +38,7 @@ public abstract class DesktopFramework extends Framework {
         final FrameworkWindow fw = window.frameworkWindow.get();
         if (fw == null)
             return null;
-        if (fw instanceof JFrame)
+        if (fw instanceof Frame)
             return Native.getWindowPointer((JFrame) fw);
         return null;
     }
@@ -79,6 +80,11 @@ public abstract class DesktopFramework extends Framework {
             } catch (final Throwable ex) {
                 i4Logger.INSTANCE.log(ex);
             }
+        try {
+            return new AWTFileChooser();
+        } catch (final Throwable ex) {
+            i4Logger.INSTANCE.log(ex);
+        }
         return super.newFileChooser();
     }
 

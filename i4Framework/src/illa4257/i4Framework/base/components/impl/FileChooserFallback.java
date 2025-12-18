@@ -13,13 +13,13 @@ import illa4257.i4Framework.base.points.PPointSubtract;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.styling.StyleSetting;
-import illa4257.i4Utils.runnables.Consumer2;
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 public class FileChooserFallback implements FileChooser {
     private static final int ITEM_HEIGHT = 24;
@@ -63,7 +63,7 @@ public class FileChooserFallback implements FileChooser {
 
     private volatile boolean open = true, multiSelection = false;
     private volatile String defaultExtension = null;
-    private volatile Consumer2<FileChooser, Boolean> listener = null;
+    private volatile BiConsumer<FileChooser, Boolean> listener = null;
     private volatile List<File> files = Collections.emptyList();
     private volatile File current = null;
     private volatile Window parentWindow = null;
@@ -78,7 +78,7 @@ public class FileChooserFallback implements FileChooser {
             final Window p = parentWindow;
             if (p != null)
                 p.redirectFocus = null;
-            final Consumer2<FileChooser, Boolean> l = listener;
+            final BiConsumer<FileChooser, Boolean> l = listener;
             if (l != null)
                 l.accept(this, !files.isEmpty());
         });
@@ -220,7 +220,7 @@ public class FileChooserFallback implements FileChooser {
         parentWindow = parent;
     }
 
-    @Override public void setOnFinish(final Consumer2<FileChooser, Boolean> listener) { this.listener = listener; }
+    @Override public void setOnFinish(final BiConsumer<FileChooser, Boolean> listener) { this.listener = listener; }
 
     public void start() {
         if (window.isVisible())
