@@ -76,4 +76,17 @@ public class FileChooserFilter {
     public FileChooserFilter next(final String description, final String... patterns) { return new FileChooserFilter(this, description, patterns); }
     public FileChooserFilter next(final String description, final Iterator<String> patterns) { return new FileChooserFilter(this, description, patterns); }
     public FileChooserFilter next(final String description, final Iterable<String> patterns) { return new FileChooserFilter(this, description, patterns); }
+
+    public boolean check(final String filename) {
+        for (final String pattern : patterns)
+            if (pattern.startsWith("*")) {
+                if (filename.endsWith(pattern.substring(1)))
+                    return true;
+            } else if (pattern.startsWith(".")) {
+                if (filename.endsWith(pattern))
+                    return true;
+            } else if (filename.endsWith("." + pattern))
+                return true;
+        return false;
+    }
 }
