@@ -709,8 +709,7 @@ public class Component extends Destructor {
         final Container c = getParent();
         if (c == null)
             return;
-        if (c.components.remove(this))
-            c.components.offer(this);
+        c.toFront(this);
     }
 
     public void setSize(final float width, final float height) {

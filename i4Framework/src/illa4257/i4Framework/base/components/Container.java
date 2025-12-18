@@ -2,6 +2,7 @@ package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.events.components.*;
+import illa4257.i4Utils.MiniUtil;
 
 import java.util.Iterator;
 import java.util.Spliterator;
@@ -81,8 +82,8 @@ public class Container extends Component implements Iterable<Component> {
     }
 
     public void toFront(final Component component) {
-        if (components.remove(component))
-            components.offer(component);
+        if (components.remove(component) && components.offer(component))
+            component.fire(new ChangeZ(component, MiniUtil.indexOf(component, components)));
     }
 
     @Override public boolean isFocusable() { return false; }
