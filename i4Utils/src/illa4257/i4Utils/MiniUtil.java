@@ -143,4 +143,13 @@ public class MiniUtil {
                 return e.getKey();
         return null;
     }
+
+    public static <K, V> void removeByValue(final Map<K, V> map, final V value) {
+        final Iterator<Map.Entry<K, V>> it = map.entrySet().iterator();
+        while (it.hasNext())
+            if (value.equals(it.next().getValue())) {
+                it.remove();
+                return;
+            }
+    }
 }
