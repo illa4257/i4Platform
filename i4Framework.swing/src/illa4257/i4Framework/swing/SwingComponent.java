@@ -136,7 +136,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
                     final java.awt.Container p = getParent();
                     if (p == null)
                         return;
-                    p.setComponentZOrder(this, e.z);
+                    p.setComponentZOrder(this, p.getComponentCount() - e.z);
                 }),
                 component.addEventListener(VisibleEvent.class, e -> {
                     if (e.component == component)
