@@ -88,6 +88,7 @@ public class AWTFileChooser implements FileChooser {
     public void start() {
         final FileDialog f = dialog;
         f.setVisible(true);
+        f.dispose();
         final BiConsumer<FileChooser, Boolean> l = listener;
         if (l != null)
             l.accept(this, f.getFiles().length != 0);
