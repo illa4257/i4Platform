@@ -152,4 +152,11 @@ public class MiniUtil {
                 return;
             }
     }
+
+    public static <T> T find(final T[] elements, final Function<T, Boolean> func) {
+        for (final T e : elements)
+            if (func.apply(e))
+                return e;
+        return null;
+    }
 }
