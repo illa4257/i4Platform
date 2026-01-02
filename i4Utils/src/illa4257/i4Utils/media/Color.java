@@ -29,7 +29,7 @@ public class Color {
 
                 PURPLE = new Color(.5f, 0, .5f),
 
-                ORANGE = new Color(1f, .78431374f, 0),
+                ORANGE = new Color(1f, .647f, 0),
                 PINK = new Color(1f, .6862745f, .6862745f),
 
                 NAVY_BLUE = new Color(0, 0, .5f);
