@@ -9,51 +9,55 @@ import illa4257.i4Utils.lists.ArrIterator;
 import java.awt.*;
 import java.io.File;
 import java.util.Iterator;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class AWTFileChooser implements FileChooser {
     private final Object lock = new Object();
     public volatile FileDialog dialog = new FileDialog((Frame) null);
-    public volatile BiConsumer<FileChooser, Boolean> listener = null;
+    public volatile Consumer<Boolean> listener = null;
 
     @Override
-    public void setOpen(final boolean open) {
+    public FileChooser setOpen(final boolean open) {
         dialog.setMode(open ? FileDialog.LOAD : FileDialog.SAVE);
+        return this;
     }
 
     @Override
-    public void setMultiSelectionEnabled(final boolean allow) {
+    public FileChooser setMultiSelectionEnabled(final boolean allow) {
         dialog.setMultipleMode(allow);
+        return this;
     }
 
     @Override
-    public void setTitle(final String title) {
+    public FileChooser setTitle(final String title) {
         dialog.setTitle(title);
+        return this;
     }
 
     @Override
-    public void setDefaultExt(final String extension) {
-        if (extension == null || extension.isEmpty())
-            return;
-        dialog.setFile(extension.startsWith("*") ? extension : extension.startsWith(".") ? "*" + extension : "*." + extension);
+    public FileChooser setDefaultExt(final String extension) {
+        if (extension != null && !extension.isEmpty())
+            dialog.setFile(extension.startsWith("*") ? extension : extension.startsWith(".") ? "*" + extension : "*." + extension);
+        return this;
     }
 
     @Override
-    public void setFilter(final FileChooserFilter filters) {
+    public FileChooser setFilter(final FileChooserFilter filters) {
         dialog.setFilenameFilter((dir, name) -> filters.check(name));
+        return this;
     }
 
     @Override
-    public void setParent(final Window parent) {
+    public FileChooser setParent(final Window parent) {
         synchronized (lock) {
             final FileDialog d = dialog, n;
             final FrameworkWindow fw = parent != null ? parent.frameworkWindow.get() : null;
             if (fw == null && d.getOwner() == null)
-                return;
+                return this;
             if (fw instanceof Frame)
                 n = new FileDialog((Frame) fw, d.getTitle());
             else if (d.getOwner() == null)
-                return;
+                return this;
             else
                 n = new FileDialog((Frame) null, d.getTitle());
             n.setMode(d.getMode());
@@ -63,35 +67,31 @@ public class AWTFileChooser implements FileChooser {
             n.setFilenameFilter(d.getFilenameFilter());
             dialog = n;
         }
+        return this;
     }
 
     @Override
-    public void setInitialDir(final File dir) {
+    public FileChooser setInitialDir(final File dir) {
         final FileDialog f = dialog;
         final String d = f.getDirectory();
-        if (d == null || d.isEmpty())
-            return;
-        f.setDirectory(dir != null ? dir.getAbsolutePath() : null);
+        if (d != null && !d.isEmpty())
+            f.setDirectory(dir != null ? dir.getAbsolutePath() : null);
+        return this;
     }
 
     @Override
-    public void setCurrentDir(final File dir) {
+    public FileChooser setCurrentDir(final File dir) {
         dialog.setDirectory(dir != null ? dir.getAbsolutePath() : null);
+        return this;
     }
 
     @Override
-    public void setOnFinish(final BiConsumer<FileChooser, Boolean> listener) {
-        this.listener = listener;
-    }
-
-    @Override
-    public void start() {
+    public void startThen(final Consumer<Boolean> listener) {
         final FileDialog f = dialog;
         f.setVisible(true);
         f.dispose();
-        final BiConsumer<FileChooser, Boolean> l = listener;
-        if (l != null)
-            l.accept(this, f.getFiles().length != 0);
+        if (listener != null)
+            listener.accept(f.getFiles().length != 0);
     }
 
     @SuppressWarnings("NullableProblems")

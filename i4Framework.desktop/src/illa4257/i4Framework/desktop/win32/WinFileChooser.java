@@ -13,7 +13,7 @@ import illa4257.i4Utils.logger.i4Logger;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import static illa4257.i4Framework.desktop.win32.OpenFileNameW.*;
 
@@ -23,7 +23,6 @@ public class WinFileChooser implements FileChooser {
     private final OpenFileNameW session = new OpenFileNameW();
 
     private volatile boolean isVisible = false, open = true;
-    public volatile BiConsumer<FileChooser, Boolean> listener = null;
     private volatile List<File> files = Collections.emptyList();
 
     public WinFileChooser() {
@@ -38,25 +37,28 @@ public class WinFileChooser implements FileChooser {
                 OFN_OVERWRITEPROMPT ;
     }
 
-    @Override public void setOpen(final boolean open) { this.open = open; }
+    @Override public FileChooser setOpen(final boolean open) { this.open = open; return this; }
 
-    @Override public void setMultiSelectionEnabled(final boolean allow) {
+    @Override public FileChooser setMultiSelectionEnabled(final boolean allow) {
         if ((session.Flags & OFN_ALLOWMULTISELECT) == 0 == allow)
             session.Flags ^= OFN_ALLOWMULTISELECT;
+        return this;
     }
-    @Override public void setTitle(final String title) {
+    @Override public FileChooser setTitle(final String title) {
         session.lpstrTitle = title != null ? new WString(title) : null;
+        return this;
     }
 
-    @Override public void setDefaultExt(final String extension) {
+    @Override public FileChooser setDefaultExt(final String extension) {
         session.lpstrDefExt = extension != null ? new WString(extension) : null;
+        return this;
     }
 
     @Override
-    public void setFilter(final FileChooserFilter filters) {
+    public FileChooser setFilter(final FileChooserFilter filters) {
         if (filters == null) {
             session.lpstrFilter = null;
-            return;
+            return this;
         }
         final StringBuilder b = new StringBuilder();
         for (final FileChooserFilter filter : filters.filters) {
@@ -66,26 +68,32 @@ public class WinFileChooser implements FileChooser {
         }
         session.lpstrFilter = new WString(b.toString());
         session.nFilterIndex = filters.selected.get() + 1;
+        return this;
     }
 
-    @Override public void setParent(final Window parent) { session.hwndOwner = DesktopFramework.getWindowPointer(parent); }
+    @Override
+    public FileChooser setParent(final Window parent) {
+        session.hwndOwner = DesktopFramework.getWindowPointer(parent);
+        return this;
+    }
 
-    @Override public void setInitialDir(final File dir) {
+    @Override public FileChooser setInitialDir(final File dir) {
         session.lpstrInitialDir = dir != null ? new WString(dir.getAbsolutePath()) : null;
+        return this;
     }
 
-    @Override public void setCurrentDir(final File dir) {
+    @Override public FileChooser setCurrentDir(final File dir) {
         session.lpstrFile.clear(BUFF_SZ);
         if (dir != null)
             session.lpstrFile.setWideString(0, new File(dir, "*").getAbsolutePath());
+        return this;
     }
 
-    @Override public void setOnFinish(final BiConsumer<FileChooser, Boolean> listener) { this.listener = listener; }
     @SuppressWarnings("NullableProblems")
     @Override public Iterator<File> iterator() { return files.iterator(); }
 
     @Override
-    public void start() {
+    public void startThen(final Consumer<Boolean> listener) {
         if (isVisible)
             return;
         isVisible = true;
@@ -111,12 +119,11 @@ public class WinFileChooser implements FileChooser {
             if (filePaths.isEmpty()) {
                 files = Collections.emptyList();
                 isVisible = false;
-                final BiConsumer<FileChooser, Boolean> listener1 = listener;
-                if (listener1 != null)
+                if (listener != null)
                     try {
-                        listener1.accept(this, false);
-                    } catch (final Exception ex) {
-                        i4Logger.INSTANCE.log(ex);
+                        listener.accept(false);
+                    } catch (final Throwable ex) {
+                        i4Logger.INSTANCE.e(ex);
                     }
                 return;
             }
@@ -132,12 +139,11 @@ public class WinFileChooser implements FileChooser {
                 files = fl;
             }
             isVisible = false;
-            final BiConsumer<FileChooser, Boolean> listener1 = listener;
-            if (listener1 != null)
+            if (listener != null)
                 try {
-                    listener1.accept(this, true);
-                } catch (final Exception ex) {
-                    i4Logger.INSTANCE.log(ex);
+                    listener.accept(true);
+                } catch (final Throwable ex) {
+                    i4Logger.INSTANCE.e(ex);
                 }
             return;
         }
@@ -146,12 +152,11 @@ public class WinFileChooser implements FileChooser {
             i4Logger.INSTANCE.log(Level.ERROR, "WinFileChooser Error: " + err, Thread.currentThread().getStackTrace());
         files = Collections.emptyList();
         isVisible = false;
-        final BiConsumer<FileChooser, Boolean> listener1 = listener;
-        if (listener1 != null)
+        if (listener != null)
             try {
-                listener1.accept(this, false);
-            } catch (final Exception ex) {
-                i4Logger.INSTANCE.log(ex);
+                listener.accept(false);
+            } catch (final Throwable ex) {
+                i4Logger.INSTANCE.e(ex);
             }
     }
 }

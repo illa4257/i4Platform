@@ -7,22 +7,34 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public interface FileChooser extends Iterable<File> {
-    default void requestFocus() {}
+    default FileChooser requestFocus() { return this; }
 
     ///  Default: true
-    void setOpen(final boolean open);
+    FileChooser setOpen(final boolean open);
 
     ///  Default: false
-    void setMultiSelectionEnabled(final boolean allow);
+    FileChooser setMultiSelectionEnabled(final boolean allow);
 
-    void setTitle(final String title);
-    void setDefaultExt(final String extension);
-    void setFilter(final FileChooserFilter filters);
+    FileChooser setTitle(final String title);
+    FileChooser setDefaultExt(final String extension);
+    FileChooser setFilter(final FileChooserFilter filters);
 
-    default void setParent(final Window parent) {}
-    void setInitialDir(final File dir);
-    void setCurrentDir(final File dir);
-    void setOnFinish(final BiConsumer<FileChooser, Boolean> listener);
-    default void setOnFinish(final Consumer<Boolean> listener) { setOnFinish((ignored, v) -> listener.accept(v)); }
-    void start();
+    default FileChooser setParent(final Window parent) { return this; }
+    FileChooser setInitialDir(final File dir);
+    FileChooser setCurrentDir(final File dir);
+
+    void startThen(final Consumer<Boolean> listener);
+    default void startThen(final BiConsumer<FileChooser, Boolean> listener) { startThen(success -> listener.accept(this, success)); }
+
+    default void start(final Consumer<FileChooser> onSuccess) {
+        startThen(success -> {
+            if (success) onSuccess.accept(this);
+        });
+    }
+
+    default void start(final Runnable onSuccess) {
+        startThen(success -> {
+            if (success) onSuccess.run();
+        });
+    }
 }

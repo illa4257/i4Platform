@@ -19,7 +19,7 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class FileChooserFallback implements FileChooser {
     private static final int ITEM_HEIGHT = 24;
@@ -63,7 +63,7 @@ public class FileChooserFallback implements FileChooser {
 
     private volatile boolean open = true, multiSelection = false;
     private volatile String defaultExtension = null;
-    private volatile BiConsumer<FileChooser, Boolean> listener = null;
+    private volatile Consumer<Boolean> listener = null;
     private volatile List<File> files = Collections.emptyList();
     private volatile File current = null;
     private volatile Window parentWindow = null;
@@ -78,9 +78,9 @@ public class FileChooserFallback implements FileChooser {
             final Window p = parentWindow;
             if (p != null)
                 p.redirectFocus = null;
-            final BiConsumer<FileChooser, Boolean> l = listener;
+            final Consumer<Boolean> l = listener;
             if (l != null)
-                l.accept(this, !files.isEmpty());
+                l.accept(!files.isEmpty());
         });
 
         final Button back = new Button("^");
@@ -131,26 +131,27 @@ public class FileChooserFallback implements FileChooser {
         window.center();
     }
 
-    @Override public void requestFocus() { window.requestFocus(); }
-
-    @Override public void setOpen(final boolean open) { this.open = open; }
-    @Override public void setMultiSelectionEnabled(final boolean allow) { this.multiSelection = true; }
-    @Override public void setTitle(final String title) { window.setTitle(title); }
-    @Override public void setDefaultExt(final String extension) { this.defaultExtension = extension; }
-    @Override public void setFilter(final FileChooserFilter filters) {}
+    @Override public FileChooser requestFocus() { window.requestFocus(); return this; }
+    @Override public FileChooser setOpen(final boolean open) { this.open = open; return this; }
+    @Override public FileChooser setMultiSelectionEnabled(final boolean allow) { this.multiSelection = true; return this; }
+    @Override public FileChooser setTitle(final String title) { window.setTitle(title); return this; }
+    @Override public FileChooser setDefaultExt(final String extension) { this.defaultExtension = extension; return this; }
+    @Override public FileChooser setFilter(final FileChooserFilter filters) { return this; }
 
     @Override
-    public void setInitialDir(final File dir) {
+    public FileChooser setInitialDir(final File dir) {
         current = dir;
         path.setText(dir != null ? dir.getAbsolutePath() : "This PC");
         path.repaint();
+        return this;
     }
 
     @Override
-    public void setCurrentDir(final File dir) {
+    public FileChooser setCurrentDir(final File dir) {
         current = dir;
         path.setText(dir != null ? dir.getAbsolutePath() : "This PC");
         path.repaint();
+        return this;
     }
 
     private void addItems(final File[] l) {
@@ -215,20 +216,16 @@ public class FileChooserFallback implements FileChooser {
         pane.repaint();
     }
 
-    @Override
-    public void setParent(final Window parent) {
-        parentWindow = parent;
-    }
+    @Override public FileChooser setParent(final Window parent) { parentWindow = parent; return this; }
 
-    @Override public void setOnFinish(final BiConsumer<FileChooser, Boolean> listener) { this.listener = listener; }
-
-    public void start() {
+    public void startThen(final Consumer<Boolean> listener) {
         if (window.isVisible())
             return;
         window.setVisible(true);
         final Window p = parentWindow;
         if (p != null)
             p.redirectFocus = window;
+        this.listener = listener;
         forceRefresh();
     }
 
