@@ -59,6 +59,7 @@ public class ScrollBar extends Component {
             final float l = (orientation == Orientation.HORIZONTAL ? width : height).calcFloat();
             scroll = Math.max(min, Math.min(max, old + Math.round((np - p) / (l - thumbLength) * (max - min))));
             h.computeIfPresent(e.id(), (ignored, ignored1) -> np);
+            u.set(true);
             fire(new ScrollEvent(this, old, scroll));
             repaint();
         });
