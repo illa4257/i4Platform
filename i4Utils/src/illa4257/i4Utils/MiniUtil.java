@@ -159,4 +159,15 @@ public class MiniUtil {
                 return e;
         return null;
     }
+
+    public static <K, V> Map.Entry<K, V> findEntry(final Iterable<Map.Entry<K, V>> entries, final Function<Map.Entry<K, V>, Boolean> cons) {
+        for (final Map.Entry<K, V> e : entries)
+            if (cons.apply(e))
+                return e;
+        return null;
+    }
+
+    public static <K, V> Map.Entry<K, V> findEntry(final Map<K, V> map, final Function<Map.Entry<K, V>, Boolean> cons) {
+        return findEntry(map.entrySet(), cons);
+    }
 }
