@@ -5,6 +5,9 @@ public enum Cursor {
     TEXT,
     POINTER,
 
+    GRAB,
+    GRABBING,
+
     E_RESIZE,
     EW_RESIZE,
     N_RESIZE,
@@ -25,6 +28,8 @@ public enum Cursor {
         switch (name.replaceAll("_", "-").toLowerCase()) {
             case "text": return TEXT;
             case "pointer": return POINTER;
+            case "grab": return GRAB;
+            case "grabbing": return GRABBING;
             case "e-resize": return E_RESIZE;
             case "ew-resize": return EW_RESIZE;
             case "n-resize": return N_RESIZE;

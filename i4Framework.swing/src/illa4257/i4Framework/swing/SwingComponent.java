@@ -142,9 +142,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
                     if (e.component == component)
                         setVisible(e.value);
                 }),
-                component.addEventListener(StyleUpdateEvent.class, e -> {
-                    updateLS(null);
-                })
+                component.addEventListener(StyleUpdateEvent.class, e -> updateLS(null))
         };
 
         if (component instanceof Container) {
@@ -204,6 +202,8 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         final int cursor =
                 c == Cursor.TEXT ? TEXT_CURSOR :
                 c == Cursor.POINTER ? HAND_CURSOR :
+                c == Cursor.GRAB ? MOVE_CURSOR : // not supported
+                c == Cursor.GRABBING ? MOVE_CURSOR : // not supported
                 c == Cursor.N_RESIZE ? N_RESIZE_CURSOR :
                 c == Cursor.SE_RESIZE ? SE_RESIZE_CURSOR :
                 c == Cursor.E_RESIZE ? E_RESIZE_CURSOR :
