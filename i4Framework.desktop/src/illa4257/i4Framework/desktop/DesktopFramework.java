@@ -30,6 +30,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 public abstract class DesktopFramework extends Framework {
     public static Pointer getWindowPointer(final Window window) {
@@ -130,6 +131,15 @@ public abstract class DesktopFramework extends Framework {
             return new Image(i.getWidth(), i.getHeight(), BufImgRef.class, new BufImgRef(i));
         } catch (final Exception ignored) {
             return super.getImage(inputStream);
+        }
+    }
+
+    @Override
+    public void writeImage(final Image image, final String format, final OutputStream outputStream) throws IOException {
+        try {
+            ImageIO.write(BufImgRef.get(image), format, outputStream);
+        } catch (final Exception ignored) {
+            super.writeImage(image, format, outputStream);
         }
     }
 

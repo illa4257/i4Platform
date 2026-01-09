@@ -17,6 +17,7 @@ import illa4257.i4Utils.web.i4URI;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -122,6 +123,10 @@ public abstract class Framework implements ResourceProvider {
 
     public Image getImage(final i4URI uri) throws IOException { return getImage(openResource(uri)); }
     public Image getImage(final String uri) throws IOException { return getImage(openResource(uri)); }
+
+    public void writeImage(final Image image, final String format, final OutputStream outputStream) throws IOException {
+        throw new UnsupportedOperationException("Unsupported image format.");
+    }
 
     public File getAppDataDir() { return null; }
     public File getLocalAppDataDir() { return null; }
