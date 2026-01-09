@@ -135,4 +135,13 @@ public class Image implements Closeable {
     public String toString() {
         return getClass().getName() + "{width=" + width + ", height=" + height + ", images=" + imageMap.values() + '}';
     }
+
+    public Image crop(final int x, final int y, final int width, final int height) {
+        if (x < 0 || y < 0 || x + width > this.width || y + height > this.height)
+            throw new IllegalArgumentException("Crop area is outside of image bounds");
+        final int[] src = directIntArray(), r = new int[width * height];
+        for (int row = 0; row < height; row++)
+            System.arraycopy(src, (y + row) * width + x, r, row * width, width);
+        return new Image(width, r);
+    }
 }
