@@ -141,7 +141,7 @@ public class Image implements Closeable {
             throw new IllegalArgumentException("Crop area is outside of image bounds");
         final int[] src = directIntArray(), r = new int[width * height];
         for (int row = 0; row < height; row++)
-            System.arraycopy(src, (y + row) * width + x, r, row * width, width);
+            System.arraycopy(src, (y + row) * this.width + x, r, row * width, width);
         return new Image(width, r);
     }
 }
