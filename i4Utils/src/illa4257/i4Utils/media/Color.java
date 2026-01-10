@@ -32,7 +32,8 @@ public class Color {
                 ORANGE = new Color(1f, .647f, 0),
                 PINK = new Color(1f, .6862745f, .6862745f),
 
-                NAVY_BLUE = new Color(0, 0, .5f);
+                NAVY_BLUE = new Color(0, 0, .5f),
+                DEEP_SKY_BLUE = new Color(0x00BFFFFF);
 
     public final float red, green, blue, alpha;
 
