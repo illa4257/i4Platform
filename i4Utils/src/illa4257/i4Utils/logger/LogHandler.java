@@ -6,7 +6,6 @@ import illa4257.i4Utils.lists.ArrIterable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
 public abstract class LogHandler implements ILogHandler {
@@ -27,11 +26,9 @@ public abstract class LogHandler implements ILogHandler {
         log(level, prefix, throwable.toString(), throwable.getStackTrace());
         if (throwable instanceof InvocationTargetException)
             log(level, prefix, ((InvocationTargetException) throwable).getTargetException());
-        if (throwable instanceof CompletionException) {
-            final Throwable cause = throwable.getCause();
-            if (cause != null)
-                log(level, prefix, cause);
-        }
+        final Throwable cause = throwable.getCause();
+        if (cause != null)
+            log(level, prefix, cause);
     }
 
     @Override
