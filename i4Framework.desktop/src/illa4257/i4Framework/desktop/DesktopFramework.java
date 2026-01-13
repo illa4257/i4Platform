@@ -129,7 +129,8 @@ public abstract class DesktopFramework extends Framework {
         try {
             final BufferedImage i = ImageIO.read(inputStream);
             return new Image(i.getWidth(), i.getHeight(), BufImgRef.class, new BufImgRef(i));
-        } catch (final Exception ignored) {
+        } catch (final Throwable ex) {
+            i4Logger.INSTANCE.e(ex);
             return super.getImage(inputStream);
         }
     }
