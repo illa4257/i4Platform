@@ -1,5 +1,7 @@
 package illa4257.i4Utils.bytecode;
 
+import illa4257.i4Utils.ir.IRType;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -8,11 +10,31 @@ public class Descriptor {
     public static class Type {
         public static final Type
                     VOID = new Type('V'),
-                    INT = new Type('I');
+                    BOOL = new Type('Z'),
+                    INT = new Type('I'),
+                    LONG = new Type('J');
 
         public final char t;
 
         public Type(final char t) { this.t = t; }
+
+        public IRType toIRType() {
+            int arr;
+            Type t = this;
+            if (t instanceof Arr) {
+                arr = ((Arr) t).lvls;
+                t = ((Arr) t).type;
+            } else
+                arr = 0;
+            switch (t.t) {
+                case 'V': return new IRType(IRType.Kind.VOID, arr);
+                case 'Z': return new IRType(IRType.Kind.BOOLEAN, arr);
+                case 'I': return new IRType(IRType.Kind.INT, arr);
+                case 'J': return new IRType(IRType.Kind.LONG, arr);
+                case 'L': return new IRType(((Obj) t).ref, arr);
+                default: throw new IllegalArgumentException("Unknown Type " + t);
+            }
+        }
     }
 
     public static class Obj extends Type {
@@ -50,6 +72,9 @@ public class Descriptor {
             type = getType(r);
         } catch (final IOException ex) {
             throw new RuntimeException(ex);
+        } catch (final RuntimeException ex) {
+            System.err.println("Full: " + descriptor);
+            throw ex;
         }
     }
 
@@ -59,7 +84,9 @@ public class Descriptor {
         final char ch = (char) reader.read();
         switch (ch) {
             case 'V': return Type.VOID;
+            case 'Z': return Type.BOOL;
             case 'I': return Type.INT;
+            case 'J': return Type.LONG;
             case 'L': {
                 final StringBuilder b = Descriptor.b.get();
                 b.setLength(0);
