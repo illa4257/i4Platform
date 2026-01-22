@@ -170,4 +170,12 @@ public class MiniUtil {
     public static <K, V> Map.Entry<K, V> findEntry(final Map<K, V> map, final Function<Map.Entry<K, V>, Boolean> cons) {
         return findEntry(map.entrySet(), cons);
     }
+
+    public static <T> int count(final Iterable<T> last, final Function<T, Boolean> func) {
+        int r = 0;
+        for (final T e : last)
+            if (func.apply(e))
+                r++;
+        return r;
+    }
 }
