@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="rt.js"></script>
+        <script>
+            var env = new AsyncJavaEnv();
+            var class_loader = {loaded:{
+                "Test": {
+	cls:"Test",
+	super_cls:"java/lang/Object",
+	declared_fields:{
+		"_t":"java/lang/String",
+		"_b":"java/lang/String",
+		"_adds":"java/lang/String",
+	},
+	"<init>()void":async function(sc,env,t,p0){
+		let c,err,r0,t0;
+		r0=p0;
+		t0=r0;
+		c=await env.getClass(sc.class_loader,"java/lang/Object");
+		await c["<init>()void"](c,env,t,t0);
+		return;
+	},
+	"main(java/lang/String[)void":async function(sc,env,t,p0){
+		let c,err,r0,t0,t1;
+		r0=p0;
+		t0=env.getField(await env.getClass(sc.class_loader,"java/lang/System"),"out");
+		t1=env.getField(await env.getClass(sc.class_loader,"Test"),"t");
+		c=env.virtualMethod(t0.cls,"println(java/lang/String)void");
+		await c["println(java/lang/String)void"](c,env,t,t0,t1);
+		t0=env.getField(await env.getClass(sc.class_loader,"Test"),"t");
+		c=await env.getClass(sc.class_loader,"Test");
+		await c["test(java/lang/String)void"](c,env,t,t0);
+		return;
+	},
+	"test(java/lang/String)void":async function(sc,env,t,p0){
+		let c,err,r0,t0,t1;
+		r0=p0;
+		t0=env.getField(await env.getClass(sc.class_loader,"java/lang/System"),"out");
+		t1=r0;
+		c=env.virtualMethod(t0.cls,"println(java/lang/String)void");
+		await c["println(java/lang/String)void"](c,env,t,t0,t1);
+		return;
+	},
+	"<clinit>()void":async function(sc,env,t){
+		let c,err;
+		env.setField(await env.getClass(sc.class_loader,"Test"),"t","b");
+		return;
+	},
+	class_loader:null
+}
+            }};
+            class_loader.loaded["Test"].class_loader = class_loader;
+
+            console.log(env);
+            (async () => {
+                console.log(await class_loader.loaded["Test"]["<clinit>()void"](class_loader.loaded["Test"], env, null));
+                console.log(class_loader.loaded["Test"]);
+            })();
+        </script>
+    </head>
+    <body>
+
+    </body>
+</html>
