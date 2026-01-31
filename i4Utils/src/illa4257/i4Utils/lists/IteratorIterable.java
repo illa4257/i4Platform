@@ -4,10 +4,10 @@ import java.util.Iterator;
 import java.util.function.Consumer;
 
 public class IteratorIterable<T> implements Iterator<T> {
-    private final Iterator<Iterable<T>> iters;
+    private final Iterator<? extends Iterable<T>> iters;
     private Iterator<T> iter = null;
 
-    public IteratorIterable(final Iterator<Iterable<T>> iterables) { iters = iterables; }
+    public IteratorIterable(final Iterator<? extends Iterable<T>> iterables) { iters = iterables; }
 
     @Override
     public boolean hasNext() {

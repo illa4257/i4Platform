@@ -5,6 +5,12 @@ import java.util.List;
 import java.util.ListIterator;
 
 public class Iter {
+    public static <T> Iterator<T> skip(final Iterator<T> iterator, int n) {
+        for (; n > 0; n--)
+            iterator.next();
+        return iterator;
+    }
+
     public static <T> Iterable<T> reversible(final List<T> list) {
         return () -> reverse(list);
     }
