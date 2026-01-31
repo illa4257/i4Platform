@@ -235,7 +235,7 @@ public class IO {
      * Reads integer in big endian order.
      *
      * <pre>
-     * {@code (readByte(stream) << 24) + (readByte(stream) << 16) + (readByte(stream) << 8) + readByte(stream) }
+     * {@code (readByteI(stream) << 24) | (readByteI(stream) << 16) | (readByteI(stream) << 8) | readByteI(stream) }
      * </pre>
      *
      * @param stream InputStream
@@ -244,6 +244,13 @@ public class IO {
      */
     public static int readBEInt(final InputStream stream) throws IOException {
         return (readByteI(stream) << 24) | (readByteI(stream) << 16) + (readByteI(stream) << 8) | readByteI(stream);
+    }
+
+    public static int readBEInt(final byte[] stream, final int offset) {
+        return  ((stream[offset + 4] & 0xFF) << 24) |
+                ((stream[offset + 5] & 0xFF) << 16) |
+                ((stream[offset + 6] & 0xFF) <<  8) |
+                 (stream[offset + 7] & 0xFF);
     }
 
     /**
@@ -286,6 +293,22 @@ public class IO {
                 ((long) (stream[offset + 5] & 0xFF) << 16) |
                 ((long) (stream[offset + 6] & 0xFF) <<  8) |
                  (long) (stream[offset + 7] & 0xFF);
+    }
+
+    public static float readBEFloat(final InputStream stream) throws IOException {
+        return Float.intBitsToFloat(readBEInt(stream));
+    }
+
+    public static float readBEFloat(final byte[] stream, final int offset) {
+        return Float.intBitsToFloat(readBEInt(stream, offset));
+    }
+
+    public static double readBEDouble(final InputStream stream) throws IOException {
+        return Double.longBitsToDouble(readBELong(stream));
+    }
+
+    public static double readBEDouble(final byte[] stream, final int offset) {
+        return Double.longBitsToDouble(readBELong(stream, offset));
     }
 
     /**
