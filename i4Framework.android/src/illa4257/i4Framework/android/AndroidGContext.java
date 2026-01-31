@@ -5,9 +5,9 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.graphics.IPath;
+import illa4257.i4Utils.math.Vector2;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Utils.media.Image;
-import illa4257.i4Framework.base.math.Vector2D;
 
 public class AndroidGContext implements Context {
     public final Paint paint = new Paint();
@@ -24,17 +24,17 @@ public class AndroidGContext implements Context {
     }
 
     @Override
-    public Vector2D bounds(final String string) {
+    public Vector2 bounds(final String string) {
         final Rect bounds = new Rect();
         paint.getTextBounds(string, 0, string.length(), bounds);
-        return new Vector2D(bounds.width(), bounds.height() + paint.getFontMetrics().descent);
+        return new Vector2(bounds.width(), bounds.height() + paint.getFontMetrics().descent);
     }
 
     @Override
-    public Vector2D bounds(char[] string) {
+    public Vector2 bounds(char[] string) {
         final Rect bounds = new Rect();
         paint.getTextBounds(string, 0, string.length, bounds);
-        return new Vector2D(bounds.width(), bounds.height() + paint.getFontMetrics().descent);
+        return new Vector2(bounds.width(), bounds.height() + paint.getFontMetrics().descent);
     }
 
     @Override public void setColor(final Color color) { paint.setColor(color.toARGB()); }
@@ -42,7 +42,7 @@ public class AndroidGContext implements Context {
     @Override public void setStrokeWidth(final float newWidth) { paint.setStrokeWidth(newWidth); }
 
     @Override
-    public void setClip(final IPath path) {
+    public void setClip(final Object path) {
         if (path instanceof AndroidPath)
             canvas.clipPath(((AndroidPath) path).path);
     }
@@ -56,7 +56,7 @@ public class AndroidGContext implements Context {
     }
 
     @Override
-    public void draw(final IPath path) {
+    public void draw(final Object path) {
         canvas.drawPath(((AndroidPath) path).path, paint);
     }
 

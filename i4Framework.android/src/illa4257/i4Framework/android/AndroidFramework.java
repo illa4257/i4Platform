@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Function;
 
 public class AndroidFramework extends Framework {
     static final ConcurrentLinkedQueue<Activity> activities = new ConcurrentLinkedQueue<>();
@@ -103,9 +104,9 @@ public class AndroidFramework extends Framework {
     }
 
     @Override
-    public void fireAllWindows(final Event event) {
+    public void fireAllWindows(final Function<Window, Event> event) {
         for (final AndroidWindow window : windows)
-            window.window.fire(event);
+            window.window.fire(event.apply(window.window));
     }
 
     @Override

@@ -4,65 +4,58 @@ import android.app.Activity;
 import android.content.Intent;
 import illa4257.i4Framework.base.FileChooserFilter;
 import illa4257.i4Framework.base.FrameworkWindow;
-import illa4257.i4Framework.base.IFileChooser;
+import illa4257.i4Framework.base.FileChooser;
 import illa4257.i4Framework.base.components.Window;
-import illa4257.i4Utils.runnables.Consumer2;
 
 import java.io.File;
 import java.util.Iterator;
+import java.util.function.Consumer;
 
-public class AndroidFileChooser implements IFileChooser {
+public class AndroidFileChooser implements FileChooser {
     public final AndroidFramework framework;
     private volatile Window parent = null;
 
-    public AndroidFileChooser(final AndroidFramework framework) {
-        this.framework = framework;
-    }
+    public AndroidFileChooser(final AndroidFramework framework) { this.framework = framework; }
 
-    @Override public void setParent(final Window parent) { this.parent = parent; }
+    @Override public AndroidFileChooser setParent(final Window parent) { this.parent = parent; return this; }
 
     @Override
-    public void setOpen(boolean open) {
-
-    }
-
-    @Override
-    public void setMultiSelectionEnabled(boolean allow) {
-
+    public AndroidFileChooser setOpen(boolean open) {
+        return this;
     }
 
     @Override
-    public void setTitle(String title) {
-
+    public AndroidFileChooser setMultiSelectionEnabled(boolean allow) {
+        return this;
     }
 
     @Override
-    public void setDefaultExt(String extension) {
-
+    public AndroidFileChooser setTitle(String title) {
+        return this;
     }
 
     @Override
-    public void setFilter(FileChooserFilter filters) {
-
+    public AndroidFileChooser setDefaultExt(String extension) {
+        return this;
     }
 
     @Override
-    public void setInitialDir(File dir) {
-
+    public AndroidFileChooser setFilter(FileChooserFilter filters) {
+        return this;
     }
 
     @Override
-    public void setCurrentDir(File dir) {
-
+    public AndroidFileChooser setInitialDir(File dir) {
+        return this;
     }
 
     @Override
-    public void setOnFinish(Consumer2<IFileChooser, Boolean> listener) {
-
+    public AndroidFileChooser setCurrentDir(File dir) {
+        return this;
     }
 
     @Override
-    public void start() {
+    public void startThen(final Consumer<Boolean> listener) {
         final Window w = parent;
         if (w == null)
             return;
@@ -78,6 +71,7 @@ public class AndroidFileChooser implements IFileChooser {
         a.startActivityForResult(intent, 2);
     }
 
+    @SuppressWarnings("NullableProblems")
     @Override
     public Iterator<File> iterator() {
         return null;

@@ -109,7 +109,7 @@ public class AndroidWindow implements FrameworkWindow {
             window.endX.set(new PointAttach(root.getWidth(), null));
             window.endY.set(new PointAttach(root.getHeight(), null));
             updateSafeZone(root.getRootWindowInsets());
-            window.fire(new ChangePointEvent());
+            window.fire(new ChangePointEvent(window));
             window.repaint();
         });
         window.addDirectEventListener(VisibleEvent.class, e -> {
@@ -148,7 +148,7 @@ public class AndroidWindow implements FrameworkWindow {
                             }
                             framework.addThemeListener(this::onThemeUpdate);
                             onThemeUpdate(framework.getTheme(), framework.getBaseTheme());
-                            window.fire(new StyleUpdateEvent());
+                            window.fire(new StyleUpdateEvent(window));
                         });
                     } catch (final Exception ex) {
                         i4Logger.INSTANCE.log(ex);
@@ -169,15 +169,15 @@ public class AndroidWindow implements FrameworkWindow {
             switch (e.getAction()) {
                 case KeyEvent.ACTION_DOWN:
                     if (heldKeys.add(e.getKeyCode()))
-                        c.fire(new KeyDownEvent(KEY_MAP.get(e.getKeyCode()), (char) e.getUnicodeChar()));
-                    c.fire(new KeyPressEvent(KEY_MAP.get(e.getKeyCode()), (char) e.getUnicodeChar()));
+                        c.fire(new KeyDownEvent(c, KEY_MAP.get(e.getKeyCode()), (char) e.getUnicodeChar()));
+                    c.fire(new KeyPressEvent(c, KEY_MAP.get(e.getKeyCode()), (char) e.getUnicodeChar()));
                     break;
                 case KeyEvent.ACTION_UP:
                     heldKeys.remove(e.getKeyCode());
-                    c.fire(new KeyUpEvent(KEY_MAP.get(e.getKeyCode()), (char) e.getUnicodeChar()));
+                    c.fire(new KeyUpEvent(c, KEY_MAP.get(e.getKeyCode()), (char) e.getUnicodeChar()));
                     break;
                 default:
-                    c.fire(new KeyPressEvent(KEY_MAP.get(e.getKeyCode()), (char) e.getUnicodeChar()));
+                    c.fire(new KeyPressEvent(c, KEY_MAP.get(e.getKeyCode()), (char) e.getUnicodeChar()));
                     break;
             }
         }
@@ -198,13 +198,13 @@ public class AndroidWindow implements FrameworkWindow {
                 case MotionEvent.TOOL_TYPE_FINGER:
                     switch (e.getAction()) {
                         case MotionEvent.ACTION_MOVE:
-                            c.fire(new TouchMoveEvent(gx, gy, pos[0], pos[1], true, e.getPointerId(i)));
+                            c.fire(new TouchMoveEvent(c, gx, gy, pos[0], pos[1], true, e.getPointerId(i)));
                             break;
                         case MotionEvent.ACTION_DOWN:
-                            c.fire(new TouchDownEvent(gx, gy, pos[0], pos[1], true, e.getPointerId(i)));
+                            c.fire(new TouchDownEvent(c, gx, gy, pos[0], pos[1], true, e.getPointerId(i)));
                             break;
                         case MotionEvent.ACTION_UP:
-                            c.fire(new TouchUpEvent(gx, gy, pos[0], pos[1], true, e.getPointerId(i)));
+                            c.fire(new TouchUpEvent(c, gx, gy, pos[0], pos[1], true, e.getPointerId(i)));
                             break;
                         default:
                             System.out.println("Unknown action: " + e.getAction());
@@ -214,13 +214,13 @@ public class AndroidWindow implements FrameworkWindow {
                 case MotionEvent.TOOL_TYPE_MOUSE:
                     switch (e.getAction()) {
                         case MotionEvent.ACTION_MOVE:
-                            c.fire(new MouseMoveEvent(gx, gy, pos[0], pos[1], true, e.getPointerId(i)));
+                            c.fire(new MouseMoveEvent(c, gx, gy, pos[0], pos[1], true, e.getPointerId(i)));
                             break;
                         case MotionEvent.ACTION_DOWN:
-                            c.fire(new MouseDownEvent(gx, gy, pos[0], pos[1], true, e.getPointerId(i), getMouseButton(e.getButtonState())));
+                            c.fire(new MouseDownEvent(c, gx, gy, pos[0], pos[1], true, e.getPointerId(i), getMouseButton(e.getButtonState())));
                             break;
                         case MotionEvent.ACTION_UP:
-                            c.fire(new MouseUpEvent(gx, gy, pos[0], pos[1], true, e.getPointerId(i), getMouseButton(e.getButtonState())));
+                            c.fire(new MouseUpEvent(c, gx, gy, pos[0], pos[1], true, e.getPointerId(i), getMouseButton(e.getButtonState())));
                             break;
                         default:
                             System.out.println("Unknown action: " + e.getAction());
