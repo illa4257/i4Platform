@@ -8,6 +8,13 @@ public class IRTmp {
     }
 
     @Override
+    public boolean equals(final Object o) {
+        if (o instanceof IRTmp)
+            return index == ((IRTmp) o).index;
+        return super.equals(o);
+    }
+
+    @Override
     public String toString() {
         return "TMP(" + index + ')';
     }

@@ -20,4 +20,9 @@ public class Inst {
         this.output = output;
         this.params = params;
     }
+
+    @Override
+    public String toString() {
+        return "Inst@" + Integer.toHexString(hashCode()) + "(" + opcode + ")";
+    }
 }

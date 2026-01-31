@@ -10,7 +10,7 @@ public class IRType {
         FLOAT,
         LONG,
         DOUBLE,
-        LITERAL
+        CHAR, LITERAL
     }
 
     public boolean isPrimitive = false;

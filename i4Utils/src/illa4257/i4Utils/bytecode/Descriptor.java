@@ -11,8 +11,13 @@ public class Descriptor {
         public static final Type
                     VOID = new Type('V'),
                     BOOL = new Type('Z'),
+                    BYTE = new  Type('B'),
+                    SHORT = new  Type('S'),
+                    CHAR = new  Type('C'),
                     INT = new Type('I'),
-                    LONG = new Type('J');
+                    LONG = new Type('J'),
+                    FLOAT = new Type('F'),
+                    DOUBLE = new Type('D');
 
         public final char t;
 
@@ -29,8 +34,13 @@ public class Descriptor {
             switch (t.t) {
                 case 'V': return new IRType(IRType.Kind.VOID, arr);
                 case 'Z': return new IRType(IRType.Kind.BOOLEAN, arr);
+                case 'B': return new IRType(IRType.Kind.BYTE, arr);
+                case 'S': return new IRType(IRType.Kind.SHORT, arr);
+                case 'C': return new IRType(IRType.Kind.CHAR, arr);
                 case 'I': return new IRType(IRType.Kind.INT, arr);
                 case 'J': return new IRType(IRType.Kind.LONG, arr);
+                case 'F': return new IRType(IRType.Kind.FLOAT, arr);
+                case 'D': return new IRType(IRType.Kind.DOUBLE, arr);
                 case 'L': return new IRType(((Obj) t).ref, arr);
                 default: throw new IllegalArgumentException("Unknown Type " + t);
             }
@@ -85,8 +95,13 @@ public class Descriptor {
         switch (ch) {
             case 'V': return Type.VOID;
             case 'Z': return Type.BOOL;
+            case 'B': return Type.BYTE;
+            case 'S': return Type.SHORT;
+            case 'C': return Type.CHAR;
             case 'I': return Type.INT;
             case 'J': return Type.LONG;
+            case 'F': return Type.FLOAT;
+            case 'D': return Type.DOUBLE;
             case 'L': {
                 final StringBuilder b = Descriptor.b.get();
                 b.setLength(0);
