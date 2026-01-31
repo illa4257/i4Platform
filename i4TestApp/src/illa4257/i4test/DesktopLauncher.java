@@ -1,7 +1,8 @@
 package illa4257.i4test;
 
-import illa4257.i4Framework.swing.SwingFramework;
+import illa4257.i4Framework.awt.AWTFramework;
 import illa4257.i4Utils.logger.AnsiColoredPrintStreamLogHandler;
+import illa4257.i4Utils.logger.i4Logger;
 
 import javax.net.ssl.*;
 import java.io.IOException;
@@ -11,9 +12,11 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyStore;
@@ -28,11 +31,15 @@ public class DesktopLauncher {
 
     public static void main(final String[] args) throws Exception {
         L.registerHandler(new AnsiColoredPrintStreamLogHandler(System.out));
-        i4Test.init(new SwingFramework("illa4257.i4Test"));
+        i4Test.init(new AWTFramework("illa4257.i4Test"));
+        if (false) {
+            i4Test.start();
+            return;
+        }
 
         final SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
         sslContext.init(
-                createKeyManagers("niotest.p12", "changeit", "changeit"),
+                createKeyManagers("niotest.p12", "a12d29f29838193b1537e17e1f6e794e", "a12d29f29838193b1537e17e1f6e794e"),
                 null, null
         );
 
@@ -86,67 +93,47 @@ public class DesktopLauncher {
             serverChannel.configureBlocking(false);
             serverChannel.bind(new InetSocketAddress(1234));
 
-            final NioRunner runner = new NioRunner(sslPool, new ArrayBuffMgr(new int[] { 1024, 32 * 1024, 64 * 1024, 128 * 1024 }, 0)) {
+            final NioRunner runner = new NioRunner(sslPool, new ArrayBuffMgr(new int[] { 1024, 32 * 1024, 64 * 1024, 128 * 1024, 256 * 1024, 1024 * 1024 }, 0)) {
                 @Override
                 public void accept(SelectionKey key) throws IOException {
+                    System.out.println("Accept");
                     SocketChannel client = serverChannel.accept();
                     client.configureBlocking(false);
 
                     final SSLEngine engine = sslContext.createSSLEngine();
+                    final SSLParameters parameters = engine.getSSLParameters();
+                    //noinspection Since15
+                    parameters.setApplicationProtocols(new String[] { "http/1.1" });
+                    //parameters.setApplicationProtocols(new String[] { "h2", "http/1.1" });
+                    engine.setSSLParameters(parameters);
                     engine.setUseClientMode(false);
                     engine.beginHandshake();
-                    final Session s = new Session();
-                    s.engine = engine;
-                    register(client).attach(s);
-                }
-
-                @Override
-                public void processData(final SelectionKey key) throws IOException {
-                    key.interestOps(SelectionKey.OP_READ);
-                    final SocketChannel client = (SocketChannel) key.channel();
-                    final Session s = (Session) key.attachment();
-                    ByteBuffer ai = s.appIn != null ? s.appIn : appIn;
-                    if (s.engine != null) {
-                        ByteBuffer ni = s.netIn != null ? s.netIn : netIn;
-                        final int l = client.read(ni);
-                        if (l == -1)
-                            throw new IOException("Closed");
-                        ni.flip();
-                        while (true) {
-                            final SSLEngineResult r = s.engine.unwrap(ni, ai);
-                            switch (r.getStatus()) {
-                                case OK:
-                                    if (ni.hasRemaining()) {
-                                        ni.compact();
-                                        if (ni == netIn)
-                                            netIn = mgr.get(s.engine.getSession().getPacketBufferSize());
-                                        s.netIn = ni;
-                                    } else
-                                        ni.clear();
-                                    break;
-                                case BUFFER_OVERFLOW:
-                                    final ByteBuffer nb = mgr.nextTier(ai, s.engine.getSession().getApplicationBufferSize());
-                                    ai.flip();
-                                    nb.put(ai);
-                                    if (ai == appIn)
-                                        ai.clear();
-                                    else
-                                        mgr.recycle(ai);
-                                    s.appIn = ai = nb;
-                                    continue;
-                                default:
-                                    throw new RuntimeException("Unknown unwrap status: " + r.getStatus());
+                    final NioHttpSession s = new NioHttpSession() {
+                        @Override
+                        public void onContentStart() throws Exception {
+                            final ByteBuffer b = mgr.get();
+                            if (path.equalsIgnoreCase("/favicon.ico") || path.startsWith("/.")) {
+                                responseLine = STATUS[404];
+                                response = new byte[0];
+                                writeStatus(b);
+                            } else {
+                                response = ("Hello, world! You're at " + path).getBytes(StandardCharsets.US_ASCII);
+                                writeStatus(b);
                             }
-                            break;
+                            writeHeader(b, "Server", "test");
+                            writeEndHeaders(b);
+                            b.flip();
+                            //write(b);
+                            closeRequest(b);
                         }
-                    } else {
-                        client.read(ai);
-                    }
-                    ai.flip();
-
-                    final byte[] d = new byte[ai.remaining()];
-                    ai.get(d);
-                    System.out.println(new String(d));
+                    };
+                    s.reset();
+                    s.engine = engine;
+                    s.engine = null;
+                    s.mgr = mgr;
+                    s.runner = this;
+                    s.client = client;
+                    (s.key = register(client)).attach(s);
                 }
             };
             runner.register(serverChannel);

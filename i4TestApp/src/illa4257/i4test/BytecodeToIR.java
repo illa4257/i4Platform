@@ -21,7 +21,7 @@ public class BytecodeToIR {
 
         ClassFile cf = null;
         try (final ZipInputStream zis = new ZipInputStream(Files.newInputStream(new File("/usr/lib/jvm/java-8-openjdk/jre/lib/rt.jar").toPath()))) {
-            final String target = Object.class.getName().replaceAll("\\.", "/") + ".class";
+            final String target = ClassLoader.class.getName().replaceAll("\\.", "/") + ".class";
             ZipEntry e;
             while ((e = zis.getNextEntry()) != null) {
                 if (e.getName().equals(target)) {
@@ -35,5 +35,11 @@ public class BytecodeToIR {
         final IRClass cls = cf.toIRClass();
 
         IR2JS.write(new IR2JS.PSW(ps), cls);
+        /*for (final IRMethod m : cls.methods) {
+            if (m.name.equals("equals")) {
+                m.print();
+                IR2JS.write(new IR2JS.PSW(ps), m.instructions);
+            }
+        }*/
     }
 }

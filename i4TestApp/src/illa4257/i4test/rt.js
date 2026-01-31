@@ -1,8 +1,38 @@
+async function divByZero(class_loader, env, t) {
+    let c = await env.getClass(class_loader, "java/lang/ArithmeticException"),
+       ex = await env.alloc(c);
+    await c["<init>(java/lang/String)void"](c, env, t, "/ by zero");
+    throw ex;
+}
+
+async function addClass(class_loader, env, t, cls) {
+    class_loader.loaded[cls.name] = cls;
+    cls.class_loader = class_loader;
+    if (cls.super_cls !== undefined)
+        cls.super_cls = await env.getClass(class_loader, cls.super_cls);
+    if (cls["<clinit>()void"] !== undefined)
+        await cls["<clinit>()void"](cls, env, t);
+}
+
+function instanceOf(instance,cls) {
+    return true;
+}
+
 class AsyncJavaEnv {
     constructor() {}
 
-    alloc(cls) {
-        return {cls:cls,lock:null,lock_owner:null,lock_n:0,waiters:[]};
+    alloc(cls,m={}) {
+        m.cls = cls;
+        if (cls.super_cls !== undefined) {
+            if (m.super_instance === undefined)
+                m.super_instance = {};
+            m.super_instance = this.alloc(cls.super_cls, m.super_instance);
+        }
+        m.lock = null;
+        m.lock_owner = null;
+        m.lock_n = 0;
+        m.waiters = [];
+        return m;
     }
 
     getField(inst, name) {
@@ -14,7 +44,33 @@ class AsyncJavaEnv {
     }
 
     async getClass(class_loader, cls) {
-        return class_loader.loaded[cls]
+        let c = class_loader.loaded[cls];
+        if (c === undefined) throw new Error("No class " + cls);
+        return c;
+    }
+
+    arrLen(arr) {
+        return arr.length;
+    }
+
+    arrGet(arr, index) {
+        return arr[index];
+    }
+
+    arrSet(arr, index, val) {
+        arr[index] = val;
+    }
+
+    newArr(len) {
+        return new Array(len);
+    }
+
+    async callNative(cls, env, t, methodName, ...args) {
+        let method1 = 'Java_' + cls.name.replaceAll(new RegExp("[/,()]","g"),"_") + "_" + methodName.replaceAll(new RegExp("[/,()]","g"),"_"),
+            method2 = window[method1];
+        if (method2 === undefined)
+            throw new Error("Missing Native Method: " + method1 + "(cls, env, thread, ...args)");
+        return await method2(cls, env, t, ...args);
     }
 
     async monitorEnter(t, instance) {
@@ -38,6 +94,19 @@ class AsyncJavaEnv {
             l.resolve();
         }
     }
+}
+
+// natives
+function Java_java_lang_Object_registerNatives__void(cls, env, thread, ...args) {
+
+}
+
+function Java_java_lang_ClassLoader_registerNatives__void(cls, env, thread, ...args) {
+
+}
+
+function Java_java_lang_System_registerNatives__void(cls, env, thread, ...args) {
+
 }
 
 console.log("rt.js loaded!");

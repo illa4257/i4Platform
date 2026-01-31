@@ -3,6 +3,11 @@ package illa4257.i4test;
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.*;
+import illa4257.i4Framework.base.components.Button;
+import illa4257.i4Framework.base.components.Component;
+import illa4257.i4Framework.base.components.Label;
+import illa4257.i4Framework.base.components.Panel;
+import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
 import illa4257.i4Framework.base.points.PPointSubtract;
@@ -15,6 +20,7 @@ import illa4257.i4Framework.base.utils.Cache;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.media.Image;
 
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -116,9 +122,9 @@ public class i4Test {
         framework.stylesheet.clear();
         try (final BufferedReader r = new BufferedReader(new InputStreamReader(framework.openResource("assets:///illa4257/i4Framework/" + baseTheme.name().toLowerCase() + ".css")))) {
             CSSParser.parse(framework.stylesheet, r);
-        } catch (final IOException ex) {
-            L.log(ex);
+        } catch (final Exception ex) {
+            L.e(ex);
         }
-        framework.fireAllWindows(new StyleUpdateEvent());
+        framework.fireAllWindows(StyleUpdateEvent::new);
     }
 }

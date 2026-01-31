@@ -18,13 +18,14 @@ public class IR2JS {
     }
 
     public static class MW implements W {
-        public final PrintStream ps;
+        public final W w;
 
-        public MW(final PrintStream ps) { this.ps = ps; }
+        public MW(final PrintStream ps) { this.w = new PSW(ps); }
+        public MW(final W w) { this.w = w; }
 
         @Override
         public W w(final String str) {
-            ps.print(str);
+            w.w(str);
             return this;
         }
     }
@@ -95,23 +96,17 @@ public class IR2JS {
 
     public static StringBuilder encType(final StringBuilder b, final IRType type) {
         switch (type.kind) {
-            case VOID:
-                b.append("void");
-                break;
-            case BOOLEAN:
-                b.append("boolean");
-                break;
-            case INT:
-                b.append("int");
-                break;
-            case LONG:
-                b.append("long");
-                break;
-            case LITERAL:
-                b.append(type.cls);
-                break;
-            default:
-                throw new RuntimeException("Unknown kind: " + type.kind);
+            case VOID: b.append("void");break;
+            case BOOLEAN: b.append("boolean");break;
+            case BYTE: b.append("byte");break;
+            case SHORT: b.append("short");break;
+            case CHAR: b.append("char");break;
+            case INT: b.append("int");break;
+            case LONG: b.append("long");break;
+            case FLOAT: b.append("float");break;
+            case DOUBLE: b.append("double");break;
+            case LITERAL: b.append(type.cls);break;
+            default: throw new RuntimeException("Unknown kind: " + type.kind);
         }
         return Str.repeat(b, "[", type.array);
     }
@@ -149,16 +144,18 @@ public class IR2JS {
 
     public static void write(final W o, final IRClass cls) {
         o.w("{").st(1);
-        o.ln().w("cls:\"" + cls.name + "\",");
-        o.ln().w("super_cls:\"" + cls.superName + "\",");
+        o.ln().w("name:\"" + cls.name + "\",");
+        if (cls.superName != null)
+            o.ln().w("super_cls:\"" + cls.superName + "\",");
         o.ln().w("declared_fields:{").st(2);
         for (final IRField f : cls.fields) {
             o.ln().w("\"_" + f.name + "\":\"").w(encType(f.type)).w("\",");
         }
         o.st(1).ln().w("},");
         for (final IRMethod m : cls.methods) {
-            o.ln().w(methodName(m) + ":async function(sc,env,t");
+            o.ln().w(methodName(m) + ":async function(");
             int i = 0;
+            o.w("sc,env,t");
             if (!m.access.contains(IRAccess.STATIC)) {
                 o.w(",p" + i);
                 i++;
@@ -166,13 +163,28 @@ public class IR2JS {
             for (final IRType ignored : m.argumentsTypes)
                 o.w(",p" + i++);
             o.w("){").st(2);
-            if (m.access.contains(IRAccess.NATIVE))
-                o.ln().w("// native");
-            else
-                write(new SW(o, 2), m.instructions);
+            if (m.access.contains(IRAccess.NATIVE)) {
+                o.ln();
+                if (m.type.kind != IRType.Kind.VOID)
+                    o.w("return ");
+                o.w("await env.callNative(sc,env,t,").w(methodName(m));
+                i = 0;
+                if (!m.access.contains(IRAccess.STATIC)) {
+                    o.w(",p" + i);
+                    i++;
+                }
+                for (final IRType ignored : m.argumentsTypes)
+                    o.w(",p" + i++);
+                o.w(");");
+            } else
+                try {
+                    write(new SW(o, 2), m.instructions);
+                } catch (final RuntimeException e) {
+                    m.print();
+                    throw e;
+                }
             o.st(1).ln().w("},");
         }
-        o.ln().w("class_loader:null");
         o.st(0).ln().w("}").ln();
     }
 
@@ -184,7 +196,11 @@ public class IR2JS {
         for (final Inst inst : instructions)
             switch (inst.opcode) {
                 case IF_EQ:
+                case IF_NE:
+                case IF_GT:
                 case IF_GE:
+                case IF_LT:
+                case IF_LE:
                 case IF_NULL:
                 case IF_NONNULL:
                 case GOTO:
@@ -202,13 +218,14 @@ public class IR2JS {
                     break;
             }
         w.ln().w("let c,err");
+        if (hasJumps)
+            w.w(",cursor=0");
         for (final String var : scopeVars) {
             w.w(",");
             w.w(var);
         }
         w.w(";");
         if (hasJumps) {
-            w.ln().w("let cursor=0;");
             w.ln().w("while(true)");
             w.st(1).ln().w("switch(cursor){");
             if (!instructions.isEmpty() && instructions.get(0).opcode != Opcode.ANCHOR)
@@ -268,19 +285,41 @@ public class IR2JS {
                         break;
                     throw new RuntimeException("Illegal state of try catch ...");
                 case ADD:
-                    w.w(of(inst.output));
-                    w.w("=");
-                    w.w(of(inst.params[0]));
-                    w.w("+");
-                    w.w(of(inst.params[1]));
-                    w.w(";");
-                    break;
                 case SUBTRACT:
+                case MULTIPLY:
+                case DIVIDE:
+                case REMAINDER:
+                    if ((inst.opcode == Opcode.DIVIDE || inst.opcode == Opcode.REMAINDER) && (inst.params[2] == IRType.Kind.INT || inst.params[2] == IRType.Kind.LONG)) {
+                        w.w("if(");
+                        w.w(of(inst.params[1]));
+                        w.w("===0");
+                        if (inst.params[2] == IRType.Kind.LONG)
+                            w.w("n");
+                        w.w(")");
+                        w.w("await divByZero(sc.class_loader,env,t);");
+                        w.ln();
+                    }
                     w.w(of(inst.output));
                     w.w("=");
+                    switch ((IRType.Kind) inst.params[2]) {
+                        case INT: w.w(inst.opcode == Opcode.MULTIPLY ? "Math.imul(" : "("); break;
+                        case LONG: w.w(inst.opcode == Opcode.DIVIDE || inst.opcode == Opcode.REMAINDER ? "(" : "BigInt.asIntN(64,"); break;
+                        case FLOAT: w.w("Math.fround("); break;
+                    }
                     w.w(of(inst.params[0]));
-                    w.w("-");
+                    switch (inst.opcode) {
+                        case ADD: w.w("+"); break;
+                        case SUBTRACT: w.w("-"); break;
+                        case MULTIPLY: w.w(inst.params[2] == IRType.Kind.INT ? "," : "*"); break;
+                        case DIVIDE: w.w("/"); break;
+                        case REMAINDER: w.w("%"); break;
+                    }
                     w.w(of(inst.params[1]));
+                    switch ((IRType.Kind) inst.params[2]) {
+                        case INT: w.w(inst.opcode == Opcode.MULTIPLY ? ")" : ") | 0"); break;
+                        case LONG: w.w(")"); break;
+                        case FLOAT: w.w(")"); break;
+                    }
                     w.w(";");
                     break;
 
@@ -295,7 +334,7 @@ public class IR2JS {
                     w.w(of(inst.output));
                     w.w("=");
                     final IRFieldRef ref = (IRFieldRef) inst.params[0];
-                    w.w("env.getField(");
+                    w.w("await env.getField(");
                     w.w("await env.getClass(sc.class_loader,\"");
                     w.w(ref.cls);
                     w.w("\"),\"");
@@ -316,25 +355,55 @@ public class IR2JS {
                     break;
                 }
                 case GET_FIELD: {
-                    w.w(of(inst.output));
-                    w.w("=");
                     final IRFieldRef ref = (IRFieldRef) inst.params[0];
+                    w.w(of(inst.output));
+                    w.w("=await env.getField(");
                     w.w(of(inst.params[1]));
-                    w.w(".");
+                    w.w(",\"");
                     w.w(ref.name);
-                    w.w(";");
+                    w.w("\");");
                     break;
                 }
                 case PUT_FIELD: {
                     final IRFieldRef ref = (IRFieldRef) inst.params[0];
+                    w.w("await env.setField(");
                     w.w(of(inst.params[1]));
-                    w.w(".");
+                    w.w(",\"");
                     w.w(ref.name);
-                    w.w("=");
+                    w.w("\",");
                     w.w(of(inst.params[2]));
-                    w.w(";");
+                    w.w(");");
                     break;
                 }
+                case ARRAY_LENGTH:
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output));
+                    w.w("=await env.arrLen(");
+                    w.w(of(inst.params[0]));
+                    w.w(");");
+                    break;
+                case ARRAY_GET:
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output));
+                    w.w("=await env.arrGet(");
+                    w.w(of(inst.params[0])).w(",").w(of(inst.params[1]));
+                    w.w(");");
+                    break;
+                case ARRAY_SET:
+                    w.w("await env.arrSet(");
+                    w.w(of(inst.params[0])).w(",").w(of(inst.params[1])).w(",").w(of(inst.params[2]));
+                    w.w(");");
+                    break;
+                case NEW_ARRAY:
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output));
+                    w.w("=await env.newArr(");
+                    w.w(of(inst.params[1]));
+                    w.w(");");
+                    break;
                 case GOTO:
                     w.w("cursor=" + ((IRAnchor) inst.params[0]).id + ';');
                     w.w("break;");
@@ -382,7 +451,7 @@ public class IR2JS {
                 case IF_GE: {
                     w.w("if(");
                     w.w(of(inst.params[0]));
-                    w.w(">==");
+                    w.w(">=");
                     w.w(of(inst.params[1]));
                     w.w("){");
                     w.w("cursor=" + ((IRAnchor) inst.params[2]).id + ';');
@@ -393,7 +462,7 @@ public class IR2JS {
                 case IF_LE: {
                     w.w("if(");
                     w.w(of(inst.params[0]));
-                    w.w("<==");
+                    w.w("<=");
                     w.w(of(inst.params[1]));
                     w.w("){");
                     w.w("cursor=" + ((IRAnchor) inst.params[2]).id + ';');
@@ -426,16 +495,17 @@ public class IR2JS {
                         w.w(of(inst.output));
                         w.w("=");
                     }
-                    w.w("new ");
+                    w.w("await env.alloc(await env.getClass(sc.class_loader,");
                     w.w(of(inst.params[0]));
-                    w.w("();");
+                    w.w("));");
                     break;
                 case INVOKE_STATIC:
                 case INVOKE_SPECIAL:
-                case INVOKE_VIRTUAL: {
+                case INVOKE_VIRTUAL:
+                case INVOKE_INTERFACE: {
                     final Iterator<Object> params = new ArrIterator<>(inst.params);
                     final IRMethodRef ref = (IRMethodRef) params.next();
-                    if (inst.opcode == Opcode.INVOKE_VIRTUAL)
+                    if (inst.opcode == Opcode.INVOKE_VIRTUAL || inst.opcode == Opcode.INVOKE_INTERFACE)
                         w.w("c=env.virtualMethod(t0.cls," + methodName(ref) + ");").ln();
                     else
                         w.w("c=await env.getClass(sc.class_loader,\"" + ref.cls + "\");").ln();
@@ -472,9 +542,23 @@ public class IR2JS {
                     w.w(of(inst.params[0]));
                     w.w(";");
                     break;
-                case MONITOR_ENTER: break;
-                case MONITOR_EXIT: break;
+                case MONITOR_ENTER:
+                    w.w("await env.monitorEnter(t,");
+                    w.w(of(inst.params[0]));
+                    w.w(");");
+                    break;
+                case MONITOR_EXIT:
+                    w.w("await env.monitorExit(t,");
+                    w.w(of(inst.params[0]));
+                    w.w(");");
+                    break;
                 case CHECK_CAST: break;
+                case INSTANCEOF:
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output));
+                    w.w("=instanceOf(").w(of(inst.params[0])).w(",").w(of(inst.params[1])).w(");");
+                    break;
                 default:
                     throw new RuntimeException("Unknown opcode " + inst.opcode);
             }
@@ -497,10 +581,18 @@ public class IR2JS {
             return "t" + ((IRTmp) arg).index;
         if (arg instanceof IRParameter)
             return "p" + ((IRParameter) arg).index;
+        if (arg instanceof IRByte)
+            return Byte.toString(((IRByte) arg).n);
         if (arg instanceof IRInt)
             return Integer.toString(((IRInt) arg).n);
+        if (arg instanceof IRLong)
+            return ((IRLong) arg).n + "n";
+        if (arg instanceof IRFloat)
+            return Float.toString(((IRFloat) arg).n);
+        if (arg instanceof IRDouble)
+            return Double.toString(((IRDouble) arg).n);
         if (arg instanceof String)
-            return '"' + (String) arg + '"';
+            return '"' + ((String) arg).replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + '"';
         return String.valueOf(arg);
     }
 }
