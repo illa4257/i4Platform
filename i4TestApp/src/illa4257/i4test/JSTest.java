@@ -15,14 +15,14 @@ public class JSTest {
     public static void main(String[] args) throws Exception {
         try (final PrintStream out = new PrintStream(new File("i4TestApp/src/illa4257/i4test/bootstrap.js"))) {
             final List<Class<?>> classes = Arrays.asList(
-                    /*Object.class,
+                    Object.class,
                     Stack.class,
                     AbstractCollection.class,
                     AbstractList.class,
                     Vector.class,
                     ClassLoader.class,
                     ProtectionDomain.class,
-                    System.class*/
+                    System.class
             );
             final IR2JS.PSW w = new IR2JS.PSW(out);
             w.w("var env = new AsyncJavaEnv();").ln()
@@ -64,7 +64,8 @@ public class JSTest {
             loadClass(irClasses, loaded, irClasses.get(c.superName), w);
         loaded.add(c.name);
         w.ln().w("await addClass(class_loader,env,null,");
-        IR2JS.write(new IR2JS.MW(new IR2JS.SW(w, 1)), c);
+        //IR2JS.write(new IR2JS.MW(new IR2JS.SW(w, 1)), c);
+        IR2JS.write(new IR2JS.SW(w, 1), c);
         w.w(");");
     }
 }

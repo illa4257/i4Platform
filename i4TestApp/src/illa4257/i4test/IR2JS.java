@@ -289,6 +289,8 @@ public class IR2JS {
                 case MULTIPLY:
                 case DIVIDE:
                 case REMAINDER:
+                case SHIFT_LEFT:
+                case SHIFT_RIGHT:
                     if ((inst.opcode == Opcode.DIVIDE || inst.opcode == Opcode.REMAINDER) && (inst.params[2] == IRType.Kind.INT || inst.params[2] == IRType.Kind.LONG)) {
                         w.w("if(");
                         w.w(of(inst.params[1]));
@@ -313,15 +315,26 @@ public class IR2JS {
                         case MULTIPLY: w.w(inst.params[2] == IRType.Kind.INT ? "," : "*"); break;
                         case DIVIDE: w.w("/"); break;
                         case REMAINDER: w.w("%"); break;
+                        case SHIFT_LEFT: w.w("<<"); if (inst.params[2] == IRType.Kind.LONG) w.w("BigInt("); break;
+                        case SHIFT_RIGHT: w.w(">>"); if (inst.params[2] == IRType.Kind.LONG) w.w("BigInt("); break;
                     }
                     w.w(of(inst.params[1]));
                     switch ((IRType.Kind) inst.params[2]) {
                         case INT: w.w(inst.opcode == Opcode.MULTIPLY ? ")" : ") | 0"); break;
-                        case LONG: w.w(")"); break;
+                        case LONG: if (inst.opcode == Opcode.SHIFT_LEFT || inst.opcode == Opcode.SHIFT_RIGHT) w.w("&0x3f)"); w.w(")"); break;
                         case FLOAT: w.w(")"); break;
                     }
                     w.w(";");
                     break;
+                case LONG2INT: {
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output));
+                    w.w("=Number(BigInt.asIntN(32,");
+                    w.w(of(inst.params[0]));
+                    w.w(")) | 0;");
+                    break;
+                }
 
                 case STORE: {
                     w.w(of(inst.output));

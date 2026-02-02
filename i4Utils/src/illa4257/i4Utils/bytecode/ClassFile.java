@@ -1,6 +1,7 @@
 package illa4257.i4Utils.bytecode;
 
 import illa4257.i4Utils.io.IO;
+import illa4257.i4Utils.io.TrackInputStream;
 import illa4257.i4Utils.ir.*;
 import illa4257.i4Utils.ir.IRExc;
 import illa4257.i4Utils.lists.Iter;
@@ -153,7 +154,7 @@ public class ClassFile {
                 final ArrayList<Stack<Object>> activeStacks = new ArrayList<>();
                 activeStacks.add(new Stack<>());
                 final HashMap<IRAnchor, ArrayList<Stack<Object>>> stacks = new HashMap<>();
-                try (final ByteArrayInputStream is = new ByteArrayInputStream(attr.info)) {
+                try (final TrackInputStream is = new TrackInputStream(new ByteArrayInputStream(attr.info))) {
                     IO.readBEShort(is); // Max Stack
                     IO.readBEShort(is); // Max Locals
 
@@ -192,7 +193,9 @@ public class ClassFile {
 
 
                     final Consumer<IRAnchor> newBranch = a -> {
-                        if (a.id < 1)
+                        if (!(a.id instanceof Integer))
+                            throw new RuntimeException("Not allowed " + a);
+                        if ((int) a.id < 1)
                             return;
                         //i4Logger.INSTANCE.w(new RuntimeException("new branch " + activeStacks));
                         final ArrayList<Stack<Object>> vs = new ArrayList<>();
@@ -265,9 +268,9 @@ public class ClassFile {
                         }
                         return new IRTmp(c);
                     };
-                    
-                    for (; codeLen != 0; codeLen--) {
-                        final int currentPC = totalCodeLen - codeLen;
+                    for (codeLen--; codeLen >= 0; codeLen--) {
+                        final long codeStart = is.position;
+                        final int currentPC = totalCodeLen - codeLen - 1;
                         for (final Exc exc : Iter.reversible(excs))
                             if (exc.start == currentPC) {
                                 instructions.add(new Inst(Opcode.TRY, new Object[] { exc.exc }));
@@ -363,9 +366,18 @@ public class ClassFile {
                             }
 
                             case 18: // ldc
+                            case 19: // ldc_w
+                            case 20: // ldc2_w
                             {
-                                codeLen--;
-                                Object v = cf.constantPool.get(IO.readByteI(is) - 1);
+                                Object v;
+                                if (b == 18) {
+                                    codeLen--;
+                                    v = cf.constantPool.get(IO.readByteI(is) - 1);
+                                } else {
+                                    codeLen -= 2;
+                                    v = cf.constantPool.get(IO.readBEShortI(is) - 1);
+                                }
+
                                 if (v instanceof ClsTag)
                                     v = cf.constantPool.get(((ClsTag) v).nameIndex - 1);
                                 else if (v instanceof IntTag)
@@ -377,34 +389,10 @@ public class ClassFile {
                                 else if (v instanceof DoubleTag)
                                     v = new IRDouble(((DoubleTag) v).n);
                                 else if (v instanceof StrTag)
-                                    v = cf.constantPool.get(((StrTag) v).stringIndex - 1);
-                                else
-                                    throw new RuntimeException("Unknown type of constants: " + v);
-                                final Inst inst = new Inst(Opcode.STORE, new Object[]{v});
-                                instructions.add(inst);
-                                pushOperand.accept(inst);
-                                break;
-                            }
-
-                            case 20: // ldc2_w
-                            {
-                                codeLen -= 2;
-                                Object v = cf.constantPool.get(IO.readBEShortI(is) - 1);
-                                if (v instanceof ClsTag)
-                                    v = cf.constantPool.get(((ClassFile.StrTag) v).stringIndex - 1);
-                                else if (v instanceof IntTag)
-                                    v = new IRInt(((IntTag) v).n);
-                                else if (v instanceof LongTag)
-                                    v = new IRLong(((LongTag) v).n);
-                                else if (v instanceof FloatTag)
-                                    v = new IRFloat(((FloatTag) v).n);
-                                else if (v instanceof DoubleTag)
-                                    v = new IRDouble(((DoubleTag) v).n);
-                                else if (v instanceof StrTag)
                                     v = cf.constantPool.get(((ClassFile.StrTag) v).stringIndex - 1);
                                 else
                                     throw new RuntimeException("Unknown type of constants: " + v);
-                                final Inst inst = new Inst(Opcode.STORE, new Object[]{v});
+                                final Inst inst = new Inst(Opcode.STORE, new Object[]{ v });
                                 instructions.add(inst);
                                 pushOperand.accept(inst);
                                 break;
@@ -436,6 +424,8 @@ public class ClassFile {
 
                             case 30: // lload_0
                             case 31: // lload_1
+                            case 32: // lload_2
+                            case 33: // lload_3
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRRegister(b - 30)});
                                 instructions.add(inst);
@@ -470,18 +460,20 @@ public class ClassFile {
                             case 44: // aload_2
                             case 45: // aload_3
                             {
-                                final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRRegister(b - 42)});
+                                final Inst inst = new Inst(Opcode.STORE, new Object[]{ new IRRegister(b - 42) });
                                 instructions.add(inst);
                                 pushOperand.accept(inst);
                                 break;
                             }
 
                             case 46: // iaload
+                            case 47: // laload
                             case 48: // faload
                             case 49: // daload
                             case 50: // aaload
                             case 51: // baload
                             case 52: // caload
+                            case 53: // saload
                             {
                                 final Object index = popOperand.get();
                                 final Inst inst = new Inst(Opcode.ARRAY_GET, new Object[]{popOperand.get(), index});
@@ -542,7 +534,7 @@ public class ClassFile {
                             case 77: // astore_2
                             case 78: // astore_3
                             {
-                                instructions.add(new Inst(Opcode.STORE, new IRRegister(b - 75), new Object[]{popOperand.get()}));
+                                instructions.add(new Inst(Opcode.STORE, new IRRegister(b - 75), new Object[]{ popOperand.get() }));
                                 break;
                             }
 
@@ -553,6 +545,7 @@ public class ClassFile {
                             case 83: // aastore
                             case 84: // bastore
                             case 85: // castore
+                            case 86: // sastore
                             {
                                 final Object val = popOperand.get(), index = popOperand.get();
                                 instructions.add(new Inst(Opcode.ARRAY_SET, null, new Object[]{popOperand.get(), index, val}));
@@ -560,17 +553,6 @@ public class ClassFile {
                             }
 
                             case 88: { // pop2
-                                /*final Object r = activeStacks.get(0).remove(activeStacks.get(0).size() - 1); // TODO: fix
-                                if (r == Const.LONG_RESULT) {
-                                    last.remove(last.size() - 1);
-                                    break;
-                                }
-                                if (r == Const.RESULT) {
-                                    final Inst inst = last.remove(last.size() - 1);
-                                    final IRMethodRef ref = (IRMethodRef) inst.params[0];
-                                    if ((ref.type.kind == IRType.Kind.LONG || ref.type.kind == IRType.Kind.DOUBLE) && ref.type.array == 0)
-                                        break;
-                                }*/
                                 if (activeStacks.isEmpty())
                                     throw new RuntimeException("Illegal state");
                                 for (final Stack<Object> stack : activeStacks)
@@ -579,13 +561,6 @@ public class ClassFile {
                                 break;
                             }
                             case 87: { // pop
-                                /*final Object r = activeStacks.get(0).remove(activeStacks.get(0).size() - 1); // TODO: fix
-                                if (r == Const.LONG_RESULT) {
-                                    pushOperand.accept(Const.RESULT);
-                                    break;
-                                }
-                                if (r == Const.RESULT)
-                                    last.remove(last.size() - 1);*/
                                 if (activeStacks.isEmpty())
                                     throw new RuntimeException("Illegal state");
                                 for (final Stack<Object> stack : activeStacks)
@@ -683,6 +658,14 @@ public class ClassFile {
                                 break;
                             }
 
+                            case 95: // swap
+                            {
+                                final Object v1 = popOperand.get(), v2 = popOperand.get();
+                                pushOperand.accept(v1);
+                                pushOperand.accept(v2);
+                                break;
+                            }
+
                             case 96: // iadd
                             case 97: // ladd
                             case 98: // fadd
@@ -745,6 +728,7 @@ public class ClassFile {
                             }
 
                             case 116: // ineg
+                            case 117: // lneg
                             case 118: // fneg
                             case 119: // dneg
                             {
@@ -774,12 +758,25 @@ public class ClassFile {
                                 break;
                             }
 
+                            case 125: // lushr
+                            {
+                                final Object s = popOperand.get();
+                                final Inst inst = new Inst(Opcode.UNSIGNED_SHIFT_RIGHT, new Object[] { popOperand.get(), s, nType(b - 124) });
+                                instructions.add(inst);
+                                pushOperand.accept(inst);
+                                break;
+                            }
+
                             case 126: // iand
+                            case 127: // land
                             case 128: // ior
+                            case 129: // lor
                             case 130: // ixor
+                            case 131: // lxor
                             {
                                 final Object v2 = popOperand.get();
-                                final Inst inst = new Inst(b == 126 ? Opcode.AND : b == 128 ? Opcode.OR : Opcode.XOR, new Object[] { popOperand.get(), v2 });
+                                final Inst inst = new Inst(b == 126 || b == 127 ? Opcode.AND : b == 128 || b == 129 ? Opcode.OR : Opcode.XOR, new Object[] { popOperand.get(), v2,
+                                b == 126 || b == 128 || b == 130 ? IRType.Kind.INT : IRType.Kind.LONG });
                                 instructions.add(inst);
                                 pushOperand.accept(inst);
                                 break;
@@ -794,104 +791,42 @@ public class ClassFile {
                             }
 
                             case 133: // i2l
-                            {
-                                final Inst inst = new Inst(Opcode.INT2LONG, new Object[] { popOperand.get() });
-                                instructions.add(inst);
-                                pushOperand.accept(inst);
-                                break;
-                            }
-
                             case 134: // i2f
-                            {
-                                final Inst inst = new Inst(Opcode.INT2FLOAT, new Object[]{popOperand.get()});
-                                instructions.add(inst);
-                                pushOperand.accept(inst);
-                                break;
-                            }
-
                             case 135: // i2d
-                            {
-                                final Inst inst = new Inst(Opcode.INT2DOUBLE, new Object[]{popOperand.get()});
-                                instructions.add(inst);
-                                pushOperand.accept(inst);
-                                break;
-                            }
-
                             case 136: // l2i
-                            {
-                                final Inst inst = new Inst(Opcode.LONG2INT, new Object[]{popOperand.get()});
-                                instructions.add(inst);
-                                pushOperand.accept(inst);
-                                break;
-                            }
-
+                            case 137: // l2f
+                            case 138: // l2d
                             case 139: // f2i
-                            {
-                                final Inst inst = new Inst(Opcode.FLOAT2INT, new Object[]{popOperand.get()});
-                                instructions.add(inst);
-                                pushOperand.accept(inst);
-                                break;
-                            }
-
                             case 140: // f2l
-                            {
-                                final Inst inst = new Inst(Opcode.FLOAT2LONG, new Object[]{popOperand.get()});
-                                instructions.add(inst);
-                                pushOperand.accept(inst);
-                                break;
-                            }
-
                             case 141: // f2d
-                            {
-                                final Inst inst = new Inst(Opcode.FLOAT2DOUBLE, new Object[]{popOperand.get()});
-                                instructions.add(inst);
-                                pushOperand.accept(inst);
-                                break;
-                            }
-
                             case 142: // d2i
-                            {
-                                final Inst inst = new Inst(Opcode.DOUBLE2INT, new Object[]{popOperand.get()});
-                                instructions.add(inst);
-                                pushOperand.accept(inst);
-                                break;
-                            }
-
                             case 143: // d2l
-                            {
-                                final Inst inst = new Inst(Opcode.DOUBLE2LONG, new Object[]{popOperand.get()});
-                                instructions.add(inst);
-                                pushOperand.accept(inst);
-                                break;
-                            }
-
                             case 144: // d2f
-                            {
-                                final Inst inst = new Inst(Opcode.DOUBLE2FLOAT, new Object[]{popOperand.get()});
-                                instructions.add(inst);
-                                pushOperand.accept(inst);
-                                break;
-                            }
-
                             case 145: // i2b
-                            {
-                                final Inst inst = new Inst(Opcode.INT2BYTE, new Object[]{popOperand.get()});
-                                instructions.add(inst);
-                                pushOperand.accept(inst);
-                                break;
-                            }
-
                             case 146: // i2c
-                            {
-                                final Inst inst = new Inst(Opcode.INT2CHAR, new Object[]{popOperand.get()});
-                                instructions.add(inst);
-                                pushOperand.accept(inst);
-                                break;
-                            }
-
                             case 147: // i2s
                             {
-                                final Inst inst = new Inst(Opcode.INT2SHORT, new Object[]{popOperand.get()});
+                                final Inst inst = new Inst(
+                                        b == 133 ? Opcode.INT2LONG :
+                                        b == 134 ? Opcode.INT2FLOAT :
+                                        b == 135 ? Opcode.INT2DOUBLE :
+
+                                        b == 136 ? Opcode.LONG2INT :
+                                        b == 137 ? Opcode.LONG2FLOAT :
+                                        b == 138 ? Opcode.LONG2DOUBLE :
+
+                                        b == 139 ? Opcode.FLOAT2INT :
+                                        b == 140 ? Opcode.FLOAT2LONG :
+                                        b == 141 ? Opcode.FLOAT2DOUBLE :
+
+                                        b == 142 ? Opcode.DOUBLE2INT :
+                                        b == 143 ? Opcode.DOUBLE2FLOAT :
+                                        b == 144 ? Opcode.DOUBLE2LONG :
+
+                                        b == 145 ? Opcode.INT2BYTE :
+                                        b == 146 ? Opcode.INT2CHAR :
+                                                Opcode.INT2SHORT
+                                        , new Object[]{ popOperand.get() });
                                 instructions.add(inst);
                                 pushOperand.accept(inst);
                                 break;
@@ -972,12 +907,35 @@ public class ClassFile {
                                 break;
                             }
 
-                            case 168: { // jsr
+                            case 168: // jsr
+                            { // TODO: Check it with java -5
                                 codeLen -= 2;
-                                final IRAnchor skip = new IRAnchor(IO.readBEShort(is));
+                                final IRAnchor skip = new IRAnchor(IO.readBEShort(is)), ret = new IRAnchor(instructions.size());
                                 instructions.add(new Inst(Opcode.GOTO, new Object[] { skip }));
                                 track.add(skip);
+                                instructions.add(new Inst(Opcode.ANCHOR, new Object[] { ret.id }));
+                                // TODO: Here are 2 instructions, need to do steps.add(0, bytes), steps.add(0, 0) and inst size+=2.
+                                // TODO: Another question is the operand stack.
                                 break;
+                            }
+
+                            case 169: // ret
+                            {
+                                codeLen--;
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { new IRAnchor(new IRRegister(IO.readByteI(is))) }));
+                                break;
+                            }
+
+                            case 170: // tableswitch
+                            {
+                                // TODO: Implement it!
+                                throw new RuntimeException("Not implemented");
+                            }
+
+                            case 171: // lookupswitch
+                            {
+                                // TODO: Implement it!
+                                throw new RuntimeException("Not implemented");
                             }
 
                             case 172: // ireturn
@@ -1019,8 +977,9 @@ public class ClassFile {
                                 break;
                             }
 
-                            case 181: {
-                                codeLen -= 2; // putfield
+                            case 181: // putfield
+                            {
+                                codeLen -= 2;
                                 Object val = popOperand.get();
                                 instructions.add(new Inst(Opcode.PUT_FIELD, new Object[] { fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IO.readBEShort(is) - 1)), popOperand.get(), val }));
                                 break;
@@ -1157,6 +1116,57 @@ public class ClassFile {
                                 break;
                             }
 
+                            case 196: // wide
+                            {
+                                codeLen -= 3;
+                                final int b2 = IO.readByteI(is);
+                                switch (b2) {
+                                    case 21: // iload
+                                    case 22: // lload
+                                    case 23: // fload
+                                    case 24: // dload
+                                    case 25: // aload
+                                    {
+                                        final Inst inst = new Inst(Opcode.STORE, new Object[]{ new IRRegister(IO.readBEShortI(is)) });
+                                        instructions.add(inst);
+                                        pushOperand.accept(inst);
+                                        break;
+                                    }
+                                    case 54: // istore
+                                    case 55: // lstore
+                                    case 56: // fstore
+                                    case 57: // dstore
+                                    case 58: // astore
+                                    {
+                                        instructions.add(new Inst(Opcode.STORE, new IRRegister(IO.readBEShortI(is)), new Object[]{ popOperand.get() }));
+                                        break;
+                                    }
+                                    case 132: // iinc
+                                    {
+                                        codeLen -= 2;
+                                        final int i = IO.readBEShortI(is);
+                                        instructions.add(new Inst(Opcode.ADD, new IRRegister(i), new Object[] { new IRRegister(i), new IRInt(IO.readBEShortI(is)), IRType.Kind.INT }));
+                                        break;
+                                    }
+                                    default: throw new RuntimeException("Unknown wide opcode " + b);
+                                }
+                                break;
+                            }
+
+                            case 197: // multianewarray
+                            {
+                                codeLen -= 3;
+                                final Object cls = cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShortI(is) - 1)).nameIndex - 1);
+                                int dim = IO.readByteI(is);
+                                final Inst inst = new Inst(Opcode.NEW_ARRAY, dim + 1);
+                                inst.params[0] = cls;
+                                for (int i = dim; i > 0; i--)
+                                    inst.params[i] = popOperand.get();
+                                instructions.add(inst);
+                                pushOperand.accept(inst);
+                                break;
+                            }
+
                             case 198: // if_null
                             case 199: // if_nonnull
                             {
@@ -1175,46 +1185,64 @@ public class ClassFile {
                                 break;
                             }
 
+                            case 201: // jsr_w
+                            { // TODO: Check it with java -5
+                                codeLen -= 4;
+                                final IRAnchor skip = new IRAnchor(IO.readBEInt(is)), ret = new IRAnchor(instructions.size());
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { skip }));
+                                track.add(skip);
+                                instructions.add(new Inst(Opcode.ANCHOR, new Object[] { ret.id }));
+                                // TODO: Here are 2 instructions, need to do steps.add(0, bytes), steps.add(0, 0) and inst size+=2.
+                                // TODO: Another question is the operand stack.
+                                break;
+                            }
+
                             default:
                                 throw new RuntimeException("Unknown operation: " + b);
                         }
-
                         final int delta = old - codeLen;
+                        if (is.position - codeStart != delta)
+                            throw new RuntimeException("Wrong delta " + (is.position - codeStart) + " vs " + delta);
                         old = codeLen;
                         {
-                            final Iterator<IRAnchor> iter = track.iterator();
+                            Iterator<IRAnchor> iter = track.iterator();
                             final int instDelta = instructions.size() - oldInstSize;
                             oldInstSize = instructions.size();
+                            if (instDelta > 1)
+                                throw new RuntimeException("Too much");
                             m:
                             while (iter.hasNext()) {
                                 final IRAnchor n = iter.next();
-                                if (n.id < 0) {
+                                if ((int) n.id < 0) {
+                                    final int target = (int) n.id;
+                                    //n.id = (int) n.id + deltaBonus + (instDelta == 0 ? delta : 0);
+                                    //n.id = (int) n.id - deltaBonus;
                                     for (int i = 0; i < steps.size(); i++) {
-                                        n.id += steps.get(i);
-                                        if (n.id == 0) {
+                                        n.id = (int) n.id + steps.get(i);
+                                        if ((int) n.id == 0) {
                                             iter.remove();
                                             final Inst anchor = instructions.get(instructions.size() - 3 - i);
                                             if (anchor.opcode == Opcode.ANCHOR) {
-                                                n.id = (int) anchor.params[0];
+                                                n.id = anchor.params[0];
                                                 continue m;
                                             }
                                             n.id = instructions.size() - 2 - i;
-                                            instructions.add(n.id, new Inst(Opcode.ANCHOR, new Object[]{n.id}));
-                                            steps.add(steps.size() - n.id, 0);
+                                            instructions.add((int) n.id, new Inst(Opcode.ANCHOR, new Object[]{n.id}));
+                                            steps.add(steps.size() - (int) n.id, 0);
                                             oldInstSize++;
                                             continue m;
-                                        } else if (n.id > 0)
-                                            throw new RuntimeException("Too much: " + n.id + " | " + (instructions.size() - n.id) + " | " + instructions.size() + " vs " + steps.size() + " | " + steps);
+                                        } else if ((int) n.id > 0)
+                                            throw new RuntimeException("Too much: " + n.id + " | target: " + target + " | " + deltaBonus + "+" + delta + "/" + instDelta + " | " + i + " | " + (instructions.size() - (int) n.id) + " | " + instructions.size() + " vs " + steps.size() + " | " + steps);
                                     }
                                     throw new RuntimeException("Illegal step amount " + n.id + " vs " + steps);
                                 }
-                                n.id -= delta;
-                                if (n.id == 0) {
+                                n.id = (int) n.id - delta;
+                                if ((int) n.id == 0) {
                                     iter.remove();
                                     if (!instructions.isEmpty()) {
                                         final Inst anchor = instructions.get(instructions.size() - 1);
                                         if (anchor.opcode == Opcode.ANCHOR) {
-                                            n.id = (int) anchor.params[0];
+                                            n.id = anchor.params[0];
                                             continue;
                                         }
                                     }
@@ -1292,8 +1320,18 @@ public class ClassFile {
                     if (!track.isEmpty())
                         throw new RuntimeException("Some tracks left: " + track);
                 } catch (final RuntimeException e) {
-                    i4Logger.INSTANCE.e(m.name);
-                    m.print();
+                    i4Logger.INSTANCE.e("#" + m.name);
+                    //m.print();
+                    int si = steps.size() - 1, i = 0;
+                    System.out.println("[");
+                    for (final Inst inst : instructions) {
+                        System.out.println("\t" + i + "\t" + inst.opcode + ' ' + Arrays.toString(inst.params) + " >> " + inst.output);
+                        if (si >= 0)
+                            i += steps.get(si--);
+                        else
+                            i = -1;
+                    }
+                    System.out.println("]");
                     throw e;
                 }
             }
@@ -1450,7 +1488,12 @@ public class ClassFile {
             cls.fields.add(field);
         }
         for (final Method m : methods)
-            cls.methods.add(m.toIRMethod(this));
+            try {
+                cls.methods.add(m.toIRMethod(this));
+            } catch (final RuntimeException e) {
+                System.out.println(cls.name);
+                throw e;
+            }
         return cls;
     }
 

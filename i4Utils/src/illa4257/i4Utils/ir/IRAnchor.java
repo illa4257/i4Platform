@@ -1,9 +1,11 @@
 package illa4257.i4Utils.ir;
 
 public class IRAnchor {
-    public int id;
+    public Object id;
 
-    public IRAnchor(final int id) { this.id = id; }
+    public IRAnchor(final Object id) {
+        this.id = id instanceof Short ? (int) (short) id : id;
+    }
 
     @Override
     public String toString() {
