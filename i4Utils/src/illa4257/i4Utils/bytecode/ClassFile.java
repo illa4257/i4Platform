@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -146,21 +147,18 @@ public class ClassFile {
             for (final Attr attr : attributes) {
                 if (!"Code".equals(cf.constantPool.get(attr.nameIndex - 1)))
                     continue;
-                final ArrayList<IRAnchor> track = new ArrayList<>();
-                final ArrayList<Integer> steps = new ArrayList<>();//, catchOffsets = new ArrayList<>();
                 final ArrayList<Exc> excs = new ArrayList<>();
                 final ArrayList<Inst> instructions = m.instructions;
-                //final SyncVar<ArrayList<Object>> operands = new SyncVar<>(new ArrayList<>());
+                final Stack<Integer> instSizes = new Stack<>();
+                final ArrayList<IRAnchor> track = new ArrayList<>();
                 final ArrayList<Stack<Object>> activeStacks = new ArrayList<>();
-                activeStacks.add(new Stack<>());
                 final HashMap<IRAnchor, ArrayList<Stack<Object>>> stacks = new HashMap<>();
+                activeStacks.add(new Stack<>());
                 try (final TrackInputStream is = new TrackInputStream(new ByteArrayInputStream(attr.info))) {
                     IO.readBEShort(is); // Max Stack
                     IO.readBEShort(is); // Max Locals
 
-                    int old;
-                    final int totalCodeLen;
-                    int codeLen = old = totalCodeLen = IO.readBEInt(is), deltaBonus = 0, oldInstSize = 0, oldInstSize2 = 0;
+                    final int totalCodeLen = IO.readBEInt(is);
                     is.mark(attr.info.length);
                     //noinspection ResultOfMethodCallIgnored
                     is.skip(totalCodeLen);
@@ -176,26 +174,23 @@ public class ClassFile {
                             exc.exc.cls = (String) cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(type - 1)).nameIndex - 1);
                         else
                             exc.exc.cls = null;
-                        exc.exc.anchor = new IRAnchor(-999);
+                        exc.exc.anchor = new IRAnchor(exc);
                         excs.add(exc);
                     }
                     is.reset();
                     for (int i1 = 0, i2 = 0, ot = (m.access.contains(IRAccess.STATIC) ? 0 : 1), t = m.argumentsTypes.size() + ot; i1 < t; i1++, i2++) {
                         instructions.add(new Inst(Opcode.STORE, new IRRegister(i2), new Object[]{ new IRParameter(i1) }));
-                        steps.add(0, 0);
-                        oldInstSize++;
+                        instSizes.add(0);
                         if (i1 < ot)
                             continue;
                         final IRType type = m.argumentsTypes.get(i1 - ot);
                         if ((type.kind == IRType.Kind.LONG || type.kind == IRType.Kind.DOUBLE) && type.array == 0)
                             i2++;
                     }
-
-
                     final Consumer<IRAnchor> newBranch = a -> {
-                        if (!(a.id instanceof Integer))
+                        if (!(a.id instanceof Long))
                             throw new RuntimeException("Not allowed " + a);
-                        if ((int) a.id < 1)
+                        if ((long) a.id < 1)
                             return;
                         //i4Logger.INSTANCE.w(new RuntimeException("new branch " + activeStacks));
                         final ArrayList<Stack<Object>> vs = new ArrayList<>();
@@ -268,31 +263,103 @@ public class ClassFile {
                         }
                         return new IRTmp(c);
                     };
-                    for (codeLen--; codeLen >= 0; codeLen--) {
-                        final long codeStart = is.position;
-                        final int currentPC = totalCodeLen - codeLen - 1;
-                        for (final Exc exc : Iter.reversible(excs))
-                            if (exc.start == currentPC) {
-                                instructions.add(new Inst(Opcode.TRY, new Object[] { exc.exc }));
-                                steps.add(0, 0);
-                                oldInstSize++;
+                    final ArrayList<IRAnchor> toBeRemoved = new ArrayList<>();
+                    final Consumer<Long> loadStacks = l -> {
+                        for (final Map.Entry<IRAnchor, ArrayList<Stack<Object>>> e : stacks.entrySet()) {
+                            if (e.getKey().id instanceof Exc)
+                                continue;
+                            if (l != (long) e.getKey().id)
+                                continue;
+                            activeStacks.addAll(e.getValue());
+                            toBeRemoved.add(e.getKey());
+                        }
+                        for (final IRAnchor a : toBeRemoved)
+                            stacks.remove(a);
+                        toBeRemoved.clear();
+                    };
+                    boolean add = true;
+                    final long codeStart = is.position;
+                    while (is.position - codeStart != totalCodeLen) {
+                        final long instructionStart = is.position - codeStart;
+                        AtomicInteger instSize = new AtomicInteger(instructions.size());
+                        final Function<Integer, IRAnchor> newAnchor = offset -> {
+                            final long o = instructionStart + offset;
+                            final IRAnchor anchor = new IRAnchor(o);
+                            if (offset < 0) {
+                                int i = 0;
+                                long p = 0;
+                                while (true) {
+                                    if (p >= o) {
+                                        final Inst old = instructions.get(i);
+                                        if (old.opcode == Opcode.ANCHOR)
+                                            anchor.id = old.params[0];
+                                        else {
+                                            instructions.add(i, new Inst(Opcode.ANCHOR, new Object[]{ o }));
+                                            instSizes.add(i, 0);
+                                            instSize.getAndIncrement();
+                                        }
+                                        break;
+                                    }
+                                    p += instSizes.get(i++);
+                                }
+                            } else
+                                track.add(anchor);
+                            return anchor;
+                        };
+                        {
+                            IRAnchor f = null;
+                            Iterator<IRAnchor> ai = track.iterator();
+                            while (ai.hasNext()) {
+                                final IRAnchor anchor = ai.next();
+                                if ((long) anchor.id != instructionStart)
+                                    continue;
+                                if (f == null) {
+                                    f = anchor;
+                                    final Inst old = !instructions.isEmpty() ? instructions.get(instructions.size() - 1) : null;
+                                    if (old.opcode == Opcode.ANCHOR)
+                                        anchor.id = old.params[0];
+                                    else {
+                                        instructions.add(new Inst(Opcode.ANCHOR, new Object[]{anchor.id}));
+                                        instSizes.add(0);
+                                        instSize.getAndIncrement();
+                                    }
+                                    loadStacks.accept(instructionStart);
+                                } else
+                                    anchor.id = f.id;
+                                ai.remove();
                             }
-                        for (final Exc exc : excs)
-                            if (exc.end == currentPC) {
-                                instructions.add(new Inst(Opcode.CATCH, new Object[] { exc.exc }));
-                                steps.add(0, 0);
-                                oldInstSize++;
-                            }
-                        for (final Exc exc : excs)
-                            if (exc.offset == currentPC) {
-                                instructions.add(new Inst(Opcode.ANCHOR, new Object[] { exc.exc.anchor.id = instructions.size() }));
-                                steps.add(0, 0);
-                                oldInstSize++;
-                                activeStacks.clear();
-                                activeStacks.add(new Stack<>());
-                                pushOperand.accept(Const.EXCEPTION);
-                            }
-                        final int b = is.read();
+                            for (final Exc exc : Iter.reversible(excs))
+                                if (exc.start == instructionStart) {
+                                    instructions.add(new Inst(Opcode.TRY, new Object[]{exc.exc}));
+                                    instSizes.add(0);
+                                    instSize.getAndIncrement();
+                                }
+                            for (final Exc exc : excs)
+                                if (exc.end == instructionStart) {
+                                    instructions.add(new Inst(Opcode.CATCH, new Object[]{exc.exc}));
+                                    instSizes.add(0);
+                                    instSize.getAndIncrement();
+                                    final ArrayList<Stack<Object>> l = new ArrayList<>();
+                                    l.add(new Stack<>());
+                                    stacks.put(exc.exc.anchor, l);
+                                }
+                            for (final Exc exc : excs)
+                                if (exc.offset == instructionStart) {
+                                    final Inst old = !instructions.isEmpty() ? instructions.get(instructions.size() - 1) : null;
+                                    if (old != null && old.opcode == Opcode.ANCHOR) {
+                                        exc.exc.anchor.id = old.params[0];
+                                    } else {
+                                        instructions.add(new Inst(Opcode.ANCHOR, new Object[]{exc.exc.anchor.id = instructionStart}));
+                                        instSizes.add(0);
+                                        instSize.getAndIncrement();
+                                        loadStacks.accept(instructionStart);
+                                    }
+                                    activeStacks.clear();
+                                    activeStacks.add(new Stack<>());
+                                    pushOperand.accept(Const.EXCEPTION);
+                                }
+                        }
+                        final int b = IO.readByteI(is);
                         switch (b) {
                             case 0: { // NOOP
                                 instructions.add(new Inst(Opcode.NO_OP, 0));
@@ -300,7 +367,7 @@ public class ClassFile {
                             }
                             case 1: // null
                             {
-                                final Inst inst = new Inst(Opcode.STORE, new Object[]{null});
+                                final Inst inst = new Inst(Opcode.STORE, new Object[]{ null });
                                 instructions.add(inst);
                                 pushOperand.accept(inst);
                                 break;
@@ -349,7 +416,6 @@ public class ClassFile {
 
                             case 16: // bipush
                             {
-                                codeLen--;
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRByte(IO.readByte(is))});
                                 instructions.add(inst);
                                 pushOperand.accept(inst);
@@ -358,7 +424,6 @@ public class ClassFile {
 
                             case 17: // sipush
                             {
-                                codeLen -= 2;
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRShort(IO.readBEShort(is))});
                                 instructions.add(inst);
                                 pushOperand.accept(inst);
@@ -370,13 +435,10 @@ public class ClassFile {
                             case 20: // ldc2_w
                             {
                                 Object v;
-                                if (b == 18) {
-                                    codeLen--;
+                                if (b == 18)
                                     v = cf.constantPool.get(IO.readByteI(is) - 1);
-                                } else {
-                                    codeLen -= 2;
+                                else
                                     v = cf.constantPool.get(IO.readBEShortI(is) - 1);
-                                }
 
                                 if (v instanceof ClsTag)
                                     v = cf.constantPool.get(((ClsTag) v).nameIndex - 1);
@@ -404,7 +466,6 @@ public class ClassFile {
                             case 24: // dload
                             case 25: // aload
                             {
-                                codeLen--;
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRRegister(IO.readByteI(is))});
                                 instructions.add(inst);
                                 pushOperand.accept(inst);
@@ -488,7 +549,6 @@ public class ClassFile {
                             case 57: // dstore
                             case 58: // astore
                             {
-                                codeLen--;
                                 instructions.add(new Inst(Opcode.STORE, new IRRegister(IO.readByteI(is)), new Object[]{popOperand.get()}));
                                 break;
                             }
@@ -758,6 +818,7 @@ public class ClassFile {
                                 break;
                             }
 
+                            case 124: // iushr
                             case 125: // lushr
                             {
                                 final Object s = popOperand.get();
@@ -784,7 +845,6 @@ public class ClassFile {
 
                             case 132: // iinc
                             {
-                                codeLen -= 2;
                                 final int i = IO.readByteI(is);
                                 instructions.add(new Inst(Opcode.ADD, new IRRegister(i), new Object[] { new IRRegister(i), new IRInt(IO.readByteI(is)), IRType.Kind.INT }));
                                 break;
@@ -860,8 +920,7 @@ public class ClassFile {
                             case 157: // if_gt
                             case 158: // if_le
                             {
-                                codeLen -= 2;
-                                final IRAnchor bn = new IRAnchor(IO.readBEShort(is));
+                                final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
                                 instructions.add(new Inst(
                                         b == 153 ? Opcode.IF_EQ :
                                         b == 154 ? Opcode.IF_NE :
@@ -869,8 +928,8 @@ public class ClassFile {
                                         b == 156 ? Opcode.IF_GE :
                                         b == 157 ? Opcode.IF_GT :
                                                 Opcode.IF_LE
-                                        , new Object[] { popOperand.get(), new IRInt(0), bn }));
-                                track.add(bn);
+                                        , new Object[] { popOperand.get(), new IRInt(0), anchor }));
+                                newBranch.accept(anchor);
                                 break;
                             }
 
@@ -884,8 +943,7 @@ public class ClassFile {
                             case 165: // if_acmpeq
                             case 166: // if_acmpne
                             {
-                                codeLen -= 2;
-                                final IRAnchor skip = new IRAnchor(IO.readBEShort(is));
+                                final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
                                 Object val2 = popOperand.get();
                                 instructions.add(new Inst(
                                         b == 159 || b == 165 ? Opcode.IF_EQ :
@@ -894,34 +952,28 @@ public class ClassFile {
                                                                 b == 162 ? Opcode.IF_GE :
                                                                         b == 163 ? Opcode.IF_GT :
                                                                                 Opcode.IF_LE
-                                        , new Object[] { popOperand.get(), val2, skip }));
-                                track.add(skip);
+                                        , new Object[] { popOperand.get(), val2, anchor }));
+                                newBranch.accept(anchor);
                                 break;
                             }
 
                             case 167: { // goto
-                                codeLen -= 2;
-                                final IRAnchor skip = new IRAnchor(IO.readBEShort(is));
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { skip }));
-                                track.add(skip);
+                                final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { anchor }));
+                                newBranch.accept(anchor);
+                                activeStacks.clear();
                                 break;
                             }
 
                             case 168: // jsr
                             { // TODO: Check it with java -5
-                                codeLen -= 2;
-                                final IRAnchor skip = new IRAnchor(IO.readBEShort(is)), ret = new IRAnchor(instructions.size());
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { skip }));
-                                track.add(skip);
-                                instructions.add(new Inst(Opcode.ANCHOR, new Object[] { ret.id }));
-                                // TODO: Here are 2 instructions, need to do steps.add(0, bytes), steps.add(0, 0) and inst size+=2.
-                                // TODO: Another question is the operand stack.
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IO.readBEShort(is)) }));
+                                // TODO: Check the operand stack.
                                 break;
                             }
 
                             case 169: // ret
                             {
-                                codeLen--;
                                 instructions.add(new Inst(Opcode.GOTO, new Object[] { new IRAnchor(new IRRegister(IO.readByteI(is))) }));
                                 break;
                             }
@@ -950,12 +1002,11 @@ public class ClassFile {
                             }
 
                             case 177: // return
-                                activeStacks.clear();
                                 instructions.add(new Inst(Opcode.RETURN, 0));
+                                activeStacks.clear();
                                 break;
 
                             case 178: { // getstatic
-                                codeLen -= 2;
                                 final Inst inst = new Inst(Opcode.GET_STATIC, new Object[] { fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IO.readBEShort(is) - 1)) });
                                 instructions.add(inst);
                                 pushOperand.accept(inst);
@@ -963,14 +1014,12 @@ public class ClassFile {
                             }
 
                             case 179: { // putstatic
-                                codeLen -= 2;
                                 instructions.add(new Inst(Opcode.PUT_STATIC, new Object[] { fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IO.readBEShort(is) - 1)), popOperand.get() }));
                                 break;
                             }
 
                             case 180: // getfield
                             {
-                                codeLen -= 2;
                                 final Inst inst = new Inst(Opcode.GET_FIELD, new Object[] { fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IO.readBEShort(is) - 1)), popOperand.get() });
                                 instructions.add(inst);
                                 pushOperand.accept(inst);
@@ -979,7 +1028,6 @@ public class ClassFile {
 
                             case 181: // putfield
                             {
-                                codeLen -= 2;
                                 Object val = popOperand.get();
                                 instructions.add(new Inst(Opcode.PUT_FIELD, new Object[] { fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IO.readBEShort(is) - 1)), popOperand.get(), val }));
                                 break;
@@ -989,7 +1037,6 @@ public class ClassFile {
                             case 183: // invokespecial
                             case 184: // invokestatic
                             {
-                                codeLen -= 2;
                                 final ClassFile.MethodRef ref = (ClassFile.MethodRef) cf.constantPool.get(IO.readBEShortI(is) - 1);
                                 final ClassFile.NameAndType nt = (ClassFile.NameAndType) cf.constantPool.get(ref.nameAndTypeIndex - 1);
                                 final Descriptor d = new Descriptor((String) cf.constantPool.get(nt.descriptorIndex - 1));
@@ -1006,7 +1053,6 @@ public class ClassFile {
 
                             case 185: // invokeinterface
                             {
-                                codeLen -= 4;
                                 final InterfaceMethodRef ref = (ClassFile.InterfaceMethodRef) cf.constantPool.get(IO.readBEShortI(is) - 1);
                                 final ClassFile.NameAndType nt = (ClassFile.NameAndType) cf.constantPool.get(ref.nameAndTypeIndex - 1);
                                 final Descriptor d = new Descriptor((String) cf.constantPool.get(nt.descriptorIndex - 1));
@@ -1025,7 +1071,6 @@ public class ClassFile {
 
                             case 186: // invokedynamic
                             {
-                                codeLen -= 4;
                                 final MethodRef ref = (ClassFile.MethodRef) cf.constantPool.get(IO.readBEShortI(is) - 1);
                                 final ClassFile.NameAndType nt = (ClassFile.NameAndType) cf.constantPool.get(ref.nameAndTypeIndex - 1);
                                 final Descriptor d = new Descriptor((String) cf.constantPool.get(nt.descriptorIndex - 1));
@@ -1042,7 +1087,6 @@ public class ClassFile {
                             }
 
                             case 187: { // new
-                                codeLen -= 2;
                                 final Inst inst = new Inst(Opcode.ALLOCATE, new Object[] { cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShort(is) - 1)).nameIndex - 1) });
                                 instructions.add(inst);
                                 pushOperand.accept(inst);
@@ -1050,7 +1094,6 @@ public class ClassFile {
                             }
 
                             case 188: { // newarray
-                                codeLen--;
                                 final byte t = IO.readByte(is);
                                 IRType.Kind kind;
                                 switch (t) {
@@ -1071,7 +1114,6 @@ public class ClassFile {
                             }
 
                             case 189: { // anewarray
-                                codeLen -= 2;
                                 final Inst inst = new Inst(Opcode.NEW_ARRAY, new Object[] { cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShortI(is) - 1)).nameIndex - 1), popOperand.get() });
                                 instructions.add(inst);
                                 pushOperand.accept(inst);
@@ -1088,12 +1130,10 @@ public class ClassFile {
                             case 191: { // athrow
                                 instructions.add(new Inst(Opcode.THROW, new Object[]{ popOperand.get() }));
                                 activeStacks.clear();
-                                // TODO: I removed operands.get().clear();
                                 break;
                             }
 
                             case 192: { // checkcast
-                                codeLen -= 2;
                                 final Object operand = popOperand.get();
                                 pushOperand.accept(operand);
                                 instructions.add(new Inst(Opcode.CHECK_CAST, new Object[]{ operand, cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShort(is) - 1)).nameIndex - 1) }));
@@ -1101,7 +1141,6 @@ public class ClassFile {
                             }
 
                             case 193: { // instanceof
-                                codeLen -= 2;
                                 final Object operand = popOperand.get();
                                 final Inst inst = new Inst(Opcode.INSTANCEOF, new Object[]{ operand, cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShort(is) - 1)).nameIndex - 1) });
                                 instructions.add(inst);
@@ -1118,7 +1157,6 @@ public class ClassFile {
 
                             case 196: // wide
                             {
-                                codeLen -= 3;
                                 final int b2 = IO.readByteI(is);
                                 switch (b2) {
                                     case 21: // iload
@@ -1143,7 +1181,6 @@ public class ClassFile {
                                     }
                                     case 132: // iinc
                                     {
-                                        codeLen -= 2;
                                         final int i = IO.readBEShortI(is);
                                         instructions.add(new Inst(Opcode.ADD, new IRRegister(i), new Object[] { new IRRegister(i), new IRInt(IO.readBEShortI(is)), IRType.Kind.INT }));
                                         break;
@@ -1155,7 +1192,6 @@ public class ClassFile {
 
                             case 197: // multianewarray
                             {
-                                codeLen -= 3;
                                 final Object cls = cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShortI(is) - 1)).nameIndex - 1);
                                 int dim = IO.readByteI(is);
                                 final Inst inst = new Inst(Opcode.NEW_ARRAY, dim + 1);
@@ -1170,131 +1206,42 @@ public class ClassFile {
                             case 198: // if_null
                             case 199: // if_nonnull
                             {
-                                codeLen -= 2;
-                                final IRAnchor skip = new IRAnchor(IO.readBEShort(is));
-                                instructions.add(new Inst(b == 198 ? Opcode.IF_NULL : Opcode.IF_NONNULL, new Object[] { popOperand.get(), skip }));
-                                track.add(skip);
+                                final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
+                                instructions.add(new Inst(b == 198 ? Opcode.IF_NULL : Opcode.IF_NONNULL, new Object[] { popOperand.get(), anchor }));
+                                newBranch.accept(anchor);
                                 break;
                             }
 
                             case 200: { // goto_w
-                                codeLen -= 4;
-                                final IRAnchor skip = new IRAnchor(IO.readBEInt(is));
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { skip }));
-                                track.add(skip);
+                                final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { anchor }));
+                                newBranch.accept(anchor);
+                                activeStacks.clear();
                                 break;
                             }
 
                             case 201: // jsr_w
                             { // TODO: Check it with java -5
-                                codeLen -= 4;
-                                final IRAnchor skip = new IRAnchor(IO.readBEInt(is)), ret = new IRAnchor(instructions.size());
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { skip }));
-                                track.add(skip);
-                                instructions.add(new Inst(Opcode.ANCHOR, new Object[] { ret.id }));
-                                // TODO: Here are 2 instructions, need to do steps.add(0, bytes), steps.add(0, 0) and inst size+=2.
-                                // TODO: Another question is the operand stack.
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IO.readBEShort(is)) }));
+                                // TODO: Check the operand stack.
                                 break;
                             }
 
                             default:
                                 throw new RuntimeException("Unknown operation: " + b);
                         }
-                        final int delta = old - codeLen;
-                        if (is.position - codeStart != delta)
-                            throw new RuntimeException("Wrong delta " + (is.position - codeStart) + " vs " + delta);
-                        old = codeLen;
+
                         {
-                            Iterator<IRAnchor> iter = track.iterator();
-                            final int instDelta = instructions.size() - oldInstSize;
-                            oldInstSize = instructions.size();
+                            final int instDelta = instructions.size() - instSize.get();
+                            final long len = is.position - instructionStart - codeStart;
                             if (instDelta > 1)
-                                throw new RuntimeException("Too much");
-                            m:
-                            while (iter.hasNext()) {
-                                final IRAnchor n = iter.next();
-                                if ((int) n.id < 0) {
-                                    final int target = (int) n.id;
-                                    //n.id = (int) n.id + deltaBonus + (instDelta == 0 ? delta : 0);
-                                    //n.id = (int) n.id - deltaBonus;
-                                    for (int i = 0; i < steps.size(); i++) {
-                                        n.id = (int) n.id + steps.get(i);
-                                        if ((int) n.id == 0) {
-                                            iter.remove();
-                                            final Inst anchor = instructions.get(instructions.size() - 3 - i);
-                                            if (anchor.opcode == Opcode.ANCHOR) {
-                                                n.id = anchor.params[0];
-                                                continue m;
-                                            }
-                                            n.id = instructions.size() - 2 - i;
-                                            instructions.add((int) n.id, new Inst(Opcode.ANCHOR, new Object[]{n.id}));
-                                            steps.add(steps.size() - (int) n.id, 0);
-                                            oldInstSize++;
-                                            continue m;
-                                        } else if ((int) n.id > 0)
-                                            throw new RuntimeException("Too much: " + n.id + " | target: " + target + " | " + deltaBonus + "+" + delta + "/" + instDelta + " | " + i + " | " + (instructions.size() - (int) n.id) + " | " + instructions.size() + " vs " + steps.size() + " | " + steps);
-                                    }
-                                    throw new RuntimeException("Illegal step amount " + n.id + " vs " + steps);
-                                }
-                                n.id = (int) n.id - delta;
-                                if ((int) n.id == 0) {
-                                    iter.remove();
-                                    if (!instructions.isEmpty()) {
-                                        final Inst anchor = instructions.get(instructions.size() - 1);
-                                        if (anchor.opcode == Opcode.ANCHOR) {
-                                            n.id = anchor.params[0];
-                                            continue;
-                                        }
-                                    }
-                                    n.id = instructions.size();
-                                    instructions.add(new Inst(Opcode.ANCHOR, new Object[]{n.id}));
-                                    steps.add(0, 0);
-                                    oldInstSize++;
-                                }
-                            }
-                            if (instDelta == 0)
-                                deltaBonus += delta;
-                            else if (instDelta == 1) {
-                                steps.add(0, delta + deltaBonus);
-                                deltaBonus = 0;
-                            } else
-                                throw new RuntimeException("Too much" + instDelta);
+                                throw new RuntimeException("Instruction has more than one instruction at position " + instructionStart);
+                            if (add)
+                                instSizes.add((int) len);
+                            else
+                                instSizes.add(instSizes.pop() + (int) len);
+                            add = instDelta > 0;
                         }
-                        for (; oldInstSize2 < instructions.size(); oldInstSize2++) {
-                            final Inst inst = instructions.get(oldInstSize2);
-                            if (
-                                    Arrays.asList(
-                                            Opcode.IF_EQ, Opcode.IF_NE,
-                                            Opcode.IF_LT, Opcode.IF_LE,
-                                            Opcode.IF_GT, Opcode.IF_GE
-                                    ).contains(inst.opcode)
-                            ) {
-                                newBranch.accept((IRAnchor) inst.params[2]);
-                                continue;
-                            }
-                            if (
-                                    Arrays.asList(
-                                            Opcode.IF_NULL, Opcode.IF_NONNULL
-                                    ).contains(inst.opcode)
-                            ) {
-                                newBranch.accept((IRAnchor) inst.params[1]);
-                                continue;
-                            }
-                            if (inst.opcode == Opcode.GOTO) {
-                                newBranch.accept((IRAnchor) inst.params[0]);
-                                activeStacks.clear();
-                                continue;
-                            }
-                        }
-                        final ArrayList<IRAnchor> toBeRemoved = new ArrayList<>();
-                        for (final Map.Entry<IRAnchor, ArrayList<Stack<Object>>> e : stacks.entrySet()) {
-                            if (track.contains(e.getKey()))
-                                continue;
-                            activeStacks.addAll(e.getValue());
-                            toBeRemoved.add(e.getKey());
-                        }
-                        for (final IRAnchor a : toBeRemoved)
-                            stacks.remove(a);
                         if (activeStacks.size() > 1) {
                             final Iterator<Stack<Object>> iter = activeStacks.iterator();
                             if (iter.hasNext()) {
@@ -1322,14 +1269,17 @@ public class ClassFile {
                 } catch (final RuntimeException e) {
                     i4Logger.INSTANCE.e("#" + m.name);
                     //m.print();
-                    int si = steps.size() - 1, i = 0;
+                    int i = 0, p = 0;
                     System.out.println("[");
                     for (final Inst inst : instructions) {
-                        System.out.println("\t" + i + "\t" + inst.opcode + ' ' + Arrays.toString(inst.params) + " >> " + inst.output);
-                        if (si >= 0)
-                            i += steps.get(si--);
-                        else
-                            i = -1;
+                        final int l = instSizes.size() > i ? instSizes.get(i) : -1;
+                        System.out.println("\t" + p + "\t" + l + "\t" + inst.opcode + ' ' + Arrays.toString(inst.params) + " >> " + inst.output);
+                        if (l == -1) {
+                            p = -1;
+                            continue;
+                        }
+                        p += l;
+                        i++;
                     }
                     System.out.println("]");
                     throw e;

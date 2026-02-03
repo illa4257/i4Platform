@@ -291,6 +291,7 @@ public class IR2JS {
                 case REMAINDER:
                 case SHIFT_LEFT:
                 case SHIFT_RIGHT:
+                case UNSIGNED_SHIFT_RIGHT:
                     if ((inst.opcode == Opcode.DIVIDE || inst.opcode == Opcode.REMAINDER) && (inst.params[2] == IRType.Kind.INT || inst.params[2] == IRType.Kind.LONG)) {
                         w.w("if(");
                         w.w(of(inst.params[1]));
@@ -305,7 +306,7 @@ public class IR2JS {
                     w.w("=");
                     switch ((IRType.Kind) inst.params[2]) {
                         case INT: w.w(inst.opcode == Opcode.MULTIPLY ? "Math.imul(" : "("); break;
-                        case LONG: w.w(inst.opcode == Opcode.DIVIDE || inst.opcode == Opcode.REMAINDER ? "(" : "BigInt.asIntN(64,"); break;
+                        case LONG: w.w(inst.opcode == Opcode.DIVIDE || inst.opcode == Opcode.REMAINDER ? "(" : inst.opcode == Opcode.UNSIGNED_SHIFT_RIGHT ? "BigInt.asIntN(64,BigInt.asUintN(64," : "BigInt.asIntN(64,"); break;
                         case FLOAT: w.w("Math.fround("); break;
                     }
                     w.w(of(inst.params[0]));
@@ -317,15 +318,41 @@ public class IR2JS {
                         case REMAINDER: w.w("%"); break;
                         case SHIFT_LEFT: w.w("<<"); if (inst.params[2] == IRType.Kind.LONG) w.w("BigInt("); break;
                         case SHIFT_RIGHT: w.w(">>"); if (inst.params[2] == IRType.Kind.LONG) w.w("BigInt("); break;
+                        case UNSIGNED_SHIFT_RIGHT:
+                            if (inst.params[2] == IRType.Kind.LONG)
+                                w.w(")");
+                            w.w(">>");
+                            if (inst.params[2] == IRType.Kind.LONG)
+                                w.w("(BigInt(");
+                            else if (inst.params[2] == IRType.Kind.INT)
+                                w.w(">");
+                            break;
                     }
                     w.w(of(inst.params[1]));
                     switch ((IRType.Kind) inst.params[2]) {
                         case INT: w.w(inst.opcode == Opcode.MULTIPLY ? ")" : ") | 0"); break;
-                        case LONG: if (inst.opcode == Opcode.SHIFT_LEFT || inst.opcode == Opcode.SHIFT_RIGHT) w.w("&0x3f)"); w.w(")"); break;
+                        case LONG:
+                            if (inst.opcode == Opcode.SHIFT_LEFT || inst.opcode == Opcode.SHIFT_RIGHT)
+                                w.w("&0x3f)");
+                            else if (inst.opcode == Opcode.UNSIGNED_SHIFT_RIGHT)
+                                w.w(")&63n)");
+                            w.w(")");
+                            break;
                         case FLOAT: w.w(")"); break;
                     }
                     w.w(";");
                     break;
+
+                case INT2LONG: {
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output));
+                    w.w("=BigInt(");
+                    w.w(of(inst.params[0]));
+                    w.w(");");
+                    break;
+                }
+
                 case LONG2INT: {
                     if (inst.output == null)
                         break;
@@ -439,54 +466,24 @@ public class IR2JS {
                     w.w("}");
                     break;
                 }
-                case IF_EQ: {
+
+                case IF_EQ:
+                case IF_NE:
+                case IF_GT:
+                case IF_LT:
+                case IF_GE:
+                case IF_LE:
+                {
                     w.w("if(");
                     w.w(of(inst.params[0]));
-                    w.w("===");
-                    w.w(of(inst.params[1]));
-                    w.w("){");
-                    w.w("cursor=" + ((IRAnchor) inst.params[2]).id + ';');
-                    w.w("break;");
-                    w.w("}");
-                    break;
-                }
-                case IF_NE: {
-                    w.w("if(");
-                    w.w(of(inst.params[0]));
-                    w.w("!==");
-                    w.w(of(inst.params[1]));
-                    w.w("){");
-                    w.w("cursor=" + ((IRAnchor) inst.params[2]).id + ';');
-                    w.w("break;");
-                    w.w("}");
-                    break;
-                }
-                case IF_GE: {
-                    w.w("if(");
-                    w.w(of(inst.params[0]));
-                    w.w(">=");
-                    w.w(of(inst.params[1]));
-                    w.w("){");
-                    w.w("cursor=" + ((IRAnchor) inst.params[2]).id + ';');
-                    w.w("break;");
-                    w.w("}");
-                    break;
-                }
-                case IF_LE: {
-                    w.w("if(");
-                    w.w(of(inst.params[0]));
-                    w.w("<=");
-                    w.w(of(inst.params[1]));
-                    w.w("){");
-                    w.w("cursor=" + ((IRAnchor) inst.params[2]).id + ';');
-                    w.w("break;");
-                    w.w("}");
-                    break;
-                }
-                case IF_LT: {
-                    w.w("if(");
-                    w.w(of(inst.params[0]));
-                    w.w("<");
+                    switch (inst.opcode) {
+                        case IF_EQ: w.w("==="); break;
+                        case IF_NE: w.w("!=="); break;
+                        case IF_GE: w.w(">="); break;
+                        case IF_LE: w.w("<="); break;
+                        case IF_GT: w.w(">"); break;
+                        case IF_LT: w.w("<"); break;
+                    }
                     w.w(of(inst.params[1]));
                     w.w("){");
                     w.w("cursor=" + ((IRAnchor) inst.params[2]).id + ';');
@@ -605,7 +602,8 @@ public class IR2JS {
         if (arg instanceof IRDouble)
             return Double.toString(((IRDouble) arg).n);
         if (arg instanceof String)
-            return '"' + ((String) arg).replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + '"';
+            return '"' + ((String) arg).replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"")
+                    .replaceAll("\n", "\\\\n").replaceAll("\r", "\\\\r") + '"';
         return String.valueOf(arg);
     }
 }
