@@ -1,9 +1,9 @@
 package illa4257.i4Utils.ir;
 
-public class IRParameter {
+public class IRArg {
     public final int index;
 
-    public IRParameter(int index) {
+    public IRArg(int index) {
         this.index = index;
     }
 

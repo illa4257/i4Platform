@@ -157,11 +157,11 @@ public class IR2JS {
             int i = 0;
             o.w("sc,env,t");
             if (!m.access.contains(IRAccess.STATIC)) {
-                o.w(",p" + i);
+                o.w(",a" + i);
                 i++;
             }
             for (final IRType ignored : m.argumentsTypes)
-                o.w(",p" + i++);
+                o.w(",a" + i++);
             o.w("){").st(2);
             if (m.access.contains(IRAccess.NATIVE)) {
                 o.ln();
@@ -170,22 +170,23 @@ public class IR2JS {
                 o.w("await env.callNative(sc,env,t,").w(methodName(m));
                 i = 0;
                 if (!m.access.contains(IRAccess.STATIC)) {
-                    o.w(",p" + i);
+                    o.w(",a" + i);
                     i++;
                 }
                 for (final IRType ignored : m.argumentsTypes)
-                    o.w(",p" + i++);
+                    o.w(",a" + i++);
                 o.w(");");
             } else
                 try {
                     write(new SW(o, 2), m.instructions);
                 } catch (final RuntimeException e) {
                     m.print();
+                    System.out.println(m.name);
                     throw e;
                 }
             o.st(1).ln().w("},");
         }
-        o.st(0).ln().w("}").ln();
+        o.st(0).ln().w("}");
     }
 
     public static void write(final W w, final ArrayList<Inst> instructions) {
@@ -330,7 +331,7 @@ public class IR2JS {
                     }
                     w.w(of(inst.params[1]));
                     switch ((IRType.Kind) inst.params[2]) {
-                        case INT: w.w(inst.opcode == Opcode.MULTIPLY ? ")" : ") | 0"); break;
+                        case INT: w.w(inst.opcode == Opcode.MULTIPLY ? ")" : ")|0"); break;
                         case LONG:
                             if (inst.opcode == Opcode.SHIFT_LEFT || inst.opcode == Opcode.SHIFT_RIGHT)
                                 w.w("&0x3f)");
@@ -343,11 +344,16 @@ public class IR2JS {
                     w.w(";");
                     break;
 
-                case INT2LONG: {
+                case INT2LONG:
+                case INT2FLOAT:
+                {
                     if (inst.output == null)
                         break;
                     w.w(of(inst.output));
-                    w.w("=BigInt(");
+                    switch (inst.opcode) {
+                        case INT2LONG: w.w("=BigInt("); break;
+                        case INT2FLOAT: w.w("=Math.fround("); break;
+                    }
                     w.w(of(inst.params[0]));
                     w.w(");");
                     break;
@@ -363,11 +369,15 @@ public class IR2JS {
                     break;
                 }
 
+                case FLOAT2INT: {
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output)).w("=isNaN(").w(of(inst.params[0])).w(")?NaN:~~").w(of(inst.params[0])).w(";");
+                    break;
+                }
+
                 case STORE: {
-                    w.w(of(inst.output));
-                    w.w("=");
-                    w.w(of(inst.params[0]));
-                    w.w(";");
+                    w.w(of(inst.output)).w("=").w(of(inst.params[0])).w(";");
                     break;
                 }
                 case GET_STATIC: {
@@ -375,7 +385,7 @@ public class IR2JS {
                     w.w("=");
                     final IRFieldRef ref = (IRFieldRef) inst.params[0];
                     w.w("await env.getField(");
-                    w.w("await env.getClass(sc.class_loader,\"");
+                    w.w("await env.getClass(sc.class_loader,t,\"");
                     w.w(ref.cls);
                     w.w("\"),\"");
                     w.w(ref.name);
@@ -385,7 +395,7 @@ public class IR2JS {
                 case PUT_STATIC: {
                     final IRFieldRef ref = (IRFieldRef) inst.params[0];
                     w.w("env.setField(");
-                    w.w("await env.getClass(sc.class_loader,\"");
+                    w.w("await env.getClass(sc.class_loader,t,\"");
                     w.w(ref.cls);
                     w.w("\"),\"");
                     w.w(ref.name);
@@ -491,6 +501,28 @@ public class IR2JS {
                     w.w("}");
                     break;
                 }
+
+                case OR:
+                case XOR:
+                case AND:
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output));
+                    w.w("=");
+                    switch ((IRType.Kind) inst.params[2]) {
+                        case INT: w.w("("); break;
+                        case LONG: w.w("BigInt.asIntN(64,"); break;
+                    }
+                    w.w(of(inst.params[0]));
+                    w.w(inst.opcode == Opcode.OR ? "|" : inst.opcode == Opcode.XOR ? "^" : "&");
+                    w.w(of(inst.params[1]));
+                    switch ((IRType.Kind) inst.params[2]) {
+                        case INT: w.w(")|0"); break;
+                        case LONG: w.w(")"); break;
+                    }
+                    w.w(";");
+                    break;
+
                 case COMPARE: {
                     if (inst.output == null)
                         break;
@@ -500,12 +532,23 @@ public class IR2JS {
                     w.w(of(inst.params[0]) + "<" + of(inst.params[1]) + "?-1:0;");
                     break;
                 }
+
+                case COMPARE_NAN: {
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output));
+                    w.w("=isNaN(").w(of(inst.params[0]) + ")||isNaN(" + of(inst.params[1]) + ")?" + of(inst.params[2]) + ":");
+                    w.w(of(inst.params[0]) + ">" + of(inst.params[1]) + "?1:");
+                    w.w(of(inst.params[0]) + "<" + of(inst.params[1]) + "?-1:0;");
+                    break;
+                }
+
                 case ALLOCATE:
                     if (inst.output != null) {
                         w.w(of(inst.output));
                         w.w("=");
                     }
-                    w.w("await env.alloc(await env.getClass(sc.class_loader,");
+                    w.w("await env.alloc(await env.getClass(sc.class_loader,t,");
                     w.w(of(inst.params[0]));
                     w.w("));");
                     break;
@@ -516,9 +559,9 @@ public class IR2JS {
                     final Iterator<Object> params = new ArrIterator<>(inst.params);
                     final IRMethodRef ref = (IRMethodRef) params.next();
                     if (inst.opcode == Opcode.INVOKE_VIRTUAL || inst.opcode == Opcode.INVOKE_INTERFACE)
-                        w.w("c=env.virtualMethod(t0.cls," + methodName(ref) + ");").ln();
+                        w.w("c=virtualMethod(t0.cls," + methodName(ref) + ");").ln();
                     else
-                        w.w("c=await env.getClass(sc.class_loader,\"" + ref.cls + "\");").ln();
+                        w.w("c=await env.getClass(sc.class_loader,t,\"" + ref.cls + "\");").ln();
                     if (inst.output != null) {
                         w.w(of(inst.output));
                         w.w("=");
@@ -589,8 +632,8 @@ public class IR2JS {
             return "r" + ((IRRegister) arg).index;
         if (arg instanceof IRTmp)
             return "t" + ((IRTmp) arg).index;
-        if (arg instanceof IRParameter)
-            return "p" + ((IRParameter) arg).index;
+        if (arg instanceof IRArg)
+            return "a" + ((IRArg) arg).index;
         if (arg instanceof IRByte)
             return Byte.toString(((IRByte) arg).n);
         if (arg instanceof IRInt)
@@ -604,6 +647,8 @@ public class IR2JS {
         if (arg instanceof String)
             return '"' + ((String) arg).replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"")
                     .replaceAll("\n", "\\\\n").replaceAll("\r", "\\\\r") + '"';
+        if (arg instanceof IRPhi)
+            throw new RuntimeException("Phi isn't supported.");
         return String.valueOf(arg);
     }
 }

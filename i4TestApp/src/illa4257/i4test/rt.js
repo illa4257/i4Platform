@@ -9,13 +9,17 @@ async function addClass(class_loader, env, t, cls) {
     class_loader.loaded[cls.name] = cls;
     cls.class_loader = class_loader;
     if (cls.super_cls !== undefined)
-        cls.super_cls = await env.getClass(class_loader, cls.super_cls);
-    if (cls["<clinit>()void"] !== undefined)
-        await cls["<clinit>()void"](cls, env, t);
+        cls.super_cls = await env.getClass(class_loader, t, cls.super_cls);
 }
 
 function instanceOf(instance,cls) {
     return true;
+}
+
+function virtualMethod(cls,name) {
+    while (cls[name] === undefined)
+        cls = cls.super_cls;
+    return cls;
 }
 
 class AsyncJavaEnv {
@@ -43,9 +47,14 @@ class AsyncJavaEnv {
         inst['_' + name] = val;
     }
 
-    async getClass(class_loader, cls) {
+    async getClass(class_loader, t, cls) {
         let c = class_loader.loaded[cls];
         if (c === undefined) throw new Error("No class " + cls);
+        if (!c.init) {
+            c.init = true;
+            if (c["<clinit>()void"] !== undefined)
+                await c["<clinit>()void"](c, this, t);
+        }
         return c;
     }
 
@@ -97,16 +106,9 @@ class AsyncJavaEnv {
 }
 
 // natives
-function Java_java_lang_Object_registerNatives__void(cls, env, thread, ...args) {
-
-}
-
-function Java_java_lang_ClassLoader_registerNatives__void(cls, env, thread, ...args) {
-
-}
-
-function Java_java_lang_System_registerNatives__void(cls, env, thread, ...args) {
-
-}
+function Java_java_lang_Object_registerNatives__void(cls, env, thread, ...args) {}
+function Java_java_lang_ClassLoader_registerNatives__void(cls, env, thread, ...args) {}
+function Java_java_lang_System_registerNatives__void(cls, env, thread, ...args) {}
+function Java_sun_misc_Unsafe_registerNatives__void(cls, env, thread, ...args) {}
 
 console.log("rt.js loaded!");

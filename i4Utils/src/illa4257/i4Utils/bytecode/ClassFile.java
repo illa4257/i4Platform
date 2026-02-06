@@ -6,7 +6,6 @@ import illa4257.i4Utils.ir.*;
 import illa4257.i4Utils.ir.IRExc;
 import illa4257.i4Utils.lists.Iter;
 import illa4257.i4Utils.logger.i4Logger;
-import illa4257.i4Utils.str.Str;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -14,6 +13,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -130,10 +130,6 @@ public class ClassFile {
             throw new RuntimeException("Unknown type " + n);
         }
 
-        public static boolean isNot64Bit(final Object o) {
-            throw new RuntimeException("Unknown object " + o);
-        }
-
         public IRMethod toIRMethod(final ClassFile cf) throws IOException {
             final Descriptor descriptor = new Descriptor((String) cf.constantPool.get(descriptorIndex - 1));
             final IRMethod m = new IRMethod();
@@ -153,6 +149,7 @@ public class ClassFile {
                 final ArrayList<IRAnchor> track = new ArrayList<>();
                 final ArrayList<Stack<Object>> activeStacks = new ArrayList<>();
                 final HashMap<IRAnchor, ArrayList<Stack<Object>>> stacks = new HashMap<>();
+                final HashMap<Stack<Object>, Inst> stackStarters = new HashMap<>();
                 activeStacks.add(new Stack<>());
                 try (final TrackInputStream is = new TrackInputStream(new ByteArrayInputStream(attr.info))) {
                     IO.readBEShort(is); // Max Stack
@@ -179,7 +176,7 @@ public class ClassFile {
                     }
                     is.reset();
                     for (int i1 = 0, i2 = 0, ot = (m.access.contains(IRAccess.STATIC) ? 0 : 1), t = m.argumentsTypes.size() + ot; i1 < t; i1++, i2++) {
-                        instructions.add(new Inst(Opcode.STORE, new IRRegister(i2), new Object[]{ new IRParameter(i1) }));
+                        instructions.add(new Inst(Opcode.STORE, new IRRegister(i2), new Object[]{ new IRArg(i1) }));
                         instSizes.add(0);
                         if (i1 < ot)
                             continue;
@@ -187,81 +184,70 @@ public class ClassFile {
                         if ((type.kind == IRType.Kind.LONG || type.kind == IRType.Kind.DOUBLE) && type.array == 0)
                             i2++;
                     }
+                    final AtomicInteger instSize = new AtomicInteger(instructions.size()), counter = new AtomicInteger();
                     final Consumer<IRAnchor> newBranch = a -> {
                         if (!(a.id instanceof Long))
                             throw new RuntimeException("Not allowed " + a);
                         if ((long) a.id < 1)
                             return;
-                        //i4Logger.INSTANCE.w(new RuntimeException("new branch " + activeStacks));
                         final ArrayList<Stack<Object>> vs = new ArrayList<>();
                         for (final Stack<Object> s : activeStacks) {
                             final Stack<Object> s2 = new Stack<>();
                             s2.addAll(s);
                             vs.add(s2);
+                            stackStarters.put(s2, instructions.get(instructions.size() - 1));
                         }
                         stacks.put(a, vs);
                     };
-                    final Consumer<Object> pushOperand = v -> {
+                    final ArrayList<Object> bits64 = new ArrayList<>();
+                    final BiConsumer<Object, Boolean> pushOperand = (v, is64bit) -> {
                         if (activeStacks.isEmpty())
                             throw new RuntimeException("Illegal state");
                         for (final Stack<Object> stack : activeStacks)
                             stack.add(v);
-                    };
-                    final Function<Stack<Object>, Object> pop = stack -> {
-                        Object val = stack.pop();
-                        if (val instanceof Inst) {
-                            final Inst inst = (Inst) val;
-                            if (inst.output == null)
-                                inst.output = new IRTmp(stack.size());
-                            val = inst.output;
-                        }
-
-                        return val;
+                        if (is64bit && !bits64.contains(v))
+                            bits64.add(v);
                     };
                     final Supplier<Object> popOperand = () -> {
-                        if (activeStacks.size() == 1)
-                            return pop.apply(activeStacks.get(0));
-                        Iterator<Stack<Object>> iter = activeStacks.iterator();
-                        if (!iter.hasNext())
+                        if (activeStacks.isEmpty())
                             throw new RuntimeException("Illegal state");
-                        Stack<Object> stack = iter.next();
-                        int c = stack.size();
-
-                        int valIndex = -1;
-                        while (iter.hasNext()) {
-                            stack = iter.next();
-                            if (c != stack.size())
-                                throw new RuntimeException("Not implemented " + activeStacks);
-                            final Object v = stack.get(c - 1);
-                            if (v instanceof IRTmp) {
-                                if (valIndex == -1)
-                                    valIndex = ((IRTmp) v).index;
-                                if (((IRTmp) v).index != valIndex)
-                                    throw new RuntimeException("Not implemented " + activeStacks);
+                        final ArrayList<Object> results = new ArrayList<>();
+                        for (final Stack<Object> stack : activeStacks)
+                            results.add(stack.pop());
+                        boolean onlyInst = true;
+                        for (final Object o : results)
+                            if (!(o instanceof Inst))
+                                onlyInst = false;
+                        if (onlyInst) {
+                            final IRTmp r = new IRTmp(counter.getAndIncrement());
+                            for (final Object o : results)
+                                if (o instanceof Inst)
+                                    ((Inst) o).output = r;
+                            return r;
+                        }
+                        if (results.size() == 1)
+                            return results.get(0);
+                        final IRTmp r = new IRTmp(counter.getAndIncrement());
+                        for (final Object o : results) {
+                            if (o instanceof Inst) {
+                                ((Inst) o).output = r;
                                 continue;
                             }
-                            if (v instanceof Inst) {
-                                if (((Inst) v).output != null)
-                                    throw new RuntimeException("Not implemented " + activeStacks);
-                                continue;
-                            }
-                            throw new RuntimeException("Not implemented " + activeStacks);
+                            boolean f = true;
+                            int i = 1;
+                            for (final Inst inst : instructions)
+                                if (inst.output == o) {
+                                    f = false;
+                                    break;
+                                } else
+                                    i++;
+                            if (f)
+                                throw new RuntimeException("Not found " + i);
+                            instructions.add(i, new Inst(Opcode.STORE, r, new Object[] { o }));
+                            instSizes.add(i, 0);
+                            instSize.getAndIncrement();
                         }
-                        c--;
-                        if (valIndex != c && valIndex != -1)
-                            throw new RuntimeException("Not implemented " + activeStacks);
-                        final ArrayList<Object> used = new ArrayList<>();
-                        iter = activeStacks.iterator();
-                        while (iter.hasNext()) {
-                            stack = iter.next();
-                            final Object v = stack.pop();
-                            if (used.contains(v))
-                                continue;
-                            used.add(v);
-                            if (v instanceof Inst)
-                                ((Inst) v).output = new IRTmp(c);
-                        }
-                        return new IRTmp(c);
+                        return r;
                     };
                     final ArrayList<IRAnchor> toBeRemoved = new ArrayList<>();
                     final Consumer<Long> loadStacks = l -> {
@@ -277,11 +263,23 @@ public class ClassFile {
                             stacks.remove(a);
                         toBeRemoved.clear();
                     };
+                    final Function<Object, Boolean> isNot64Bit = o -> !bits64.contains(o);
+                    final Supplier<IRHint> getStackSnapshot = () -> {
+                        int n = 0;
+                        for (final Stack<Object> stack : activeStacks)
+                            if (stack.size() > n)
+                                n = stack.size();
+                        final IRHint hint = new IRHint(IRHints.STACK);
+                        for (; n > 0; n--)
+                            hint.params.add(0, popOperand.get());
+                        for (final Object v : hint.params)
+                            pushOperand.accept(v, !isNot64Bit.apply(v));
+                        return hint;
+                    };
                     boolean add = true;
                     final long codeStart = is.position;
                     while (is.position - codeStart != totalCodeLen) {
                         final long instructionStart = is.position - codeStart;
-                        AtomicInteger instSize = new AtomicInteger(instructions.size());
                         final Function<Integer, IRAnchor> newAnchor = offset -> {
                             final long o = instructionStart + offset;
                             final IRAnchor anchor = new IRAnchor(o);
@@ -356,7 +354,7 @@ public class ClassFile {
                                     }
                                     activeStacks.clear();
                                     activeStacks.add(new Stack<>());
-                                    pushOperand.accept(Const.EXCEPTION);
+                                    pushOperand.accept(Const.EXCEPTION, false);
                                 }
                         }
                         final int b = IO.readByteI(is);
@@ -369,7 +367,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{ null });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
                             case 2: // iconst_m1
@@ -382,7 +380,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRInt(b - 3)});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
@@ -391,7 +389,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRLong(b - 9)});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, true);
                                 break;
                             }
 
@@ -401,7 +399,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRFloat(b - 11)});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
@@ -410,7 +408,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRDouble(b - 14)});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, true);
                                 break;
                             }
 
@@ -418,7 +416,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRByte(IO.readByte(is))});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
@@ -426,7 +424,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRShort(IO.readBEShort(is))});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
@@ -456,7 +454,7 @@ public class ClassFile {
                                     throw new RuntimeException("Unknown type of constants: " + v);
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{ v });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, v instanceof IRLong || v instanceof IRDouble);
                                 break;
                             }
 
@@ -468,7 +466,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRRegister(IO.readByteI(is))});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, b == 22 || b == 24);
                                 break;
                             }
 
@@ -479,7 +477,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRRegister(b - 26)});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
@@ -490,7 +488,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRRegister(b - 30)});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, true);
                                 break;
                             }
 
@@ -501,7 +499,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRRegister(b - 34)});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
@@ -512,7 +510,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{new IRRegister(b - 38)});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, true);
                                 break;
                             }
 
@@ -523,7 +521,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.STORE, new Object[]{ new IRRegister(b - 42) });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
@@ -539,7 +537,7 @@ public class ClassFile {
                                 final Object index = popOperand.get();
                                 final Inst inst = new Inst(Opcode.ARRAY_GET, new Object[]{popOperand.get(), index});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, b == 47 || b == 49);
                                 break;
                             }
 
@@ -616,7 +614,7 @@ public class ClassFile {
                                 if (activeStacks.isEmpty())
                                     throw new RuntimeException("Illegal state");
                                 for (final Stack<Object> stack : activeStacks)
-                                    if (isNot64Bit(stack.pop()))
+                                    if (isNot64Bit.apply(stack.pop()))
                                         stack.pop();
                                 break;
                             }
@@ -630,99 +628,107 @@ public class ClassFile {
 
                             case 89: { // dup
                                 Object val = popOperand.get();
-                                pushOperand.accept(val);
-                                pushOperand.accept(val);
+                                pushOperand.accept(val, false);
+                                pushOperand.accept(val, false);
                                 break;
                             }
 
                             case 90: // dup_x1
                             {
                                 final Object d = popOperand.get(), o = popOperand.get();
-                                pushOperand.accept(d);
-                                pushOperand.accept(o);
-                                pushOperand.accept(d);
+                                pushOperand.accept(d, false);
+                                pushOperand.accept(o, false);
+                                pushOperand.accept(d, false);
                                 break;
                             }
 
                             case 91: // dup_x2
                             {
-                                final Object d = popOperand.get(), o1 = popOperand.get(), o2 = popOperand.get();
-                                pushOperand.accept(d);
-                                pushOperand.accept(o1);
-                                pushOperand.accept(o2);
-                                pushOperand.accept(d);
+                                final Object d = popOperand.get(), o1 = popOperand.get();
+                                final boolean nb64 = isNot64Bit.apply(d);
+                                final Object o2 = nb64 ? popOperand.get() : null;
+                                pushOperand.accept(d, false);
+                                pushOperand.accept(o1, !nb64);
+                                if (nb64)
+                                    pushOperand.accept(o2, false);
+                                pushOperand.accept(d, false);
                                 break;
                             }
 
                             case 92: // dup2
                             {
                                 final Object v1 = popOperand.get();
-                                if (isNot64Bit(v1)) {
+                                final boolean nb64 = isNot64Bit.apply(v1);
+                                if (nb64) {
                                     final Object v2 = popOperand.get();
-                                    pushOperand.accept(v2);
-                                    pushOperand.accept(v1);
-                                    pushOperand.accept(v2);
+                                    pushOperand.accept(v2, false);
+                                    pushOperand.accept(v1, false);
+                                    pushOperand.accept(v2, false);
                                 } else
-                                    pushOperand.accept(v1);
-                                pushOperand.accept(v1);
+                                    pushOperand.accept(v1, true);
+                                pushOperand.accept(v1, !nb64);
                                 break;
                             }
 
                             case 93: // dup2_x1
                             {
                                 final Object v1 = popOperand.get(), v2 = popOperand.get();
-                                if (isNot64Bit(v1)) {
+                                final boolean nb64 = isNot64Bit.apply(v1);
+                                if (nb64) {
                                     final Object v3 = popOperand.get();
-                                    pushOperand.accept(v2);
-                                    pushOperand.accept(v1);
-                                    pushOperand.accept(v3);
+                                    pushOperand.accept(v2, false);
+                                    pushOperand.accept(v1, false);
+                                    pushOperand.accept(v3, false);
                                 } else
-                                    pushOperand.accept(v1);
-                                pushOperand.accept(v2);
-                                pushOperand.accept(v1);
+                                    pushOperand.accept(v1, true);
+                                pushOperand.accept(v2, !nb64);
+                                pushOperand.accept(v1, !nb64);
                                 break;
                             }
 
                             case 94: // dup2_x2
                             {
                                 final Object v1 = popOperand.get(), v2 = popOperand.get();
-                                if (isNot64Bit(v1)) {
-                                    if (isNot64Bit(v2)) {
+                                final boolean nb64 = isNot64Bit.apply(v1), nb64_2 = isNot64Bit.apply(v2);
+                                if (nb64) {
+                                    if (nb64_2) {
                                         final Object v3 = popOperand.get();
-                                        if (isNot64Bit(v3)) {
+                                        final boolean nb64_3 = isNot64Bit.apply(v3);
+                                        if (nb64_3) {
                                             final Object v4 = popOperand.get();
-                                            if (isNot64Bit(v4)) { // Form 1
-                                                pushOperand.accept(v2);
-                                                pushOperand.accept(v1);
-                                                pushOperand.accept(v4);
+                                            if (isNot64Bit.apply(v4)) { // Form 1
+                                                pushOperand.accept(v2, false);
+                                                pushOperand.accept(v1, false);
+                                                pushOperand.accept(v4, false);
                                             } else
                                                 throw new RuntimeException("Illegal state");
                                         } else { // Form 3
-                                            pushOperand.accept(v2);
-                                            pushOperand.accept(v1);
+                                            pushOperand.accept(v2, false);
+                                            pushOperand.accept(v1, false);
                                         }
-                                        pushOperand.accept(v3);
+                                        pushOperand.accept(v3, !nb64_3);
                                     } else
                                         throw new RuntimeException("Illegal state");
-                                } else if (isNot64Bit(v2)) {
+                                } else if (nb64_2) {
                                     final Object v3 = popOperand.get();
-                                    if (isNot64Bit(v3)) { // Form 2
-                                        pushOperand.accept(v1);
-                                        pushOperand.accept(v3);
+                                    final boolean nb64_3 = isNot64Bit.apply(v3);
+                                    if (nb64_3) { // Form 2
+                                        pushOperand.accept(v1, true);
+                                        pushOperand.accept(v3, false);
                                     } else
                                         throw new RuntimeException("Illegal state");
                                 } else // Form 4
-                                    pushOperand.accept(v1);
-                                pushOperand.accept(v2);
-                                pushOperand.accept(v1);
+                                    pushOperand.accept(v1, true);
+                                pushOperand.accept(v2, !nb64_2);
+                                pushOperand.accept(v1, !nb64);
                                 break;
                             }
 
                             case 95: // swap
                             {
                                 final Object v1 = popOperand.get(), v2 = popOperand.get();
-                                pushOperand.accept(v1);
-                                pushOperand.accept(v2);
+                                pushOperand.accept(v1, !isNot64Bit.apply(v1));
+                                pushOperand.accept(v2, !isNot64Bit.apply(v2));
                                 break;
                             }
 
@@ -735,7 +741,7 @@ public class ClassFile {
                                 final Inst inst = new Inst(Opcode.ADD, new Object[]{popOperand.get(), val2,
                                         nType(b - 96)});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, b == 97 || b == 99);
                                 break;
                             }
 
@@ -747,7 +753,7 @@ public class ClassFile {
                                 Object val2 = popOperand.get();
                                 final Inst inst = new Inst(Opcode.SUBTRACT, new Object[]{ popOperand.get(), val2, nType(b - 100) });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, b == 101 || b == 103);
                                 break;
                             }
 
@@ -759,7 +765,7 @@ public class ClassFile {
                                 Object val2 = popOperand.get();
                                 final Inst inst = new Inst(Opcode.MULTIPLY, new Object[] { popOperand.get(), val2, nType(b - 104) });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, b == 105 || b == 107);
                                 break;
                             }
 
@@ -771,7 +777,7 @@ public class ClassFile {
                                 Object val2 = popOperand.get();
                                 final Inst inst = new Inst(Opcode.DIVIDE, new Object[] { popOperand.get(), val2, nType(b - 108) });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, b == 109 || b == 111);
                                 break;
                             }
 
@@ -783,7 +789,7 @@ public class ClassFile {
                                 Object val2 = popOperand.get();
                                 final Inst inst = new Inst(Opcode.REMAINDER, new Object[] { popOperand.get(), val2, nType(b - 112) });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, b == 113 || b == 115);
                                 break;
                             }
 
@@ -794,7 +800,7 @@ public class ClassFile {
                             {
                                 final Inst inst = new Inst(Opcode.NEGATIVE, new Object[] { popOperand.get() });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, b == 117 || b == 119);
                                 break;
                             }
 
@@ -804,7 +810,7 @@ public class ClassFile {
                                 final Object s = popOperand.get();
                                 final Inst inst = new Inst(Opcode.SHIFT_LEFT, new Object[] { popOperand.get(), s, nType(b - 120) });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, b == 121);
                                 break;
                             }
 
@@ -814,7 +820,7 @@ public class ClassFile {
                                 final Object s = popOperand.get();
                                 final Inst inst = new Inst(Opcode.SHIFT_RIGHT, new Object[] { popOperand.get(), s, nType(b - 122) });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, b == 123);
                                 break;
                             }
 
@@ -824,7 +830,7 @@ public class ClassFile {
                                 final Object s = popOperand.get();
                                 final Inst inst = new Inst(Opcode.UNSIGNED_SHIFT_RIGHT, new Object[] { popOperand.get(), s, nType(b - 124) });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, b == 125);
                                 break;
                             }
 
@@ -836,17 +842,18 @@ public class ClassFile {
                             case 131: // lxor
                             {
                                 final Object v2 = popOperand.get();
+                                final boolean isLong = b == 127 || b== 129 || b == 131;
                                 final Inst inst = new Inst(b == 126 || b == 127 ? Opcode.AND : b == 128 || b == 129 ? Opcode.OR : Opcode.XOR, new Object[] { popOperand.get(), v2,
-                                b == 126 || b == 128 || b == 130 ? IRType.Kind.INT : IRType.Kind.LONG });
+                                        isLong ? IRType.Kind.LONG : IRType.Kind.INT });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, isLong);
                                 break;
                             }
 
                             case 132: // iinc
                             {
                                 final int i = IO.readByteI(is);
-                                instructions.add(new Inst(Opcode.ADD, new IRRegister(i), new Object[] { new IRRegister(i), new IRInt(IO.readByteI(is)), IRType.Kind.INT }));
+                                instructions.add(new Inst(Opcode.ADD, new IRRegister(i), new Object[] { new IRRegister(i), new IRInt(IO.readByte(is)), IRType.Kind.INT }));
                                 break;
                             }
 
@@ -888,7 +895,7 @@ public class ClassFile {
                                                 Opcode.INT2SHORT
                                         , new Object[]{ popOperand.get() });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, b == 133 || b == 135 || b == 138 || b == 140 || b == 141 || b == 144);
                                 break;
                             }
 
@@ -897,7 +904,7 @@ public class ClassFile {
                                 final Object val2 = popOperand.get();
                                 final Inst inst = new Inst(Opcode.COMPARE, new Object[]{popOperand.get(), val2});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
@@ -909,7 +916,7 @@ public class ClassFile {
                                 final Object val2 = popOperand.get();
                                 final Inst inst = new Inst(Opcode.COMPARE_NAN, new Object[]{popOperand.get(), val2, b == 149 || b == 151 ? new IRInt(-1) : new IRInt(1)});
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
@@ -920,6 +927,7 @@ public class ClassFile {
                             case 157: // if_gt
                             case 158: // if_le
                             {
+                                final Object v = popOperand.get();
                                 final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
                                 instructions.add(new Inst(
                                         b == 153 ? Opcode.IF_EQ :
@@ -928,7 +936,7 @@ public class ClassFile {
                                         b == 156 ? Opcode.IF_GE :
                                         b == 157 ? Opcode.IF_GT :
                                                 Opcode.IF_LE
-                                        , new Object[] { popOperand.get(), new IRInt(0), anchor }));
+                                        , new Object[] { v, new IRInt(0), anchor, getStackSnapshot.get() }));
                                 newBranch.accept(anchor);
                                 break;
                             }
@@ -943,8 +951,8 @@ public class ClassFile {
                             case 165: // if_acmpeq
                             case 166: // if_acmpne
                             {
+                                Object val2 = popOperand.get(), val1 = popOperand.get();
                                 final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
-                                Object val2 = popOperand.get();
                                 instructions.add(new Inst(
                                         b == 159 || b == 165 ? Opcode.IF_EQ :
                                                 b == 160 || b == 166 ? Opcode.IF_NE :
@@ -952,14 +960,14 @@ public class ClassFile {
                                                                 b == 162 ? Opcode.IF_GE :
                                                                         b == 163 ? Opcode.IF_GT :
                                                                                 Opcode.IF_LE
-                                        , new Object[] { popOperand.get(), val2, anchor }));
+                                        , new Object[] { val1, val2, anchor, getStackSnapshot.get() }));
                                 newBranch.accept(anchor);
                                 break;
                             }
 
                             case 167: { // goto
                                 final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { anchor }));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { anchor, getStackSnapshot.get() }));
                                 newBranch.accept(anchor);
                                 activeStacks.clear();
                                 break;
@@ -967,14 +975,14 @@ public class ClassFile {
 
                             case 168: // jsr
                             { // TODO: Check it with java -5
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IO.readBEShort(is)) }));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IO.readBEShort(is)), getStackSnapshot.get() }));
                                 // TODO: Check the operand stack.
                                 break;
                             }
 
                             case 169: // ret
                             {
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { new IRAnchor(new IRRegister(IO.readByteI(is))) }));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { new IRAnchor(new IRRegister(IO.readByteI(is))), getStackSnapshot.get() }));
                                 break;
                             }
 
@@ -1007,9 +1015,10 @@ public class ClassFile {
                                 break;
 
                             case 178: { // getstatic
-                                final Inst inst = new Inst(Opcode.GET_STATIC, new Object[] { fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IO.readBEShort(is) - 1)) });
+                                final IRFieldRef ref = fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IO.readBEShort(is) - 1));
+                                final Inst inst = new Inst(Opcode.GET_STATIC, new Object[] { ref });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, ref.type.kind == IRType.Kind.LONG || ref.type.kind == IRType.Kind.DOUBLE);
                                 break;
                             }
 
@@ -1020,9 +1029,10 @@ public class ClassFile {
 
                             case 180: // getfield
                             {
-                                final Inst inst = new Inst(Opcode.GET_FIELD, new Object[] { fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IO.readBEShort(is) - 1)), popOperand.get() });
+                                final IRFieldRef ref = fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IO.readBEShort(is) - 1));
+                                final Inst inst = new Inst(Opcode.GET_FIELD, new Object[] { ref, popOperand.get() });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, ref.type.kind == IRType.Kind.LONG || ref.type.kind == IRType.Kind.DOUBLE);
                                 break;
                             }
 
@@ -1040,14 +1050,15 @@ public class ClassFile {
                                 final ClassFile.MethodRef ref = (ClassFile.MethodRef) cf.constantPool.get(IO.readBEShortI(is) - 1);
                                 final ClassFile.NameAndType nt = (ClassFile.NameAndType) cf.constantPool.get(ref.nameAndTypeIndex - 1);
                                 final Descriptor d = new Descriptor((String) cf.constantPool.get(nt.descriptorIndex - 1));
+                                final IRMethodRef mr = methodRef(cf, ref);
                                 final int l = d.parameters.size() + (b == 184 ? 1 : 2);
                                 final Inst inst = new Inst(b == 182 ? Opcode.INVOKE_VIRTUAL : b == 183 ? Opcode.INVOKE_SPECIAL : Opcode.INVOKE_STATIC, l);
-                                inst.params[0] = methodRef(cf, ref);
+                                inst.params[0] = mr;
                                 for (int i = l - 1; i > 0; i--)
                                     inst.params[i] = popOperand.get();
                                 instructions.add(inst);
                                 if (d.type != Descriptor.Type.VOID)
-                                    pushOperand.accept(inst);
+                                    pushOperand.accept(inst, mr.type.kind == IRType.Kind.LONG || mr.type.kind == IRType.Kind.DOUBLE);
                                 break;
                             }
 
@@ -1056,16 +1067,17 @@ public class ClassFile {
                                 final InterfaceMethodRef ref = (ClassFile.InterfaceMethodRef) cf.constantPool.get(IO.readBEShortI(is) - 1);
                                 final ClassFile.NameAndType nt = (ClassFile.NameAndType) cf.constantPool.get(ref.nameAndTypeIndex - 1);
                                 final Descriptor d = new Descriptor((String) cf.constantPool.get(nt.descriptorIndex - 1));
+                                final IRMethodRef mr = methodRef(cf, ref);
                                 IO.readByteI(is); // stack size
                                 if (IO.readByte(is) != 0)
                                     throw new RuntimeException("Not valid the invoke interface instruction.");
                                 final Inst inst = new Inst(Opcode.INVOKE_INTERFACE, d.parameters.size() + 2);
-                                inst.params[0] = methodRef(cf, ref);
+                                inst.params[0] = mr;
                                 for (int i = d.parameters.size() + 1; i > 0; i--)
                                     inst.params[i] = popOperand.get();
                                 instructions.add(inst);
                                 if (d.type != Descriptor.Type.VOID)
-                                    pushOperand.accept(inst);
+                                    pushOperand.accept(inst, mr.type.kind == IRType.Kind.LONG || mr.type.kind == IRType.Kind.DOUBLE);
                                 break;
                             }
 
@@ -1074,22 +1086,23 @@ public class ClassFile {
                                 final MethodRef ref = (ClassFile.MethodRef) cf.constantPool.get(IO.readBEShortI(is) - 1);
                                 final ClassFile.NameAndType nt = (ClassFile.NameAndType) cf.constantPool.get(ref.nameAndTypeIndex - 1);
                                 final Descriptor d = new Descriptor((String) cf.constantPool.get(nt.descriptorIndex - 1));
+                                final IRMethodRef mr = methodRef(cf, ref);
                                 if (IO.readByte(is) != 0 || IO.readByte(is) != 0)
                                     throw new RuntimeException("Not valid the invoke interface instruction.");
                                 final Inst inst = new Inst(Opcode.INVOKE_DYNAMIC, d.parameters.size() + 2);
-                                inst.params[0] = methodRef(cf, ref);
+                                inst.params[0] = mr;
                                 for (int i = d.parameters.size(); i > 0; i--)
                                     inst.params[i] = popOperand.get();
                                 instructions.add(inst);
                                 if (d.type != Descriptor.Type.VOID)
-                                    pushOperand.accept(inst);
+                                    pushOperand.accept(inst, mr.type.kind == IRType.Kind.LONG || mr.type.kind == IRType.Kind.DOUBLE);
                                 break;
                             }
 
                             case 187: { // new
                                 final Inst inst = new Inst(Opcode.ALLOCATE, new Object[] { cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShort(is) - 1)).nameIndex - 1) });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
@@ -1109,21 +1122,21 @@ public class ClassFile {
                                 }
                                 final Inst inst = new Inst(Opcode.NEW_ARRAY, new Object[] { kind, popOperand.get() });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
                             case 189: { // anewarray
                                 final Inst inst = new Inst(Opcode.NEW_ARRAY, new Object[] { cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShortI(is) - 1)).nameIndex - 1), popOperand.get() });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
                             case 190: { // arraylength
                                 final Inst inst = new Inst(Opcode.ARRAY_LENGTH, new Object[]{ popOperand.get() });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
@@ -1135,7 +1148,7 @@ public class ClassFile {
 
                             case 192: { // checkcast
                                 final Object operand = popOperand.get();
-                                pushOperand.accept(operand);
+                                pushOperand.accept(operand, !isNot64Bit.apply(operand));
                                 instructions.add(new Inst(Opcode.CHECK_CAST, new Object[]{ operand, cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShort(is) - 1)).nameIndex - 1) }));
                                 break;
                             }
@@ -1144,7 +1157,7 @@ public class ClassFile {
                                 final Object operand = popOperand.get();
                                 final Inst inst = new Inst(Opcode.INSTANCEOF, new Object[]{ operand, cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShort(is) - 1)).nameIndex - 1) });
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
@@ -1167,7 +1180,7 @@ public class ClassFile {
                                     {
                                         final Inst inst = new Inst(Opcode.STORE, new Object[]{ new IRRegister(IO.readBEShortI(is)) });
                                         instructions.add(inst);
-                                        pushOperand.accept(inst);
+                                        pushOperand.accept(inst, b == 22 || b == 24);
                                         break;
                                     }
                                     case 54: // istore
@@ -1199,22 +1212,23 @@ public class ClassFile {
                                 for (int i = dim; i > 0; i--)
                                     inst.params[i] = popOperand.get();
                                 instructions.add(inst);
-                                pushOperand.accept(inst);
+                                pushOperand.accept(inst, false);
                                 break;
                             }
 
                             case 198: // if_null
                             case 199: // if_nonnull
                             {
+                                final Object v = popOperand.get();
                                 final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
-                                instructions.add(new Inst(b == 198 ? Opcode.IF_NULL : Opcode.IF_NONNULL, new Object[] { popOperand.get(), anchor }));
+                                instructions.add(new Inst(b == 198 ? Opcode.IF_NULL : Opcode.IF_NONNULL, new Object[] { v, anchor, getStackSnapshot.get() }));
                                 newBranch.accept(anchor);
                                 break;
                             }
 
                             case 200: { // goto_w
                                 final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { anchor }));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { anchor, getStackSnapshot.get() }));
                                 newBranch.accept(anchor);
                                 activeStacks.clear();
                                 break;
@@ -1222,7 +1236,7 @@ public class ClassFile {
 
                             case 201: // jsr_w
                             { // TODO: Check it with java -5
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IO.readBEShort(is)) }));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IO.readBEShort(is)), getStackSnapshot.get() }));
                                 // TODO: Check the operand stack.
                                 break;
                             }
@@ -1235,11 +1249,12 @@ public class ClassFile {
                             final int instDelta = instructions.size() - instSize.get();
                             final long len = is.position - instructionStart - codeStart;
                             if (instDelta > 1)
-                                throw new RuntimeException("Instruction has more than one instruction at position " + instructionStart);
+                                throw new RuntimeException("Instruction has more than one instruction " + instDelta + " at position " + instructionStart);
                             if (add)
                                 instSizes.add((int) len);
                             else
                                 instSizes.add(instSizes.pop() + (int) len);
+                            instSize.addAndGet(instDelta);
                             add = instDelta > 0;
                         }
                         if (activeStacks.size() > 1) {
@@ -1266,6 +1281,9 @@ public class ClassFile {
                     }
                     if (!track.isEmpty())
                         throw new RuntimeException("Some tracks left: " + track);
+                    IRPhi.resolve(instructions);
+                    if (m.name.equals("main"))
+                        throw new RuntimeException("test");
                 } catch (final RuntimeException e) {
                     i4Logger.INSTANCE.e("#" + m.name);
                     //m.print();
@@ -1295,7 +1313,7 @@ public class ClassFile {
             final ClassFile.NameAndType nt = (ClassFile.NameAndType) cf.constantPool.get(ref.nameAndTypeIndex - 1);
             ir.name = (String) cf.constantPool.get(nt.nameIndex - 1);
             final Descriptor d = new Descriptor((String) cf.constantPool.get(nt.descriptorIndex - 1));
-            ir.returnType = type(d.type);
+            ir.type = d.type.toIRType();
             return ir;
         }
 
@@ -1312,23 +1330,6 @@ public class ClassFile {
             return ir;
         }
 
-        public static String type(final Descriptor.Type t) {
-            if (t == Descriptor.Type.LONG)
-                return "long";
-            if (t == Descriptor.Type.INT)
-                return "int";
-            if (t == Descriptor.Type.VOID)
-                return "void";
-            if (t == Descriptor.Type.BOOL)
-                return "boolean";
-            if (t.t == 'L')
-                return ((Descriptor.Obj) t).ref;
-            if (t.t == '[') {
-                Descriptor.Arr arr = (Descriptor.Arr) t;
-                return type(arr.type) + Str.repeat("[", arr.lvls);
-            }
-            throw new RuntimeException("Unknown type: " + t.t);
-        }
     }
 
     public static ClassFile parse(final InputStream inputStream) throws IOException {

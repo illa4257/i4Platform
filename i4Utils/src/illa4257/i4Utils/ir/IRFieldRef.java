@@ -1,10 +1,11 @@
 package illa4257.i4Utils.ir;
 
 public class IRFieldRef {
-    public String cls = null, name = null, returnType = null;
+    public String cls = null, name = null;
+    public IRType type = null;
 
     @Override
     public String toString() {
-        return "FieldRef{" + cls + "#" + name + ',' + returnType + '}';
+        return "FieldRef{" + cls + "#" + name + ',' + type + '}';
     }
 }
