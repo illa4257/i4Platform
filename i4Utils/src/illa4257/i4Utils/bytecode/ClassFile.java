@@ -264,18 +264,6 @@ public class ClassFile {
                         toBeRemoved.clear();
                     };
                     final Function<Object, Boolean> isNot64Bit = o -> !bits64.contains(o);
-                    final Supplier<IRHint> getStackSnapshot = () -> {
-                        int n = 0;
-                        for (final Stack<Object> stack : activeStacks)
-                            if (stack.size() > n)
-                                n = stack.size();
-                        final IRHint hint = new IRHint(IRHints.STACK);
-                        for (; n > 0; n--)
-                            hint.params.add(0, popOperand.get());
-                        for (final Object v : hint.params)
-                            pushOperand.accept(v, !isNot64Bit.apply(v));
-                        return hint;
-                    };
                     boolean add = true;
                     final long codeStart = is.position;
                     while (is.position - codeStart != totalCodeLen) {
@@ -936,7 +924,7 @@ public class ClassFile {
                                         b == 156 ? Opcode.IF_GE :
                                         b == 157 ? Opcode.IF_GT :
                                                 Opcode.IF_LE
-                                        , new Object[] { v, new IRInt(0), anchor, getStackSnapshot.get() }));
+                                        , new Object[] { v, new IRInt(0), anchor }));
                                 newBranch.accept(anchor);
                                 break;
                             }
@@ -960,14 +948,14 @@ public class ClassFile {
                                                                 b == 162 ? Opcode.IF_GE :
                                                                         b == 163 ? Opcode.IF_GT :
                                                                                 Opcode.IF_LE
-                                        , new Object[] { val1, val2, anchor, getStackSnapshot.get() }));
+                                        , new Object[] { val1, val2, anchor }));
                                 newBranch.accept(anchor);
                                 break;
                             }
 
                             case 167: { // goto
                                 final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { anchor, getStackSnapshot.get() }));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { anchor }));
                                 newBranch.accept(anchor);
                                 activeStacks.clear();
                                 break;
@@ -975,14 +963,14 @@ public class ClassFile {
 
                             case 168: // jsr
                             { // TODO: Check it with java -5
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IO.readBEShort(is)), getStackSnapshot.get() }));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IO.readBEShort(is)) }));
                                 // TODO: Check the operand stack.
                                 break;
                             }
 
                             case 169: // ret
                             {
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { new IRAnchor(new IRRegister(IO.readByteI(is))), getStackSnapshot.get() }));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { new IRAnchor(new IRRegister(IO.readByteI(is))) }));
                                 break;
                             }
 
@@ -1180,7 +1168,7 @@ public class ClassFile {
                                     {
                                         final Inst inst = new Inst(Opcode.STORE, new Object[]{ new IRRegister(IO.readBEShortI(is)) });
                                         instructions.add(inst);
-                                        pushOperand.accept(inst, b == 22 || b == 24);
+                                        pushOperand.accept(inst, b2 == 22 || b2 == 24);
                                         break;
                                     }
                                     case 54: // istore
@@ -1221,14 +1209,14 @@ public class ClassFile {
                             {
                                 final Object v = popOperand.get();
                                 final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
-                                instructions.add(new Inst(b == 198 ? Opcode.IF_NULL : Opcode.IF_NONNULL, new Object[] { v, anchor, getStackSnapshot.get() }));
+                                instructions.add(new Inst(b == 198 ? Opcode.IF_NULL : Opcode.IF_NONNULL, new Object[] { v, anchor }));
                                 newBranch.accept(anchor);
                                 break;
                             }
 
                             case 200: { // goto_w
                                 final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { anchor, getStackSnapshot.get() }));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { anchor }));
                                 newBranch.accept(anchor);
                                 activeStacks.clear();
                                 break;
@@ -1236,7 +1224,7 @@ public class ClassFile {
 
                             case 201: // jsr_w
                             { // TODO: Check it with java -5
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IO.readBEShort(is)), getStackSnapshot.get() }));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IO.readBEShort(is)) }));
                                 // TODO: Check the operand stack.
                                 break;
                             }

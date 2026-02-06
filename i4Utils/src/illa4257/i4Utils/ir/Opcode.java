@@ -37,6 +37,18 @@ public enum Opcode {
     MONITOR_ENTER,
     MONITOR_EXIT,
 
+    // Operand Stack related
+    PUSH,
+    POP,
+    POP2,
+    DUP,
+    DUP_x1,
+    DUP_x2,
+    DUP2,
+    DUP2_x1,
+    DUP2_x2,
+    SWAP,
+
     CHECK_CAST,
     NO_OP,
     INSTANCEOF,
