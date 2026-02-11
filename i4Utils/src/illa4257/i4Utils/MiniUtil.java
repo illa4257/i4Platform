@@ -76,10 +76,30 @@ public class MiniUtil {
         return map;
     }
 
+    public static <T> int indexOfF(final Function<T, Boolean> func, final Iterator<T> iterator) {
+        int i = 0;
+        while (iterator.hasNext()) {
+            if (func.apply(iterator.next()))
+                return i;
+            i++;
+        }
+        return -1;
+    }
+
     public static <T> int indexOf(final T element, final Iterator<T> iterator) {
         int i = 0;
         while (iterator.hasNext()) {
             if (Objects.equals(iterator.next(), element))
+                return i;
+            i++;
+        }
+        return -1;
+    }
+
+    public static <T> int indexOf(final Iterable<T> iterable, final Function<T, Boolean> func) {
+        int i = 0;
+        for (final T e : iterable) {
+            if (func.apply(e))
                 return i;
             i++;
         }

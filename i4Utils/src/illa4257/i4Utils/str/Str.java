@@ -39,6 +39,13 @@ public class Str {
         builders.offer(builder);
     }
 
+    public static String getAndRecycle(final StringBuilder builder) {
+        final String r = builder.toString();
+        builder.setLength(0);
+        builders.offer(builder);
+        return r;
+    }
+
     public static String encodeURI(final String uri, final boolean isQuery) throws UnsupportedEncodingException {
         final String space = isQuery ? "+" : "%20";
         final StringBuilder builder = builder();
@@ -114,6 +121,15 @@ public class Str {
         func.accept(iter.next(), builder);
         while (iter.hasNext())
             func.accept(iter.next(), builder.append(delimiter));
+        return builder;
+    }
+
+    public static <T> StringBuilder join(final StringBuilder builder, final CharSequence delimiter, final T[] items, final BiConsumer<T, StringBuilder> func) {
+        if (items == null || items.length == 0)
+            return builder;
+        func.accept(items[0], builder);
+        for (int i = 1; i < items.length; i++)
+            func.accept(items[i], builder.append(delimiter));
         return builder;
     }
 

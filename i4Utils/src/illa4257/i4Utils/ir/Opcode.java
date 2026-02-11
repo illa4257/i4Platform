@@ -38,7 +38,6 @@ public enum Opcode {
     MONITOR_EXIT,
 
     // Operand Stack related
-    PUSH,
     POP,
     POP2,
     DUP,

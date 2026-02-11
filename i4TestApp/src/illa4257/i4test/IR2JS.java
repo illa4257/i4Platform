@@ -346,6 +346,7 @@ public class IR2JS {
 
                 case INT2LONG:
                 case INT2FLOAT:
+                case INT2CHAR:
                 {
                     if (inst.output == null)
                         break;
@@ -353,10 +354,19 @@ public class IR2JS {
                     switch (inst.opcode) {
                         case INT2LONG: w.w("=BigInt("); break;
                         case INT2FLOAT: w.w("=Math.fround("); break;
+                        case INT2CHAR: w.w("=String.fromCharCode("); break;
                     }
                     w.w(of(inst.params[0]));
+                    if (inst.opcode == Opcode.INT2CHAR)
+                        w.w("&0xFFFF");
                     w.w(");");
                     break;
+                }
+
+                case INT2BYTE: {
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output)).w("(").w(of(inst.params[0])).w("<<24)>>24;");
                 }
 
                 case LONG2INT: {
@@ -647,8 +657,6 @@ public class IR2JS {
         if (arg instanceof String)
             return '"' + ((String) arg).replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"")
                     .replaceAll("\n", "\\\\n").replaceAll("\r", "\\\\r") + '"';
-        if (arg instanceof IRPhi)
-            throw new RuntimeException("Phi isn't supported.");
         return String.valueOf(arg);
     }
 }

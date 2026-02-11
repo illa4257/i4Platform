@@ -1,4 +1,3 @@
 var env = new AsyncJavaEnv();
 var class_loader = {loaded:{}};
 (async () => {
-	await addClass(class_loader,env,null,{name:"Test",super_cls:"java/lang/Object",declared_fields:{"_t":"java/lang/String","_b":"java/lang/String","_adds":"java/lang/String",},"<init>()void":async function(sc,env,t,p0){let c,err,r0,t0;r0=p0;t0=r0;c=await env.getClass(sc.class_loader,"java/lang/Object");await c["<init>()void"](c,env,t,t0);return;},"main(java/lang/String[)void":async function(sc,env,t,p0){let c,err,r0,t0,r1,t1,t2;r0=p0;t0=1n;r1=t0;t0=await env.getField(await env.getClass(sc.class_loader,"java/lang/System"),"out");t1=r1;t2=32;

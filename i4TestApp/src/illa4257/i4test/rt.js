@@ -22,6 +22,17 @@ function virtualMethod(cls,name) {
     return cls;
 }
 
+async function Java_str(class_loader,env,t,str) {
+    const c = await env.getClass(class_loader, t, "java/lang/String"),
+        r = await env.alloc(c),
+        len = str.length,
+        arr=await env.newArr(len);
+    for (let i = 0; i < len; i++)
+        await env.arrSet(arr, i, str.charCodeAt(i));
+    await c["<init>(char[)void"](c,env,t,r,arr);
+    return r;
+}
+
 class AsyncJavaEnv {
     constructor() {}
 

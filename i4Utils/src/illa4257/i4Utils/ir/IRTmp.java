@@ -8,6 +8,11 @@ public class IRTmp {
     }
 
     @Override
+    public int hashCode() {
+        return index;
+    }
+
+    @Override
     public boolean equals(final Object o) {
         if (o instanceof IRTmp)
             return index == ((IRTmp) o).index;
