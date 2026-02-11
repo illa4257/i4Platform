@@ -1,0 +1,65 @@
+package illa4257.i4Framework.awt;
+
+import illa4257.i4Framework.base.components.Component;
+import illa4257.i4Framework.base.events.dnd.DroppedEvent;
+import illa4257.i4Utils.logger.i4Logger;
+
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.dnd.*;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+public interface IAWTComponent {
+    Component getComponent();
+    void dispose();
+
+    static AWTComponent getComponent(final java.awt.Container t, final Component c) {
+        for (final java.awt.Component co : t.getComponents())
+            if (co instanceof AWTComponent && ((AWTComponent) co).getComponent() == c)
+                return (AWTComponent) co;
+        return null;
+    }
+
+    static DropTarget wrapDropTarget(final Component component) {
+        return new DropTarget() {
+            @Override
+            public synchronized void dragEnter(DropTargetDragEvent dropTargetDragEvent) {
+                super.dragEnter(dropTargetDragEvent);
+            }
+
+            @Override
+            public synchronized void dragOver(DropTargetDragEvent dropTargetDragEvent) {
+                super.dragOver(dropTargetDragEvent);
+            }
+
+            @Override
+            public synchronized void dropActionChanged(DropTargetDragEvent dropTargetDragEvent) {
+                super.dropActionChanged(dropTargetDragEvent);
+            }
+
+            @Override
+            public synchronized void dragExit(DropTargetEvent dropTargetEvent) {
+                super.dragExit(dropTargetEvent);
+            }
+
+            @Override
+            public synchronized void drop(DropTargetDropEvent dropTargetDropEvent) {
+                try {
+                    dropTargetDropEvent.acceptDrop(DnDConstants.ACTION_COPY);
+                    final ArrayList<File> l = new ArrayList<>();
+                    final Transferable transferable = dropTargetDropEvent.getTransferable();
+                    if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
+                        //noinspection unchecked
+                        l.addAll((List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor));
+                    component.fire(new DroppedEvent(component, true, 0, dropTargetDropEvent.getLocation().x, dropTargetDropEvent.getLocation().y, dropTargetDropEvent.getLocation().x, dropTargetDropEvent.getLocation().y, l));
+                    dropTargetDropEvent.dropComplete(true);
+                } catch (final Exception ex) {
+                    i4Logger.INSTANCE.e(ex);
+                    dropTargetDropEvent.dropComplete(false);
+                }
+            }
+        };
+    }
+}
