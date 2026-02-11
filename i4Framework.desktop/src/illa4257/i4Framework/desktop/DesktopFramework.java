@@ -39,8 +39,8 @@ public abstract class DesktopFramework extends Framework {
         final FrameworkWindow fw = window.frameworkWindow.get();
         if (fw == null)
             return null;
-        if (fw instanceof Frame)
-            return Native.getWindowPointer((JFrame) fw);
+        if (fw instanceof java.awt.Window)
+            return Native.getWindowPointer((java.awt.Window) fw);
         return null;
     }
 
