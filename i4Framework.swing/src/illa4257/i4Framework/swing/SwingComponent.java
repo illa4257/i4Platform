@@ -12,6 +12,7 @@ import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Container;
 import illa4257.i4Framework.base.events.mouse.*;
 import illa4257.i4Framework.base.styling.StyleSetting;
+import illa4257.i4Utils.logger.i4Logger;
 
 import javax.swing.*;
 import java.awt.*;
@@ -234,7 +235,11 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         final Graphics2D g = (Graphics2D) graphics.create();
         g.setRenderingHints(SwingFramework.BEST);
         g.translate(offset, offset);
-        component.paint(new SwingContext(g));
+        try {
+            component.paint(new SwingContext(g));
+        } catch (final Exception ex) {
+            i4Logger.INSTANCE.e(ex);
+        }
     }
 
     @Override
