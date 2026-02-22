@@ -43,7 +43,7 @@ ComboBox {
     border-color: #446;
 }
 
-Button:hover {
+Button:enabled:hover {
     background-color: #223;
 }
 

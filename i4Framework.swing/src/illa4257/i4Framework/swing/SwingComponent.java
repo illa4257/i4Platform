@@ -143,6 +143,10 @@ public class SwingComponent extends JComponent implements ISwingComponent {
                     if (e.component == component)
                         setVisible(e.value);
                 }),
+                component.addEventListener(EnableEvent.class, e -> {
+                    if (e.component == component)
+                        setEnabled(e.value);
+                }),
                 component.addEventListener(StyleUpdateEvent.class, e -> updateLS(null))
         };
 
@@ -178,6 +182,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
 
         setDropTarget(ISwingComponent.wrapDropTarget(component));
         setVisible(component.isVisible());
+        setEnabled(component.isEnabled());
         updateLS(null);
         StyleSetting s = component.getStyle("cursor");
         if (s != null)

@@ -27,6 +27,7 @@ public class Button extends Component {
         setFocusable(true);
         final EventListener<IMoveableInputEvent> ml = e -> {
             if (
+                    !isEnabled() ||
                     e.x() < 0 || e.x() > width.calcFloat() ||
                             e.y() < 0 || e.y() > height.calcFloat()
             )
