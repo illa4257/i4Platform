@@ -96,6 +96,7 @@ public class Component extends Destructor {
         while ((c.isAnonymousClass() || c.isLocalClass()) && c.getSuperclass() != null)
             c = c.getSuperclass();
         tag.set(c.getSimpleName());
+        pseudoClasses.add("enabled");
         addEventListener(ReCalcCheckEvent.class, e -> {
             final int sx = Float.floatToIntBits(startX.calcFloat()), sy = Float.floatToIntBits(startY.calcFloat()),
                     ex = Float.floatToIntBits(endX.calcFloat()), ey = Float.floatToIntBits(endY.calcFloat());
@@ -165,6 +166,7 @@ public class Component extends Destructor {
     }
 
     public boolean isVisible() { return visible; }
+    public boolean isEnabled() { return pseudoClasses.contains("enabled"); }
     public boolean isFocusable() { return isFocusable; }
     public boolean isFocused() { return pseudoClasses.contains("focus"); }
     public boolean isFocusedWithin() { return pseudoClasses.contains("focus-within"); }
@@ -585,6 +587,12 @@ public class Component extends Destructor {
             this.visible = visible;
         }
         fire(new VisibleEvent(this, visible));
+    }
+
+    public void setEnabled(final boolean enabled) {
+        setPseudoClass("enabled", enabled);
+        setPseudoClass("disabled", !enabled);
+        fire(new EnableEvent(this, enabled));
     }
 
     private volatile boolean lastX = false, lastY = false;
