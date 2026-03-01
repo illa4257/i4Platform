@@ -16,6 +16,18 @@ public interface ISwingComponent {
     Component getComponent();
     void dispose();
 
+    static SwingComponent find(final java.awt.Container container, final Component c) {
+        for (final java.awt.Component co : container.getComponents())
+            if (co instanceof SwingComponent) {
+                if (((SwingComponent) co).getComponent() == c)
+                    return (SwingComponent) co;
+                final SwingComponent r = find((SwingComponent) co, c);
+                if (r != null)
+                    return r;
+            }
+        return null;
+    }
+
     static SwingComponent getComponent(final java.awt.Container t, final Component c) {
         for (final java.awt.Component co : t.getComponents())
             if (co instanceof SwingComponent && ((SwingComponent) co).getComponent() == c)

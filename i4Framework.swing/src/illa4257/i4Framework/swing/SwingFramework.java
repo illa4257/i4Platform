@@ -1,6 +1,7 @@
 package illa4257.i4Framework.swing;
 
 import illa4257.i4Framework.base.FrameworkWindow;
+import illa4257.i4Framework.base.PopupMenu;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
@@ -148,6 +149,30 @@ public class SwingFramework extends DesktopFramework {
     }
 
     @Override public FrameworkWindow newWindow(final Window window) { return new SwingWindow(this, window); }
+
+    @Override
+    public illa4257.i4Framework.base.PopupMenu newPopupMenu(final Component component) {
+        return new illa4257.i4Framework.base.PopupMenu() {
+            public final java.awt.PopupMenu menu = new java.awt.PopupMenu();
+
+            @Override
+            public PopupMenu add(String text, Runnable action) {
+                final MenuItem item = new MenuItem(text);
+                item.addActionListener(ignored -> action.run());
+                menu.add(item);
+                return this;
+            }
+
+            @Override
+            public PopupMenu show() {
+                final FrameworkWindow window = component.getWindow().frameworkWindow.get();
+                ((SwingWindow) window).root.add(menu);
+                final SwingComponent co = ISwingComponent.find(((SwingWindow) window).root, component);
+                menu.show(co != null ? co : ((SwingWindow) window).root, 0, co != null ? co.getHeight() : 0);
+                return this;
+            }
+        };
+    }
 
     @Override
     public void dispose() {
