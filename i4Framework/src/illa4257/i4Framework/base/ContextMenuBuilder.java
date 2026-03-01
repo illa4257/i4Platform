@@ -8,7 +8,7 @@ import illa4257.i4Framework.base.points.layout.HeightByContent;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class ContextMenuBuilder {
+public class ContextMenuBuilder implements PopupMenu {
     public final Framework framework;
     public final ConcurrentLinkedQueue<ContextMenuItem> items = new ConcurrentLinkedQueue<>();
 
@@ -21,15 +21,22 @@ public class ContextMenuBuilder {
         return this;
     }
 
+    @Override
+    public ContextMenuBuilder add(final String name, final Runnable runnable) {
+        items.add(new ContextMenuButton(name, runnable));
+        return this;
+    }
+
     public ContextMenuBuilder addButton(final String name, final Runnable runnable) {
         items.add(new ContextMenuButton(name, runnable));
         return this;
     }
 
-    public void build() {
-        Point last = null;
+    @Override
+    public ContextMenuBuilder show() {
         final Window window = new Window();
         final FrameworkWindow fw = framework.newWindow(window);
+        Point last = window.safeStartY;
         window.classes.add("context-menu");
         for (final ContextMenuItem item : items)
             if (item instanceof ContextMenuButton) {
@@ -49,7 +56,10 @@ public class ContextMenuBuilder {
         window.setFocusable(true);
         fw.asContextMenu();
         window.setVisible(true);
+        return this;
     }
+
+    public void build() { show(); }
 
     public static class ContextMenuItem {}
     public static class ContextMenuButton extends ContextMenuItem implements Runnable {

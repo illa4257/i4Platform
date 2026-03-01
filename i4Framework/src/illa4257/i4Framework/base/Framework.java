@@ -1,9 +1,18 @@
 package illa4257.i4Framework.base;
 
+import illa4257.i4Framework.base.components.Button;
 import illa4257.i4Framework.base.components.Component;
+import illa4257.i4Framework.base.components.Label;
 import illa4257.i4Framework.base.components.impl.FileChooserFallback;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Framework.base.events.components.ActionEvent;
+import illa4257.i4Framework.base.events.components.VisibleEvent;
+import illa4257.i4Framework.base.points.PPointAdd;
+import illa4257.i4Framework.base.points.PPointSubtract;
+import illa4257.i4Framework.base.points.Point;
+import illa4257.i4Framework.base.points.PointSet;
+import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Framework.base.styling.StyleSelector;
@@ -22,6 +31,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
+
+import static illa4257.i4Framework.base.math.Unit.DP;
 
 public abstract class Framework implements ResourceProvider {
     private static final boolean IS_DEV = "dev".equals(System.getProperty("env", "production"));
@@ -139,6 +150,135 @@ public abstract class Framework implements ResourceProvider {
     }
 
     public abstract FrameworkWindow newWindow(final Window window);
+    public PopupMenu newPopupMenu(final Component component) { return new ContextMenuBuilder(this); }
+    public Dialog newDialog(final Window window) {
+        return new Dialog() {
+            final Window d = new Window();
+
+            final Point dp8 = new NumberPointMultiplier(8, d.densityMultiplier);
+            final FrameworkWindow fw = newWindow(d);
+
+            private final PointSet msgY = new PointSet(d.safeStartY), contentY = new PointSet(msgY);
+            private final Point controlSY = new PPointAdd(contentY, dp8);
+            private boolean hasControls;
+            private final PointSet b1e = new PointSet(new PPointSubtract(d.safeEndX, dp8));
+            private Component component = null;
+            private Button pos = null, neg = null;
+            private Label msg = null;
+            private Runnable onCancel = null, onPos = null, onNeg = null;
+
+            @Override
+            public Dialog setTitle(final String title) {
+                d.setTitle(title);
+                return this;
+            }
+
+            @Override
+            public Dialog setMessage(final String message) {
+                if (msg == null) {
+                    msg = new Label(message);
+                    msg.setStartX(new PPointAdd(d.safeStartX, dp8));
+                    msg.setStartY(new PPointAdd(d.safeStartY, dp8));
+                    msg.setEndX(new PPointSubtract(d.safeEndX, dp8));
+                    msg.setHeight(24, DP);
+                    msgY.set(msg.endY);
+                    d.add(msg);
+                    return this;
+                }
+                msg.text = message;
+                return this;
+            }
+
+            @Override
+            public Dialog setContent(final Component component) {
+                if (this.component != null)
+                    d.remove(this.component);
+                component.setStartX(new PPointAdd(d.safeStartX, dp8));
+                component.setStartY(new PPointAdd(msgY, dp8));
+                component.setEndX(new PPointSubtract(d.safeEndX, dp8));
+                contentY.set(component.endY);
+                d.add(this.component = component);
+                return this;
+            }
+
+            @Override
+            public Dialog setPositiveButton(final String name, final Runnable action) {
+                this.onPos = action;
+                if (pos == null) {
+                    pos = new Button(name);
+                    pos.setEndX(new PPointSubtract(d.safeEndX, dp8));
+                    pos.setEndY(new PPointSubtract(d.safeEndY, dp8));
+                    pos.setWidth(64, DP);
+                    pos.setHeight(32, DP);
+                    hasControls = true;
+                    b1e.set(pos.startX);
+                    pos.addEventListener(ActionEvent.class, e -> {
+                        window.redirectFocus = null;
+                        d.setVisible(false);
+                        fw.dispose();
+                        final Runnable onPos = this.onPos;
+                        if (onPos != null)
+                            onPos.run();
+                    });
+                    d.add(pos);
+                    return this;
+                }
+                pos.setText(name);
+                return this;
+            }
+
+            @Override
+            public Dialog setNegativeButton(final String name, final Runnable action) {
+                this.onNeg = action;
+                if (neg == null) {
+                    neg = new Button(name);
+                    neg.setEndX(new PPointSubtract(b1e, dp8));
+                    neg.setEndY(new PPointSubtract(d.safeEndY, dp8));
+                    neg.setWidth(64, DP);
+                    neg.setHeight(32, DP);
+                    hasControls = true;
+                    neg.addEventListener(ActionEvent.class, e -> {
+                        window.redirectFocus = null;
+                        d.setVisible(false);
+                        fw.dispose();
+                        final Runnable onNeg = this.onNeg;
+                        if (onNeg != null)
+                            onNeg.run();
+                    });
+                    d.add(neg);
+                    return this;
+                }
+                neg.setText(name);
+                return this;
+            }
+
+            @Override
+            public Dialog setOnCancelListener(final Runnable action) {
+                onCancel = action;
+                return this;
+            }
+
+            @Override
+            public Dialog show() {
+                d.setWidth(400, DP);
+                d.setHeight(hasControls ? new PPointAdd(new NumberPointMultiplier(40, window.densityMultiplier), controlSY) : controlSY);
+                d.addDirectEventListener(VisibleEvent.class, e -> {
+                    if (e.value)
+                        return;
+                    window.redirectFocus = null;
+                    fw.dispose();
+                    final Runnable cancel = onCancel;
+                    if (cancel != null)
+                        cancel.run();
+                });
+                d.center();
+                d.setVisible(true);
+                window.redirectFocus = d;
+                return this;
+            }
+        };
+    }
+
     public FileChooser newFileChooser() { return new FileChooserFallback(this); }
     public FileChooser newFileChooser(final Window parent) {
         final FileChooser fc = newFileChooser();
