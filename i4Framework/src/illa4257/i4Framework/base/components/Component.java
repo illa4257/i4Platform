@@ -699,7 +699,7 @@ public class Component extends Destructor {
 
     public void setHeight(final float height, final Unit unit) {
         if (lastY)
-            startY.set(unit == Unit.DP ? new PPointAdd(endY, new NumberPointMultiplier(densityMultiplier, height)) : new PointAttach(-height, endY));
+            startY.set(unit == Unit.DP ? new PPointSubtract(endY, new NumberPointMultiplier(densityMultiplier, height)) : new PointAttach(-height, endY));
         else
             endY.set(unit == Unit.DP ? new PPointAdd(new NumberPointMultiplier(densityMultiplier, height), startY) : new PointAttach(height, startY));
         fire(new ChangePointEvent(this));
