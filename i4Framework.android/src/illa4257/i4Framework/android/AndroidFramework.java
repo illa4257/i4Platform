@@ -1,19 +1,23 @@
 package illa4257.i4Framework.android;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.*;
 import android.os.Build;
 import android.os.Handler;
 import android.view.KeyEvent;
+import illa4257.i4Framework.base.Dialog;
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
+import illa4257.i4Framework.base.PopupMenu;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
+import illa4257.i4Framework.base.events.components.ChangePointEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyMapper;
+import illa4257.i4Utils.media.Color;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Utils.logger.i4Logger;
@@ -143,6 +147,117 @@ public class AndroidFramework extends Framework {
 
     @Override public void invokeLater(final Runnable runnable) { uiHandler.post(runnable); }
     @Override public FrameworkWindow newWindow(final Window window) { return new AndroidWindow(this, window); }
+
+    @Override
+    public PopupMenu newPopupMenu(final Component component) {
+        return new PopupMenu() {
+            public final android.widget.PopupMenu menu = new android.widget.PopupMenu(
+                    context,
+                    AndroidView.find(((AndroidWindow) component.getWindow().frameworkWindow.get()).root, component)
+            );
+
+            @Override
+            public PopupMenu add(final String text, final Runnable action) {
+                menu.getMenu().add(text).setOnMenuItemClickListener(item -> {
+                    action.run();
+                    return true;
+                });
+                return this;
+            }
+
+            @Override
+            public PopupMenu show() {
+                menu.show();
+                return this;
+            }
+        };
+    }
+
+    @Override
+    public Dialog newDialog(final Window window) {
+        return new Dialog() {
+            final AlertDialog.Builder builder = new AlertDialog.Builder(((AndroidWindow) window.frameworkWindow.get()).activity.get());
+
+            @Override
+            public Dialog setTitle(final String title) {
+                builder.setTitle(title);
+                return this;
+            }
+
+            @Override
+            public Dialog setMessage(final String message) {
+                builder.setMessage(message);
+                return this;
+            }
+
+            @Override
+            public Dialog setContent(Component component) { /// TODO: Fix
+                final Window w = new Window();
+                w.addDirectEventListener(ChangePointEvent.class, e -> {
+                    new Throwable().printStackTrace();
+                    System.out.println(w.endX.get());
+                });
+                final AndroidWindow aw = new AndroidWindow(AndroidFramework.this, w);
+                w.frameworkWindow.set(aw);
+                w.link();
+                windows.offer(aw);
+                component = new Component() {
+                    @Override
+                    public void paint(illa4257.i4Framework.base.Context context) {
+                        super.paint(context);
+                        context.setColor(Color.RED);
+                        context.drawRect(0, 0, 256, 256);
+                    }
+                };
+
+                w.add(component);
+                aw.window.setSize(128, 128);
+                component.setSize(128, 128);
+                aw.root.updateLS(null);
+                aw.root.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+                    aw.updateSafeZone(aw.root.getRootWindowInsets());
+                    w.setSize(aw.root.getWidth(), aw.root.getHeight(), true);
+                });
+                final Component c = component;
+                new Thread(() -> {
+                    try {
+                        while (true) {
+                            Thread.sleep(1000);
+                            System.out.println(aw.root.getWidth() + " x " + aw.root.getHeight() + " / " + w.width.calcInt() + " x " + w.height.calcInt() + " / " + c.width.calcInt() + " x " + c.height.calcInt());
+                        }
+                    } catch (final Exception e) {
+                        e.printStackTrace();
+                    }
+                }).start();
+                builder.setView(aw.root);
+                return this;
+            }
+
+            @Override
+            public Dialog setPositiveButton(final String name, final Runnable action) {
+                builder.setPositiveButton(name, (d, which) -> action.run());
+                return this;
+            }
+
+            @Override
+            public Dialog setNegativeButton(final String name, final Runnable action) {
+                builder.setNegativeButton(name, (d, which) -> action.run());
+                return this;
+            }
+
+            @Override
+            public Dialog setOnCancelListener(final Runnable action) {
+                builder.setOnCancelListener(dialog -> action.run());
+                return this;
+            }
+
+            @Override
+            public Dialog show() {
+                builder.show();
+                return this;
+            }
+        };
+    }
 
     /* Not finished
     @Override

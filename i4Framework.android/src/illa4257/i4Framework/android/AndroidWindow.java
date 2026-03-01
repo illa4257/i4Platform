@@ -52,7 +52,7 @@ public class AndroidWindow implements FrameworkWindow {
         init();
     }
 
-    private void updateSafeZone(final WindowInsets insets) {
+    public void updateSafeZone(final WindowInsets insets) {
         final Insets rect = insets.getInsets(
                 WindowInsets.Type.systemBars()
                         | WindowInsets.Type.displayCutout()

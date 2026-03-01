@@ -2,6 +2,7 @@ package illa4257.i4Framework.android;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import illa4257.i4Framework.base.components.Component;
@@ -18,14 +19,32 @@ public class AndroidView extends ViewGroup {
     public final Component component;
 
     private volatile int offset = 0;
+    private boolean isNotRoot;
 
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private final EventListener<?>[] listeners;
 
     @Override protected void onLayout(boolean changed, int l, int t, int r, int b) {}
 
+    public static AndroidView find(final ViewGroup parent, final Component component) {
+        final int c = parent.getChildCount();
+        for (int i = 0; i < c; i++) {
+            final View view = parent.getChildAt(i);
+            if (!(view instanceof AndroidView))
+                continue;
+            AndroidView v = (AndroidView) view;
+            if (v.component == component)
+                return v;
+            v = find(v, component);
+            if (v != null)
+                return v;
+        }
+        return null;
+    }
+
     public AndroidView(final Component component, Context context, final boolean isNotRoot) {
         super(context);
+        this.isNotRoot = isNotRoot;
         setWillNotDraw(false);
         this.component = component;
         this.context = new AndroidGContext();
@@ -58,13 +77,22 @@ public class AndroidView extends ViewGroup {
         }
     }
 
-    private void updateLS(final StyleSetting ignored) {
+    public void updateLS(final StyleSetting ignored) {
         final int bw = component.getColor("border-color").alpha > 0 ? Math.round(Math.max(component.calcStyleNumber("border-width", Orientation.HORIZONTAL, 0), 0)) : 0;
         layout(component.startX.calcInt() - bw, component.startY.calcInt() - bw, component.endX.calcInt() + bw * 2, component.endY.calcInt() + bw * 2);
         offset = bw;
     }
 
     protected final AndroidGContext context;
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        //super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        if (isNotRoot)
+            setMeasuredDimension(component.width.calcInt(), component.height.calcInt());
+        else
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
 
     @Override
     protected void onDraw(Canvas canvas) {
