@@ -11,5 +11,7 @@ public class AndroidLauncher extends AndroidActivity {
         super.onCreate(savedInstanceState);
         i4Test.L.registerHandler(new AndroidLogger());
         i4Test.init(new AndroidFramework(getBaseContext()));
+
+        i4Test.start();
     }
 }

@@ -7,6 +7,7 @@ import illa4257.i4Framework.base.components.Button;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Label;
 import illa4257.i4Framework.base.components.Panel;
+import illa4257.i4Framework.base.components.TextField;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
@@ -102,9 +103,22 @@ public class i4Test {
         pc.add(cb);
 
         final Button b = new Button("TEST");
-        b.addEventListener(ActionEvent.class, e -> {
-            System.out.println("Hello, world!");
-        });
+        b.addEventListener(ActionEvent.class, e -> framework.newPopupMenu(b)
+                .add("test", () -> framework.newDialog(w)
+                        .setTitle("Test")
+                        .setMessage("Hello, world!")
+                        .setContent(new TextField())
+                        .setPositiveButton("OK", () -> {
+                            System.out.println("OK");
+                        })
+                        .setNegativeButton("Cancel", () -> {
+                            System.out.println("Cancel");
+                        })
+                        .show())
+                .add("test 2", () -> {
+                    System.out.println("test 2");
+                })
+                .show());
         b.setX(16, DP);
         b.setY(64, DP);
         b.setWidth(256, DP);
