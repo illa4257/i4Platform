@@ -246,12 +246,8 @@ public class IROperandStack {
                     stackLater.computeIfAbsent(((IRAnchor) inst.params[1]).id, ignored -> new ArrayList<>())
                             .add(new Stack<>());
                 else {
-                    boolean f = false;
                     for (int j = 0; j < inst.params.length; j++)
                         if (inst.params[j] instanceof IRAnchor) {
-                            if (f)
-                                throw new RuntimeException("2 anchors are not allowed");
-                            f = true;
                             final IRAnchor a = (IRAnchor) inst.params[j];
                             final Stack<Slot> snapshot = anchors.get(a.id);
                             if (snapshot != null) {
@@ -272,14 +268,42 @@ public class IROperandStack {
                                     }
                                 }
                             } else {
-                                final ArrayList<Stack<Slot>> l = stackLater.computeIfAbsent(((IRAnchor) inst.params[j]).id, ignored -> new ArrayList<>());
+                                final ArrayList<Stack<Slot>> l = stackLater.computeIfAbsent(a.id, ignored -> new ArrayList<>());
                                 for (final Stack<Slot> stack : stacks) {
                                     final Stack<Slot> s = new Stack<>();
                                     s.addAll(stack);
                                     l.add(s);
                                 }
                             }
-                        }
+                        } else if (inst.params[j] instanceof IRAnchor[])
+                            for (final IRAnchor a : (IRAnchor[]) inst.params[j]) {
+                                final Stack<Slot> snapshot = anchors.get(a.id);
+                                if (snapshot != null) {
+                                    if (snapshot.size() != stacks.get(0).size())
+                                        throw new RuntimeException("Different sizes");
+                                    for (int i2 = 0; i2 < stacks.get(0).size(); i2++) {
+                                        final Inst inst3 = snapshot.get(i2).inst;
+                                        for (final Stack<Slot> stack : stacks) {
+                                            final Inst inst2 = stack.get(i2).inst;
+                                            if (inst2.output == null) {
+                                                inst2.output = inst3.output;
+                                                continue;
+                                            }
+                                            if (inst2.output.equals(inst3.output))
+                                                continue;
+                                            instructions.add(MiniUtil.indexOf(inst2, instructions), new Inst(Opcode.STORE, inst3.output, new Object[]{inst2.output}));
+                                            i++;
+                                        }
+                                    }
+                                } else {
+                                    final ArrayList<Stack<Slot>> l = stackLater.computeIfAbsent(a.id, ignored -> new ArrayList<>());
+                                    for (final Stack<Slot> stack : stacks) {
+                                        final Stack<Slot> s = new Stack<>();
+                                        s.addAll(stack);
+                                        l.add(s);
+                                    }
+                                }
+                            }
                 }
                 if (inst.output == Const.STACK_1 || inst.output == Const.STACK_2) {
                     if (stacks.isEmpty())
@@ -288,8 +312,15 @@ public class IROperandStack {
                     for (final Stack<Slot> stack : stacks)
                         stack.push(slot);
                 }
-                if (Opcode.STOPPERS.contains(inst.opcode) || inst.opcode == Opcode.GOTO)
+                if (Opcode.STOPPERS.contains(inst.opcode) || inst.opcode == Opcode.GOTO ||
+                        inst.opcode == Opcode.LOOKUPSWITCH || inst.opcode == Opcode.TABLESWITCH)
                     stacks.clear();
+            }
+            i = 0;
+            for (; i < instructions.size(); i++) {
+                final Inst inst = instructions.get(i);
+                if (inst.output == Const.STACK_1 || inst.output == Const.STACK_2)
+                    throw new RuntimeException("Unused output " + inst.opcode + " at " + i);
             }
         } catch (final RuntimeException ex) {
             System.err.println("Index: " + i);

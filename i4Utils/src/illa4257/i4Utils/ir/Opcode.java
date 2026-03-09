@@ -66,11 +66,12 @@ public enum Opcode {
     INT2SHORT,
     LONG2DOUBLE,
     LONG2FLOAT,
-    HINT;
+    HINT, LOOKUPSWITCH, TABLESWITCH;
 
-    static List<Opcode>
+    static final List<Opcode>
             STOPPERS = Arrays.asList(RETURN, THROW),
             IFS2 = Arrays.asList(IF_NULL, IF_NONNULL),
-            IFS3 = Arrays.asList(IF_EQ, IF_NE, IF_LT, IF_LE, IF_GT, IF_GT)
+            IFS3 = Arrays.asList(IF_EQ, IF_NE, IF_LT, IF_LE, IF_GT, IF_GT),
+            STACK = Arrays.asList(DUP, DUP_x1, DUP_x2, DUP2, DUP2_x1, DUP2_x2, SWAP, POP, POP2)
             ;
 }
