@@ -21,7 +21,6 @@ public class IO {
         byte[] run(final InputStream inputStream) throws IOException;
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked", "JavaReflectionMemberAccess"})
     private static IReader detectReader() {
         try {
             final Method m = InputStream.class.getMethod("readAllBytes");
@@ -40,7 +39,7 @@ public class IO {
             };
         } catch (final NoSuchMethodException ignored) {}
         try {
-            final Class c = Class.forName("sun.misc.IOUtils");
+            final Class<?> c = Class.forName("sun.misc.IOUtils");
             try {
                 final Method m = c.getDeclaredMethod("readFully", InputStream.class);
                 return is -> {
@@ -379,6 +378,13 @@ public class IO {
         stream.write(number);
     }
 
+    public static void writeBEInt(final byte[] buff, int number, final int offset) {
+        buff[offset] = (byte) ((number >> 24) & 0xFF);
+        buff[offset + 1] = (byte) ((number >> 16) & 0xFF);
+        buff[offset + 2] = (byte) ((number >> 8) & 0xFF);
+        buff[offset + 3] = (byte) (number & 0xFF);
+    }
+
     public static void writeLEInt(final OutputStream stream, int number) throws IOException {
         stream.write(number);
         stream.write(number >> 8);
@@ -414,5 +420,16 @@ public class IO {
         stream.write((int) (number >> 16));
         stream.write((int) (number >> 8));
         stream.write((int) number);
+    }
+
+    public static void writeBELong(final byte[] buff, long number, final int offset) {
+        buff[offset] = (byte) ((number >> 56) & 0xFF);
+        buff[offset + 1] = (byte) ((number >> 48) & 0xFF);
+        buff[offset + 2] = (byte) ((number >> 40) & 0xFF);
+        buff[offset + 3] = (byte) ((number >> 32) & 0xFF);
+        buff[offset + 4] = (byte) ((number >> 24) & 0xFF);
+        buff[offset + 5] = (byte) ((number >> 16) & 0xFF);
+        buff[offset + 6] = (byte) ((number >> 8) & 0xFF);
+        buff[offset + 7] = (byte) (number & 0xFF);
     }
 }
