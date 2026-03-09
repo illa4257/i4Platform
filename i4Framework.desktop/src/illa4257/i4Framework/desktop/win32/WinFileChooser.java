@@ -5,6 +5,8 @@ import com.sun.jna.WString;
 import illa4257.i4Framework.base.FileChooserFilter;
 import illa4257.i4Framework.base.FileChooser;
 import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.base.res.FileRes;
+import illa4257.i4Framework.base.res.Res;
 import illa4257.i4Framework.desktop.DesktopFramework;
 import illa4257.i4Utils.str.Str;
 import illa4257.i4Utils.logger.Level;
@@ -23,7 +25,7 @@ public class WinFileChooser implements FileChooser {
     private final OpenFileNameW session = new OpenFileNameW();
 
     private volatile boolean isVisible = false, open = true;
-    private volatile List<File> files = Collections.emptyList();
+    private volatile List<Res> files = Collections.emptyList();
 
     public WinFileChooser() {
         session.nMaxFile = LEN;
@@ -90,7 +92,7 @@ public class WinFileChooser implements FileChooser {
     }
 
     @SuppressWarnings("NullableProblems")
-    @Override public Iterator<File> iterator() { return files.iterator(); }
+    @Override public Iterator<Res> iterator() { return files.iterator(); }
 
     @Override
     public void startThen(final Consumer<Boolean> listener) {
@@ -129,13 +131,13 @@ public class WinFileChooser implements FileChooser {
             }
             final File r = new File(filePaths.get(0));
             if (filePaths.size() == 1)
-                files = Collections.singletonList(r);
+                files = Collections.singletonList(new FileRes(r));
             else {
-                final ArrayList<File> fl = new ArrayList<>();
+                final ArrayList<Res> fl = new ArrayList<>();
                 final Iterator<String> str = filePaths.iterator();
                 str.next();
                 while (str.hasNext())
-                    fl.add(new File(r, str.next()));
+                    fl.add(new FileRes(new File(r, str.next())));
                 files = fl;
             }
             isVisible = false;

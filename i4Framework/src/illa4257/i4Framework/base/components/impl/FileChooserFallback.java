@@ -12,6 +12,8 @@ import illa4257.i4Framework.base.points.PPointAdd;
 import illa4257.i4Framework.base.points.PPointSubtract;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
+import illa4257.i4Framework.base.res.FileRes;
+import illa4257.i4Framework.base.res.Res;
 import illa4257.i4Framework.base.styling.StyleSetting;
 
 import javax.swing.filechooser.FileSystemView;
@@ -64,7 +66,7 @@ public class FileChooserFallback implements FileChooser {
     private volatile boolean open = true, multiSelection = false;
     private volatile String defaultExtension = null;
     private volatile Consumer<Boolean> listener = null;
-    private volatile List<File> files = Collections.emptyList();
+    private volatile List<Res> files = Collections.emptyList();
     private volatile File current = null;
     private volatile Window parentWindow = null;
 
@@ -118,7 +120,7 @@ public class FileChooserFallback implements FileChooser {
         confirm.addEventListener(ActionEvent.class, e -> {
             if (current == null)
                 return;
-            files = Collections.singletonList(current);
+            files = Collections.singletonList(new FileRes(current));
             frameworkWindow.dispose();
         });
         confirm.setStartX(new PPointSubtract(confirm.endX, new NumberPointMultiplier(window.densityMultiplier, 64)));
@@ -161,7 +163,7 @@ public class FileChooserFallback implements FileChooser {
             final Button btn = new Button();
             btn.addEventListener(ActionEvent.class, event -> {
                 if (f.isFile()) {
-                    files = Collections.singletonList(f);
+                    files = Collections.singletonList(new FileRes(f));
                     frameworkWindow.dispose();
                     return;
                 }
@@ -230,5 +232,5 @@ public class FileChooserFallback implements FileChooser {
     }
 
     @SuppressWarnings("NullableProblems")
-    @Override public Iterator<File> iterator() { return files.iterator(); }
+    @Override public Iterator<Res> iterator() { return files.iterator(); }
 }

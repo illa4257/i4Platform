@@ -1,6 +1,8 @@
 package illa4257.i4Framework.android;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.os.Build;
@@ -23,11 +25,16 @@ import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.PointAttach;
 import illa4257.i4Framework.base.points.numbers.NumberPoint;
 import illa4257.i4Framework.base.points.numbers.NumberPointConstant;
+import illa4257.i4Framework.base.res.Res;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.logger.i4Logger;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 import static illa4257.i4Framework.android.AndroidFramework.KEY_MAP;
 
@@ -123,7 +130,7 @@ public class AndroidWindow implements FrameworkWindow {
                         final Activity a = framework.getActivity();
                         if (a instanceof AndroidActivity)
                             ((AndroidActivity) a).frameworkWindow.set(this);
-                        densityMultiplier.set(a.getResources().getDisplayMetrics().density);
+                        densityMultiplier.set(a.getResources().getDisplayMetrics().density * AndroidFramework.SCALE_FACTOR);
                         framework.invokeLater(() -> {
                             activity.set(a);
                             a.setContentView(root);
@@ -262,5 +269,26 @@ public class AndroidWindow implements FrameworkWindow {
         framework.removeThemeListener(this::onThemeUpdate);
         framework.windows.remove(this);
         a.finishAndRemoveTask();
+    }
+
+    public final ConcurrentHashMap<Integer, Consumer<Boolean>> permissionRequests = new ConcurrentHashMap<>();
+    public final ConcurrentHashMap<Integer, Consumer<List<Res>>> filePicker = new ConcurrentHashMap<>();
+
+    public void onRequestPermissionsResult(final int requestCode, final int[] grantResults) {
+        permissionRequests.remove(requestCode).accept(grantResults[0] == PackageManager.PERMISSION_GRANTED);
+    }
+
+    public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+        if (resultData == null || resultCode != Activity.RESULT_OK) {
+            filePicker.remove(requestCode).accept(null);
+            return;
+        }
+        final ArrayList<Res> l = new ArrayList<>();
+        if (resultData.getClipData() != null)
+            for (int i = 0; i < resultData.getClipData().getItemCount(); i++)
+                l.add(new UriRes(framework.context, resultData.getClipData().getItemAt(i).getUri()));
+        else
+            l.add(new UriRes(framework.context, resultData.getData()));
+        filePicker.remove(requestCode).accept(l);
     }
 }

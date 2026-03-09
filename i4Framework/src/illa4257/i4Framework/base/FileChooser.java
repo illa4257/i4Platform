@@ -1,12 +1,13 @@
 package illa4257.i4Framework.base;
 
 import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.base.res.Res;
 
 import java.io.File;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public interface FileChooser extends Iterable<File> {
+public interface FileChooser extends Iterable<Res> {
     default FileChooser requestFocus() { return this; }
 
     ///  Default: true

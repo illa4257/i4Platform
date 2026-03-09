@@ -3,36 +3,47 @@ package illa4257.i4Framework.android;
 import android.app.Activity;
 import android.content.Intent;
 import illa4257.i4Framework.base.FileChooserFilter;
-import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.FileChooser;
 import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.base.res.Res;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class AndroidFileChooser implements FileChooser {
     public final AndroidFramework framework;
+    private final Intent intent = new Intent();
+
     private volatile Window parent = null;
 
-    public AndroidFileChooser(final AndroidFramework framework) { this.framework = framework; }
+    private volatile List<Res> result = Collections.emptyList();
+
+    public AndroidFileChooser(final AndroidFramework framework) {
+        this.framework = framework;
+        setOpen(true);
+        setMultiSelectionEnabled(false);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+    }
 
     @Override public AndroidFileChooser setParent(final Window parent) { this.parent = parent; return this; }
 
     @Override
-    public AndroidFileChooser setOpen(boolean open) {
+    public AndroidFileChooser setOpen(final boolean open) {
+        intent.setAction(open ? Intent.ACTION_OPEN_DOCUMENT : Intent.ACTION_CREATE_DOCUMENT);
         return this;
     }
 
     @Override
-    public AndroidFileChooser setMultiSelectionEnabled(boolean allow) {
+    public AndroidFileChooser setMultiSelectionEnabled(final boolean allow) {
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, allow);
         return this;
     }
 
-    @Override
-    public AndroidFileChooser setTitle(String title) {
-        return this;
-    }
+    @Override public AndroidFileChooser setTitle(final String title) { return this; }
 
     @Override
     public AndroidFileChooser setDefaultExt(String extension) {
@@ -59,21 +70,21 @@ public class AndroidFileChooser implements FileChooser {
         final Window w = parent;
         if (w == null)
             return;
-        final FrameworkWindow fw = w.frameworkWindow.get();
-        if (!(fw instanceof AndroidWindow))
-            return;
-        final Activity a = ((AndroidWindow) fw).activity.get();
+        final AndroidWindow aw = (AndroidWindow) w.frameworkWindow.get();
+        final Activity a = aw.activity.get();
         if (a == null)
             return;
-        final Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("*/*");
-        a.startActivityForResult(intent, 2);
+        final int code = 2;
+        aw.filePicker.put(code, l -> {
+            result = l;
+            listener.accept(l != null);
+        });
+        a.startActivityForResult(intent, code);
     }
 
     @SuppressWarnings("NullableProblems")
     @Override
-    public Iterator<File> iterator() {
-        return null;
+    public Iterator<Res> iterator() {
+        return result.iterator();
     }
 }

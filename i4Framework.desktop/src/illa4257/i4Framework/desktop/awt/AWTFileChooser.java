@@ -4,7 +4,10 @@ import illa4257.i4Framework.base.FileChooser;
 import illa4257.i4Framework.base.FileChooserFilter;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.base.res.FileRes;
+import illa4257.i4Framework.base.res.Res;
 import illa4257.i4Utils.lists.ArrIterator;
+import illa4257.i4Utils.lists.ConvertIterator;
 
 import java.awt.*;
 import java.io.File;
@@ -14,7 +17,6 @@ import java.util.function.Consumer;
 public class AWTFileChooser implements FileChooser {
     private final Object lock = new Object();
     public volatile FileDialog dialog = new FileDialog((Frame) null);
-    public volatile Consumer<Boolean> listener = null;
 
     @Override
     public FileChooser setOpen(final boolean open) {
@@ -96,7 +98,7 @@ public class AWTFileChooser implements FileChooser {
 
     @SuppressWarnings("NullableProblems")
     @Override
-    public Iterator<File> iterator() {
-        return new ArrIterator<>(dialog.getFiles());
+    public Iterator<Res> iterator() {
+        return new ConvertIterator<>(new ArrIterator<>(dialog.getFiles()), FileRes::new);
     }
 }

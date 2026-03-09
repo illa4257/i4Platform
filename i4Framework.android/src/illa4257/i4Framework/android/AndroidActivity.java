@@ -1,6 +1,7 @@
 package illa4257.i4Framework.android;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,7 +24,7 @@ public class AndroidActivity extends Activity {
     public void onConfigurationChanged(final Configuration newConfig) {
         final AndroidWindow w = frameworkWindow.get();
         if (w != null) {
-            w.densityMultiplier.set(newConfig.densityDpi / 160.0f);
+            w.densityMultiplier.set(newConfig.densityDpi / 160.0f * AndroidFramework.SCALE_FACTOR);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                 w.framework.onSystemThemeChange(
                         newConfig.isNightModeActive() ? "dark" : "light",
@@ -43,5 +44,21 @@ public class AndroidActivity extends Activity {
     public boolean dispatchKeyEvent(final KeyEvent ev) {
         final AndroidWindow w = frameworkWindow.get();
         return w != null ? w.onDispatch(ev) : super.dispatchKeyEvent(ev);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        final AndroidWindow w = frameworkWindow.get();
+        if (w != null)
+            w.onRequestPermissionsResult(requestCode, grantResults);
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+        final AndroidWindow w = frameworkWindow.get();
+        if (w != null)
+            w.onActivityResult(requestCode, resultCode, resultData);
+        super.onActivityResult(requestCode, resultCode, resultData);
     }
 }

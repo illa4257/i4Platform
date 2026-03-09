@@ -2,6 +2,7 @@ package illa4257.i4Framework.android;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.graphics.IPath;
@@ -14,6 +15,17 @@ public class AndroidGContext implements Context {
     public Canvas canvas;
 
     public AndroidGContext() {}
+
+    public static Path getPath(final Object path) {
+        Path p;
+        if (path instanceof AndroidPath)
+            p = ((AndroidPath) path).path;
+        else if (path instanceof Path)
+            p = (Path) path;
+        else
+            p = null;
+        return p;
+    }
 
     private final char[] buff = new char[1];
 
@@ -43,8 +55,7 @@ public class AndroidGContext implements Context {
 
     @Override
     public void setClip(final Object path) {
-        if (path instanceof AndroidPath)
-            canvas.clipPath(((AndroidPath) path).path);
+        canvas.clipPath(getPath(path));
     }
 
     @Override public void translate(final float x, final float y) { canvas.translate(x, y); }
@@ -56,8 +67,15 @@ public class AndroidGContext implements Context {
     }
 
     @Override
+    public Object newRoundShape(final float x, final float y, final float w, final float h, final float borderRadius) {
+        final Path p = new Path();
+        p.addRoundRect(x - paint.getStrokeWidth() / 2, y - paint.getStrokeWidth() / 2, w, h, borderRadius, borderRadius, Path.Direction.CW);
+        return p;
+    }
+
+    @Override
     public void draw(final Object path) {
-        canvas.drawPath(((AndroidPath) path).path, paint);
+        canvas.drawPath(getPath(path), paint);
     }
 
     @Override
