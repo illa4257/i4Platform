@@ -2,6 +2,8 @@ package illa4257.i4Framework.swing;
 
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.events.dnd.DroppedEvent;
+import illa4257.i4Framework.base.res.FileRes;
+import illa4257.i4Framework.base.res.Res;
 import illa4257.i4Utils.logger.i4Logger;
 
 import javax.swing.*;
@@ -61,11 +63,12 @@ public interface ISwingComponent {
             public synchronized void drop(DropTargetDropEvent dropTargetDropEvent) {
                 try {
                     dropTargetDropEvent.acceptDrop(DnDConstants.ACTION_COPY);
-                    final ArrayList<File> l = new ArrayList<>();
+                    final ArrayList<Res> l = new ArrayList<>();
                     final Transferable transferable = dropTargetDropEvent.getTransferable();
                     if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
                         //noinspection unchecked
-                        l.addAll((List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor));
+                        for (final File f : (List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor))
+                            l.add(new FileRes(f));
                     component.fire(new DroppedEvent(component, true, 0, dropTargetDropEvent.getLocation().x, dropTargetDropEvent.getLocation().y, dropTargetDropEvent.getLocation().x, dropTargetDropEvent.getLocation().y, l));
                     dropTargetDropEvent.dropComplete(true);
                 } catch (final Exception ex) {
