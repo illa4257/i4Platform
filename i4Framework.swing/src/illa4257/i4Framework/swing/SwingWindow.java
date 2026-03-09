@@ -11,6 +11,7 @@ import illa4257.i4Framework.base.events.mouse.MouseButton;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.events.window.CenterWindowEvent;
+import illa4257.i4Framework.base.points.numbers.NumberPoint;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,6 +21,9 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
     public final Window window;
     public final SwingFramework framework;
     public final Container root;
+
+    public final NumberPoint densityMultiplier = new NumberPoint(1);
+
     @SuppressWarnings("rawtypes")
     public EventListener[] l;
     private volatile boolean center = false;
@@ -93,6 +97,8 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
             if (b) {
                 if (!window.frameworkWindow.setIfNull(this))
                     return;
+                densityMultiplier.set(getToolkit().getScreenResolution() / 96f);
+                window.densityMultiplier.set(densityMultiplier);
                 window.link();
                 window.fire(new StyleUpdateEvent(window));
                 pack();

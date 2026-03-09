@@ -81,6 +81,10 @@ public class SwingFramework extends DesktopFramework {
     }
 
     static {
+        System.setProperty("sun.java2d.uiScale", "1.0");
+        System.setProperty("sun.java2d.uiScale.enabled", "false");
+        System.setProperty("sun.java2d.dpiaware", "true");
+
         final HashMap<RenderingHints.Key, Object> m = new HashMap<>();
 
         m.put(KEY_ANTIALIASING, VALUE_ANTIALIAS_ON);

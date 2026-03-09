@@ -58,7 +58,6 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         this.component = component;
         setFocusable(component.isFocusable());
         setOpaque(false);
-
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(final MouseEvent event) {
