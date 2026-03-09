@@ -1,5 +1,6 @@
 package illa4257.i4Framework.base;
 
+import illa4257.i4Framework.base.capabilities.Bluetooth;
 import illa4257.i4Framework.base.components.Button;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Label;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
@@ -293,4 +295,14 @@ public abstract class Framework implements ResourceProvider {
     public boolean setClipboardText(final CharSequence seq) { return false; }
 
     public boolean isDev() { return IS_DEV; }
+
+    public CompletableFuture<Bluetooth> getBluetooth(final Window window) {
+        return CompletableFuture.completedFuture(null);
+    }
+
+    /*/// Don't wait for it in the main thread!
+    /// Android doesn't allow it.
+    public <T extends Capability> CompletableFuture<T> request(final Window window, final Class<T> permission) {
+        return CompletableFuture.completedFuture(null);
+    }*/
 }

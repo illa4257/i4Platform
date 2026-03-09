@@ -8,15 +8,14 @@ import android.graphics.*;
 import android.os.Build;
 import android.os.Handler;
 import android.view.KeyEvent;
-import illa4257.i4Framework.base.Dialog;
-import illa4257.i4Framework.base.Framework;
-import illa4257.i4Framework.base.FrameworkWindow;
-import illa4257.i4Framework.base.PopupMenu;
+import illa4257.i4Framework.android.bluetooth.AndroidBluetooth;
+import illa4257.i4Framework.base.*;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.components.ChangePointEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyMapper;
+import illa4257.i4Framework.base.capabilities.Bluetooth;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.styling.BaseTheme;
@@ -26,10 +25,13 @@ import illa4257.i4Utils.web.i4URI;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
 public class AndroidFramework extends Framework {
+    public static final float SCALE_FACTOR = 1.5f;
+
     static final ConcurrentLinkedQueue<Activity> activities = new ConcurrentLinkedQueue<>();
     private static int processing = 0;
 
@@ -259,11 +261,11 @@ public class AndroidFramework extends Framework {
         };
     }
 
-    /* Not finished
+    //* Not finished
     @Override
-    public IFileChooser newFileChooser() {
+    public FileChooser newFileChooser() {
         return new AndroidFileChooser(this);
-    }*/
+    }
 
     @Override
     public InputStream openResource(final i4URI uri) {
@@ -293,7 +295,40 @@ public class AndroidFramework extends Framework {
         }
     }
 
-    @Override public File getAppDataDir() { return new File(context.getApplicationInfo().dataDir); }
-    @Override public File getLocalAppDataDir() {return context.getFilesDir(); }
+    @Override public File getAppDataDir() { return context.getFilesDir(); }
+
+    @Override public File getLocalAppDataDir() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ?
+                context.getNoBackupFilesDir() :
+                context.getFilesDir();
+    }
+
+    /// TODO: Change it.
     @Override public File getAppDir() { return new File(context.getApplicationInfo().sourceDir).getParentFile(); }
+
+    public static Activity getActivity(final Window window) {
+        return ((AndroidWindow) window.frameworkWindow.get()).activity.get();
+    }
+
+    @Override
+    public CompletableFuture<Bluetooth> getBluetooth(final Window window) {
+        return CompletableFuture.completedFuture(new AndroidBluetooth(getActivity(window)));
+    }
+
+    /*@Override
+    public <T extends Capability> CompletableFuture<T> request(final Window window, final Class<T> permission) {
+        if (permission == BluetoothAdvertise.class) {
+            final AndroidWindow aw = (AndroidWindow) window.frameworkWindow.get();
+            final Activity a = aw.activity.get();
+            final int code = 0;
+            final CompletableFuture<T> future = new CompletableFuture<>();
+            aw.requests.put(code, b -> {
+                //noinspection unchecked
+                future.complete(b ? (T) new AndroidBluetooth(context.getSystemService(BluetoothManager.class)) : null);
+            });
+            a.requestPermissions(new String[]{ Manifest.permission.BLUETOOTH_ADVERTISE }, code);
+            return future;
+        }
+        return super.request(window, permission);
+    }*/
 }
