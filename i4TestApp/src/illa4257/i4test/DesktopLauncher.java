@@ -1,6 +1,8 @@
 package illa4257.i4test;
 
+//import illa4257.i4Framework.awt.AWTFramework;
 import illa4257.i4Framework.awt.AWTFramework;
+import illa4257.i4Framework.swing.SwingFramework;
 import illa4257.i4Utils.logger.AnsiColoredPrintStreamLogHandler;
 import illa4257.i4Utils.logger.i4Logger;
 
@@ -31,8 +33,8 @@ public class DesktopLauncher {
 
     public static void main(final String[] args) throws Exception {
         L.registerHandler(new AnsiColoredPrintStreamLogHandler(System.out));
-        i4Test.init(new AWTFramework("illa4257.i4Test"));
-        if (false) {
+        i4Test.init(new SwingFramework("illa4257.i4Test"));
+        if (true) {
             i4Test.start();
             return;
         }

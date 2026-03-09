@@ -8,11 +8,13 @@ import illa4257.i4Utils.str.Str;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public class IR2JS {
     public interface W {
         W w(final String str);
         default W t(final int n) { return this; }
+        int st();
         default W st(final int nt) { return this; }
         default W ln() { return this; }
     }
@@ -28,6 +30,8 @@ public class IR2JS {
             w.w(str);
             return this;
         }
+
+        @Override public int st() { return 0; }
     }
 
     public static class PSW implements W {
@@ -35,6 +39,9 @@ public class IR2JS {
         public int nt = 0;
 
         public PSW(final PrintStream ps) { this.ps = ps; }
+
+        @Override
+        public int st() { return nt; }
 
         @Override
         public W st(int nt) {
@@ -82,6 +89,11 @@ public class IR2JS {
         }
 
         @Override
+        public int st() {
+            return w.st() - o;
+        }
+
+        @Override
         public W st(int nt) {
             w.st(o + nt);
             return this;
@@ -94,52 +106,51 @@ public class IR2JS {
         }
     }
 
-    public static StringBuilder encType(final StringBuilder b, final IRType type) {
-        switch (type.kind) {
-            case VOID: b.append("void");break;
-            case BOOLEAN: b.append("boolean");break;
-            case BYTE: b.append("byte");break;
-            case SHORT: b.append("short");break;
-            case CHAR: b.append("char");break;
-            case INT: b.append("int");break;
-            case LONG: b.append("long");break;
-            case FLOAT: b.append("float");break;
-            case DOUBLE: b.append("double");break;
-            case LITERAL: b.append(type.cls);break;
-            default: throw new RuntimeException("Unknown kind: " + type.kind);
-        }
-        return Str.repeat(b, "[", type.array);
+    public static String encArg(final IRType type) {
+        return type.toJava()
+                .replaceAll("_", "_1")
+                .replaceAll(";", "_2")
+                .replaceAll("\\[", "_3");
     }
 
-    public static String encType(final IRType type) {
+    public static StringBuilder encArgs(final StringBuilder b, final List<IRType> args, final IRType type) {
+        Str.join(b.append("__"), "", args, (t, sb) -> sb.append(encArg(t)))
+                .append(encArg(type));
+        return b;
+    }
+
+    public static String encArgs(final List<IRType> args, final IRType type) {
         final StringBuilder b = Str.builder();
         try {
-            return encType(b, type).toString();
+            return encArgs(b, args, type).toString();
+        } finally {
+            Str.recycle(b);
+        }
+    }
+
+    public static String methodName(final String methodName, final List<IRType> args, final IRType type) {
+        final StringBuilder b = Str.builder();
+        try {
+            return encArgs(b.append('"').append(methodName), args, type).append('"').toString();
         } finally {
             Str.recycle(b);
         }
     }
 
     public static String methodName(final IRMethod method) {
-        final StringBuilder b = Str.builder();
-        try {
-            b.append('"').append(method.name).append('(');
-            Str.join(b, ", ", method.argumentsTypes, (t, sb) -> encType(sb, t));
-            return encType(b.append(')'), method.type).append('"').toString();
-        } finally {
-            Str.recycle(b);
-        }
+        return methodName(method.name, method.argumentsTypes, method.type);
     }
 
     public static String methodName(final IRMethodRef method) {
-        final StringBuilder b = Str.builder();
-        try {
-            b.append('"').append(method.name).append('(');
-            Str.join(b, ", ", method.params, (t, sb) -> encType(sb, t));
-            return encType(b.append(')'), method.type).append('"').toString();
-        } finally {
-            Str.recycle(b);
-        }
+        return methodName(method.name, method.params, method.type);
+    }
+
+    public static W write(final W o, final IRField f) {
+        o.w(escapeStr(f.name)).w(":{type:").w(escapeStr(encType(f.type)))
+                .w(",flags:").w(Integer.toString(IRAccess.toJava(f.access)));
+        if (f.value != null)
+            o.w(",value:").w(f.value instanceof String ? escapeStr((String) f.value) : of(f.value));
+        return o.w("}");
     }
 
     public static void write(final W o, final IRClass cls) {
@@ -147,10 +158,9 @@ public class IR2JS {
         o.ln().w("name:\"" + cls.name + "\",");
         if (cls.superName != null)
             o.ln().w("super_cls:\"" + cls.superName + "\",");
-        o.ln().w("declared_fields:{").st(2);
-        for (final IRField f : cls.fields) {
-            o.ln().w("\"_" + f.name + "\":\"").w(encType(f.type)).w("\",");
-        }
+        o.ln().w("fields:{").st(2);
+        for (final IRField f : cls.fields)
+            write(o.ln(), f).w(",");
         o.st(1).ln().w("},");
         for (final IRMethod m : cls.methods) {
             o.ln().w(methodName(m) + ":async function(");
@@ -162,12 +172,15 @@ public class IR2JS {
             }
             for (final IRType ignored : m.argumentsTypes)
                 o.w(",a" + i++);
-            o.w("){").st(2);
+            o.w("){try{await env.traceEnter(sc,t,").w(escapeStr(m.name)).w(");").st(2);
             if (m.access.contains(IRAccess.NATIVE)) {
                 o.ln();
                 if (m.type.kind != IRType.Kind.VOID)
                     o.w("return ");
-                o.w("await env.callNative(sc,env,t,").w(methodName(m));
+                o.w("await env.callNative(sc,env,t,\"").w(m.name).w("\",\"")
+                        .w(encArgs(m.argumentsTypes, m.type)
+                                .replaceAll("[/,()]", "_"))
+                        .w("\"");
                 i = 0;
                 if (!m.access.contains(IRAccess.STATIC)) {
                     o.w(",a" + i);
@@ -180,11 +193,11 @@ public class IR2JS {
                 try {
                     write(new SW(o, 2), m.instructions);
                 } catch (final RuntimeException e) {
+                    System.err.println("#" + m.name);
                     m.print();
-                    System.out.println(m.name);
                     throw e;
                 }
-            o.st(1).ln().w("},");
+            o.st(1).ln().w("}finally{await env.traceExit(t);}},");
         }
         o.st(0).ln().w("}");
     }
@@ -206,6 +219,7 @@ public class IR2JS {
                 case IF_NONNULL:
                 case GOTO:
                 case CATCH:
+                case LOOKUPSWITCH:
                     hasJumps = true;
                     break;
                 default:
@@ -218,9 +232,13 @@ public class IR2JS {
                         scopeVars.add(v);
                     break;
             }
-        w.ln().w("let c,err");
-        if (hasJumps)
-            w.w(",cursor=0");
+        w.ln().w("let c,err,h0");
+        String cursorValue = "0";
+        if (hasJumps) {
+            if (!instructions.isEmpty() && instructions.get(0).opcode == Opcode.ANCHOR)
+                cursorValue = of(instructions.get(0).params[0]);
+            w.w(",cursor=").w(cursorValue);
+        }
         for (final String var : scopeVars) {
             w.w(",");
             w.w(var);
@@ -230,7 +248,7 @@ public class IR2JS {
             w.ln().w("while(true)");
             w.st(1).ln().w("switch(cursor){");
             if (!instructions.isEmpty() && instructions.get(0).opcode != Opcode.ANCHOR)
-                w.st(2).ln().w("case 0:").st(3);
+                w.st(2).ln().w("case ").w(cursorValue).w(":").st(3);
         }
         final ArrayList<IRExc> startTry = new ArrayList<>(), inTry = new ArrayList<>();
         final Runnable closeTry = () -> {
@@ -247,8 +265,10 @@ public class IR2JS {
                     continue;
                 w.ln();
                 if (o.cls != null)
-                    w.w("if (e instanceof " + o.cls + "){");
-                w.w("err=e;cursor=" + o.anchor.id + ";break;");
+                    w.w("if(instanceOf(e,").w(escapeStr(o.cls)).w(")){");
+                else
+                    w.w("if(e instanceof Error)throw e;").ln();
+                w.w("err=e;cursor=" + of(o.anchor.id) + ";break;");
                 if (o.cls != null)
                     w.w("}");
                 else
@@ -344,6 +364,13 @@ public class IR2JS {
                     w.w(";");
                     break;
 
+                case INT2BYTE: {
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output)).w("=(").w(of(inst.params[0])).w("<<24)>>24;");
+                    break;
+                }
+
                 case INT2LONG:
                 case INT2FLOAT:
                 case INT2CHAR:
@@ -363,21 +390,40 @@ public class IR2JS {
                     break;
                 }
 
-                case INT2BYTE: {
+                case INT2SHORT:
+                {
                     if (inst.output == null)
                         break;
-                    w.w(of(inst.output)).w("(").w(of(inst.params[0])).w("<<24)>>24;");
+                    w.w(of(inst.output)).w("=(").w(of(inst.params[0])).w("<<16)>>16;");
+                    break;
                 }
+
+                case INT2DOUBLE:
+                case FLOAT2DOUBLE:
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output)).w("=").w(of(inst.params[0])).w(";");
+                    break;
 
                 case LONG2INT: {
                     if (inst.output == null)
                         break;
-                    w.w(of(inst.output));
-                    w.w("=Number(BigInt.asIntN(32,");
-                    w.w(of(inst.params[0]));
-                    w.w(")) | 0;");
+                    w.w(of(inst.output)).w("=Number(BigInt.asIntN(32,").w(of(inst.params[0])).w(")) | 0;");
                     break;
                 }
+
+                case LONG2FLOAT: {
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output)).w("=Math.fround(Number(").w(of(inst.params[0])).w("));");
+                    break;
+                }
+
+                case LONG2DOUBLE:
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output)).w("=Number(").w(of(inst.params[0])).w(");");
+                    break;
 
                 case FLOAT2INT: {
                     if (inst.output == null)
@@ -385,6 +431,31 @@ public class IR2JS {
                     w.w(of(inst.output)).w("=isNaN(").w(of(inst.params[0])).w(")?NaN:~~").w(of(inst.params[0])).w(";");
                     break;
                 }
+
+                case DOUBLE2FLOAT:
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output)).w("=Math.fround(").w(of((inst.params[0]))).w(");");
+                    break;
+
+                case DOUBLE2INT:
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output)).w("=d2i(").w(of(inst.params[0])).w(");");
+                    break;
+
+                case FLOAT2LONG:
+                case DOUBLE2LONG:
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output)).w("=d2l(").w(of(inst.params[0])).w(");");
+                    break;
+
+                case NEGATIVE:
+                    if (inst.output == null)
+                        break;
+                    w.w(of(inst.output)).w("=-").w(of(inst.params[0])).w(";");
+                    break;
 
                 case STORE: {
                     w.w(of(inst.output)).w("=").w(of(inst.params[0])).w(";");
@@ -465,14 +536,14 @@ public class IR2JS {
                     w.w(");");
                     break;
                 case GOTO:
-                    w.w("cursor=" + ((IRAnchor) inst.params[0]).id + ';');
+                    w.w("cursor=" + of(((IRAnchor) inst.params[0]).id) + ';');
                     w.w("break;");
                     break;
                 case IF_NULL: {
                     w.w("if(");
                     w.w(of(inst.params[0]));
-                    w.w("===null){");
-                    w.w("cursor=" + ((IRAnchor) inst.params[1]).id + ';');
+                    w.w("==null){");
+                    w.w("cursor=" + of(((IRAnchor) inst.params[1]).id) + ';');
                     w.w("break;");
                     w.w("}");
                     break;
@@ -480,8 +551,8 @@ public class IR2JS {
                 case IF_NONNULL: {
                     w.w("if(");
                     w.w(of(inst.params[0]));
-                    w.w("!==null){");
-                    w.w("cursor=" + ((IRAnchor) inst.params[1]).id + ';');
+                    w.w("!=null){");
+                    w.w("cursor=" + of(((IRAnchor) inst.params[1]).id) + ';');
                     w.w("break;");
                     w.w("}");
                     break;
@@ -497,8 +568,8 @@ public class IR2JS {
                     w.w("if(");
                     w.w(of(inst.params[0]));
                     switch (inst.opcode) {
-                        case IF_EQ: w.w("==="); break;
-                        case IF_NE: w.w("!=="); break;
+                        case IF_EQ: w.w("=="); break;
+                        case IF_NE: w.w("!="); break;
                         case IF_GE: w.w(">="); break;
                         case IF_LE: w.w("<="); break;
                         case IF_GT: w.w(">"); break;
@@ -506,7 +577,7 @@ public class IR2JS {
                     }
                     w.w(of(inst.params[1]));
                     w.w("){");
-                    w.w("cursor=" + ((IRAnchor) inst.params[2]).id + ';');
+                    w.w("cursor=" + of(((IRAnchor) inst.params[2]).id) + ';');
                     w.w("break;");
                     w.w("}");
                     break;
@@ -559,8 +630,8 @@ public class IR2JS {
                         w.w("=");
                     }
                     w.w("await env.alloc(await env.getClass(sc.class_loader,t,");
-                    w.w(of(inst.params[0]));
-                    w.w("));");
+                    w.w(escapeStr((String) inst.params[0]));
+                    w.w("),t);");
                     break;
                 case INVOKE_STATIC:
                 case INVOKE_SPECIAL:
@@ -569,7 +640,7 @@ public class IR2JS {
                     final Iterator<Object> params = new ArrIterator<>(inst.params);
                     final IRMethodRef ref = (IRMethodRef) params.next();
                     if (inst.opcode == Opcode.INVOKE_VIRTUAL || inst.opcode == Opcode.INVOKE_INTERFACE)
-                        w.w("c=virtualMethod(t0.cls," + methodName(ref) + ");").ln();
+                        w.w("c=virtualMethod(" + of(inst.params[1]) + ".cls," + methodName(ref) + ");").ln();
                     else
                         w.w("c=await env.getClass(sc.class_loader,t,\"" + ref.cls + "\");").ln();
                     if (inst.output != null) {
@@ -588,12 +659,54 @@ public class IR2JS {
                     w.w(");");
                     break;
                 }
+
+                case INVOKE_DYNAMIC:
+                    switch ((Opcode) inst.params[0]) {
+                        case INVOKE_STATIC: {
+                            w.w("throw new Error('INVOKE_DYNAMIC');");
+                            break;
+                        }
+                        default:
+                            throw new RuntimeException("Unknown opcode: " + inst.params[0]);
+                    }
+
+
+                    /*switch ((Opcode) inst.params[0]) {
+                        case INVOKE_STATIC: {
+                            w.w("c=await env.getClass(sc.class_loader,t,\"" + ((IRMethodRef) inst.params[1]).cls + "\");").ln();
+                            break;
+                        }
+                        default:
+                            throw new RuntimeException("Unknown opcode: " + inst.params[0]);
+                    }
+                    switch ((Opcode) inst.params[0]) {
+                        case INVOKE_STATIC: {
+                            final IRMethodRef ref = (IRMethodRef) inst.params[1];
+                            w.w("h0=env.getField(await c[").w(methodName(ref)).w("](c,env,t");
+                            w.w("),'target');").ln();
+                            if (inst.output != null) {
+                                w.w(of(inst.output));
+                                w.w("=");
+                            }
+                            final IRMethodRef invoke = new IRMethodRef();
+                            invoke.name = "invokeExact";
+                            invoke.params.add(new IRType("java/lang/Object", 1));
+                            invoke.type = new IRType("java/lang/Object");
+                            w.w("h0.cls[").w(methodName(invoke)).w("](c,env,t,h0");
+
+                            w.w(");");
+                            break;
+                        }
+                        default:
+                            throw new RuntimeException("Unknown opcode: " + inst.params[0]);
+                    }*/
+                    break;
+
                 case RETURN: {
                     w.w("return");
                     final Iterator<Object> iter = new ArrIterator<>(inst.params);
                     if (iter.hasNext()) {
-                        w.w(" ");
-                        w.w(of(iter.next()));
+                        w.w(" ").w(of(iter.next()));
                         if (iter.hasNext())
                             throw new RuntimeException("There's more than 1 return parameters");
                     }
@@ -620,8 +733,32 @@ public class IR2JS {
                     if (inst.output == null)
                         break;
                     w.w(of(inst.output));
-                    w.w("=instanceOf(").w(of(inst.params[0])).w(",").w(of(inst.params[1])).w(");");
+                    w.w("=instanceOf(").w(of(inst.params[0])).w(",").w(escapeStr((String) inst.params[1])).w(");");
                     break;
+
+                case LOOKUPSWITCH: {
+                    w.w("switch(").w(of(inst.params[0])).w("){").st(w.st() + 1);
+                    final int[] keys = (int[]) inst.params[2];
+                    final IRAnchor[] jumps = (IRAnchor[]) inst.params[3];
+                    for (int i = 0; i < keys.length; i++)
+                        w.ln().w("case ").w(Integer.toString(keys[i]))
+                                .w(":cursor=").w(of(jumps[i].id)).w(";break;");
+                    w.ln().w("default:cursor=").w(of(((IRAnchor) inst.params[1]).id)).w(";break;");
+                    w.st(w.st() - 1).ln().w("}").ln().w("break;");
+                    break;
+                }
+                case TABLESWITCH: {
+                    w.w("switch(").w(of(inst.params[0])).w("){").st(w.st() + 1);
+                    final IRAnchor[] jumps = (IRAnchor[]) inst.params[4];
+
+                    for (int i = 0, low = (int) inst.params[2], high = (int) inst.params[3]; low <= high; low++, i++)
+                        w.ln().w("case ").w(Integer.toString(low))
+                                .w(":cursor=").w(of(jumps[i].id)).w(";break;");
+                    w.ln().w("default:cursor=").w(of(((IRAnchor) inst.params[1]).id)).w(";break;");
+                    w.st(w.st() - 1).ln().w("}").ln().w("break;");
+                    break;
+                }
+
                 default:
                     throw new RuntimeException("Unknown opcode " + inst.opcode);
             }
@@ -654,9 +791,43 @@ public class IR2JS {
             return Float.toString(((IRFloat) arg).n);
         if (arg instanceof IRDouble)
             return Double.toString(((IRDouble) arg).n);
+        if (arg instanceof IRClassRef)
+            return "await getClass(await env.getClass(sc.class_loader,t," + escapeStr(((IRClassRef) arg).cls) + "),env,t)";
         if (arg instanceof String)
-            return '"' + ((String) arg).replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"")
-                    .replaceAll("\n", "\\\\n").replaceAll("\r", "\\\\r") + '"';
-        return String.valueOf(arg);
+            return "await Java_str(sc.class_loader,env,t," + escapeStr((String) arg) + ')';
+        //return String.valueOf(arg);
+        if (arg instanceof Byte || arg instanceof Short || arg instanceof Integer || arg instanceof Float || arg instanceof Double)
+            return arg.toString();
+        if (arg instanceof Long)
+            return arg + "n";
+        if (arg == null)
+            return "null";
+        throw new RuntimeException("Can't convert " + arg.getClass() + " > " + arg);
+    }
+
+    public static String escapeStr(final String str) {
+        return '"' + str
+                .replaceAll("\\\\", "\\\\\\\\")
+                .replaceAll("\"", "\\\\\"")
+                .replaceAll("\n", "\\\\n")
+                .replaceAll("\r", "\\\\r") + '"';
+    }
+
+    public static String encType(final IRType type) {
+        final StringBuilder b = new StringBuilder();
+        Str.repeat(b, "[", type.array);
+        switch (type.kind) {
+            case BOOLEAN: b.append("boolean");break;
+            case BYTE: b.append("byte");break;
+            case SHORT: b.append("short");break;
+            case CHAR: b.append("char");break;
+            case INT: b.append("int");break;
+            case LONG: b.append("long");break;
+            case FLOAT: b.append("float");break;
+            case DOUBLE: b.append("double");break;
+            case LITERAL: b.append(type.cls);break;
+            default: throw new RuntimeException("Unknown kind: " + type.kind);
+        }
+        return Str.getAndRecycle(b);
     }
 }

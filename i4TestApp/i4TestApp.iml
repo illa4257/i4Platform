@@ -6,7 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/assets" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
+    <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="i4Utils" />
     <orderEntry type="module" module-name="i4Framework" />
@@ -15,5 +15,6 @@
     <orderEntry type="library" name="net.java.dev.jna.platform" level="application" />
     <orderEntry type="module" module-name="i4Framework.android" />
     <orderEntry type="library" scope="PROVIDED" name="android" level="application" />
+    <orderEntry type="module" module-name="i4Framework.AWT" />
   </component>
 </module>
