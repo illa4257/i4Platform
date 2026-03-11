@@ -137,12 +137,12 @@ public class ScrollPane extends Container {
     public void onConstruct() {
         super.onConstruct();
         width.subscribe(reCalcRequest);
-        densityMultiplier.subscribe(reCalcRequest);
+        dp.subscribe(reCalcRequest);
     }
 
     @Override
     public void onDestruct() {
         super.onDestruct();
-        densityMultiplier.unsubscribe(reCalcRequest);
+        dp.unsubscribe(reCalcRequest);
     }
 }

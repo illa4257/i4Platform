@@ -21,7 +21,6 @@ import illa4257.i4Framework.base.utils.Cache;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.media.Image;
 
-import java.awt.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Arrays;
@@ -64,8 +63,8 @@ public class i4Test {
         final Component c = new Component();
         c.setStartX(w.safeStartX);
         c.setStartY(w.safeStartY);
-        c.setWidth(new NumberPointMultiplier(360, w.densityMultiplier));
-        c.setHeight(new NumberPointMultiplier(360, w.densityMultiplier));
+        c.setWidth(new NumberPointMultiplier(360, w.dp));
+        c.setHeight(new NumberPointMultiplier(360, w.dp));
         c.styles.put("background-color", new StyleSetting("0x0000FF"));
         c.styles.put("background-image", new StyleSetting("test-img"));
         w.add(c);
@@ -86,7 +85,7 @@ public class i4Test {
         w.add(l);
 
         final Panel pc = new Panel();
-        final Point pcw = new NumberPointMultiplier(288, w.densityMultiplier), pch = new NumberPointMultiplier(112, w.densityMultiplier), pcho = new NumberPointMultiplier(120, w.densityMultiplier);
+        final Point pcw = new NumberPointMultiplier(288, w.dp), pch = new NumberPointMultiplier(112, w.dp), pcho = new NumberPointMultiplier(120, w.dp);
         pc.setStartX(new NumberPointMultiplier(new PPointSubtract(w.width, pcw), .5f));
         pc.setStartY(new PPointSubtract(w.safeEndY, pcho));
         pc.setWidth(pcw);

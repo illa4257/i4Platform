@@ -157,7 +157,7 @@ public abstract class Framework implements ResourceProvider {
         return new Dialog() {
             final Window d = new Window();
 
-            final Point dp8 = new NumberPointMultiplier(8, d.densityMultiplier);
+            final Point dp8 = new NumberPointMultiplier(8, d.dp);
             final FrameworkWindow fw = newWindow(d);
 
             private final PointSet msgY = new PointSet(d.safeStartY), contentY = new PointSet(msgY);
@@ -263,7 +263,7 @@ public abstract class Framework implements ResourceProvider {
             @Override
             public Dialog show() {
                 d.setWidth(400, DP);
-                d.setHeight(hasControls ? new PPointAdd(new NumberPointMultiplier(40, window.densityMultiplier), controlSY) : controlSY);
+                d.setHeight(hasControls ? new PPointAdd(new NumberPointMultiplier(40, window.dp), controlSY) : controlSY);
                 d.addDirectEventListener(VisibleEvent.class, e -> {
                     if (e.value)
                         return;

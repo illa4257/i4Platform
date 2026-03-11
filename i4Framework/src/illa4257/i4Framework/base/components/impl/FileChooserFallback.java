@@ -49,7 +49,7 @@ public class FileChooserFallback implements FileChooser {
     public final Window window = new Window();
 
     private final Point
-            offset = new NumberPointMultiplier(window.densityMultiplier, 8),
+            offset = new NumberPointMultiplier(window.dp, 8),
             offsetX = new PPointAdd(
                 window.safeStartX,
                 offset
@@ -109,10 +109,10 @@ public class FileChooserFallback implements FileChooser {
 
         pane.setStartY(new PPointAdd(
                 back.endY,
-                new NumberPointMultiplier(window.densityMultiplier, 8)
+                new NumberPointMultiplier(window.dp, 8)
         ));
         pane.setEndX(window.safeEndX);
-        pane.setEndY(new PPointSubtract(window.safeEndY, new NumberPointMultiplier(window.densityMultiplier, 64)));
+        pane.setEndY(new PPointSubtract(window.safeEndY, new NumberPointMultiplier(window.dp, 64)));
         pane.setContent(container);
         window.add(pane);
 
@@ -123,7 +123,7 @@ public class FileChooserFallback implements FileChooser {
             files = Collections.singletonList(new FileRes(current));
             frameworkWindow.dispose();
         });
-        confirm.setStartX(new PPointSubtract(confirm.endX, new NumberPointMultiplier(window.densityMultiplier, 64)));
+        confirm.setStartX(new PPointSubtract(confirm.endX, new NumberPointMultiplier(window.dp, 64)));
         confirm.setStartY(new PPointAdd(pane.endY, offset));
         confirm.setEndX(new PPointSubtract(window.safeEndX, offset));
         confirm.setEndY(new PPointSubtract(window.safeEndY, offset));

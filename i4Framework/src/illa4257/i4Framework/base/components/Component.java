@@ -47,7 +47,8 @@ public class Component extends Destructor {
     protected final SyncVar<Container> parent = new SyncVar<>();
 
     public final PointSet startX = new PointSet(), startY = new PointSet(), endX = new PointSet(), endY = new PointSet(),
-            densityMultiplier = new PointSet(NumberPointConstant.ONE);
+            dp = new PointSet(NumberPointConstant.ONE), sp = new PointSet(dp);
+
     public final Point width = new PPointSubtract(endX, startX), height = new PPointSubtract(endY, startY),
                     windowStartX = new PPointAdd(startX, null), windowStartY = new PPointAdd(startY, null),
                     windowEndX = new PPointAdd(endX, null), windowEndY = new PPointAdd(endY, null);
@@ -308,7 +309,7 @@ public class Component extends Destructor {
 
     public int getInt(final String name, final int defaultValue) {
         final StyleNumber n = getNumber(name, null);
-        return n != null ? Math.round(n.unit == Unit.DP ? n.number * densityMultiplier.calcFloat() : n.number) : defaultValue;
+        return n != null ? Math.round(n.unit == Unit.DP ? n.number * dp.calcFloat() : n.number) : defaultValue;
     }
 
     public float calcStyleNumber(final String name, final Orientation orientation, final float defaultValue) {
@@ -624,7 +625,7 @@ public class Component extends Destructor {
     public void setX(final float x, final Unit unit) {
         lastX = false;
         if (unit == Unit.DP)
-            startX.set(new NumberPointMultiplier(densityMultiplier, x));
+            startX.set(new NumberPointMultiplier(dp, x));
         else
             startX.set(new PointAttach(x, null));
         fire(new ChangePointEvent(this));
@@ -639,7 +640,7 @@ public class Component extends Destructor {
     public void setY(final float y, final Unit unit) {
         lastY = false;
         if (unit == Unit.DP)
-            startY.set(new NumberPointMultiplier(densityMultiplier, y));
+            startY.set(new NumberPointMultiplier(dp, y));
         else
             startY.set(new PointAttach(y, null));
         fire(new ChangePointEvent(this));
@@ -670,12 +671,12 @@ public class Component extends Destructor {
     public void setWidth(final float width, final Unit unit) {
         if (lastX)
             startX.set(
-                    unit == Unit.DP ? new PPointSubtract(endX, new NumberPointMultiplier(densityMultiplier, width)) :
+                    unit == Unit.DP ? new PPointSubtract(endX, new NumberPointMultiplier(dp, width)) :
                             new PointAttach(-width, endX)
             );
         else
             endX.set(
-                    unit == Unit.DP ? new PPointAdd(startX, new NumberPointMultiplier(densityMultiplier, width)) :
+                    unit == Unit.DP ? new PPointAdd(startX, new NumberPointMultiplier(dp, width)) :
                             new PointAttach(width, startX)
             );
         fire(new ChangePointEvent(this));
@@ -699,9 +700,9 @@ public class Component extends Destructor {
 
     public void setHeight(final float height, final Unit unit) {
         if (lastY)
-            startY.set(unit == Unit.DP ? new PPointSubtract(endY, new NumberPointMultiplier(densityMultiplier, height)) : new PointAttach(-height, endY));
+            startY.set(unit == Unit.DP ? new PPointSubtract(endY, new NumberPointMultiplier(dp, height)) : new PointAttach(-height, endY));
         else
-            endY.set(unit == Unit.DP ? new PPointAdd(new NumberPointMultiplier(densityMultiplier, height), startY) : new PointAttach(height, startY));
+            endY.set(unit == Unit.DP ? new PPointAdd(new NumberPointMultiplier(dp, height), startY) : new PointAttach(height, startY));
         fire(new ChangePointEvent(this));
     }
 

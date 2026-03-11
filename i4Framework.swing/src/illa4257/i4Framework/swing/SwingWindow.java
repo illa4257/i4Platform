@@ -100,7 +100,7 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
                     return;
                 densityMultiplier.set(getToolkit().getScreenResolution() / 96f);
                 font = new Font(Font.DIALOG, Font.PLAIN, Math.round(16 * densityMultiplier.calcFloat()));
-                window.densityMultiplier.set(densityMultiplier);
+                window.dp.set(densityMultiplier);
                 window.link();
                 window.fire(new StyleUpdateEvent(window));
                 pack();

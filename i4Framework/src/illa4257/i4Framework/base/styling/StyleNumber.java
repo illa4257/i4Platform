@@ -30,7 +30,7 @@ public class StyleNumber {
                 return 0;
         if (unit == Unit.DP)
             if (component != null)
-                return number * component.densityMultiplier.calcFloat();
+                return number * component.dp.calcFloat();
             else
                 return number;
         return number;
@@ -40,7 +40,7 @@ public class StyleNumber {
         if (unit == Unit.PERCENT)
             return new NumberPointMultiplier(new ParentPoint(component, orientation), number);
         if (unit == Unit.DP)
-            return new NumberPointMultiplier(component != null ? component.densityMultiplier : null, number);
+            return new NumberPointMultiplier(component != null ? component.dp : null, number);
         return new NumberPoint(number);
     }
 

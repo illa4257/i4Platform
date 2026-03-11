@@ -135,7 +135,7 @@ public class AndroidWindow implements FrameworkWindow {
                             activity.set(a);
                             a.setContentView(root);
                             window.setSize(root.getWidth(), root.getHeight());
-                            window.densityMultiplier.set(densityMultiplier);
+                            window.dp.set(densityMultiplier);
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                 if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
                                     //noinspection deprecation

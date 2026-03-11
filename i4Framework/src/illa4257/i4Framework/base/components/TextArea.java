@@ -294,13 +294,13 @@ public class TextArea extends Container {
     @Override
     public void onConstruct() {
         super.onConstruct();
-        densityMultiplier.subscribe(this::reCalcRequest);
+        dp.subscribe(this::reCalcRequest);
     }
 
     @Override
     public void onDestruct() {
         super.onDestruct();
-        densityMultiplier.unsubscribe(this::reCalcRequest);
+        dp.unsubscribe(this::reCalcRequest);
     }
 
     public String getText() {

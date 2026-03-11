@@ -99,7 +99,7 @@ public class AndroidView extends ViewGroup {
         super.onDraw(canvas);
         canvas.translate(offset, offset);
         context.canvas = canvas;
-        context.paint.setTextSize(19f * component.densityMultiplier.calcFloat() * getResources().getConfiguration().fontScale);
+        context.paint.setTextSize(19f * component.dp.calcFloat() * getResources().getConfiguration().fontScale);
         component.paint(context);
     }
 }

@@ -57,7 +57,7 @@ public class CheckBox extends Component {
     @Override
     public void paint(final Context ctx) {
         super.paint(ctx);
-        final float offset = 4 * densityMultiplier.calcFloat(), cbh = height.calcFloat() - offset * 2;
+        final float offset = 4 * dp.calcFloat(), cbh = height.calcFloat() - offset * 2;
         final Object te = text;
         final boolean v = value;
         final Color cbg = getColor(v ? "--check-color" : "--check-background-color"), c = getColor("color");

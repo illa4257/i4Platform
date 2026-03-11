@@ -26,7 +26,7 @@ public class ComboBox<T> extends TextField {
     public volatile Function<T, String> formatter = String::valueOf;
     private volatile T selected = null;
 
-    private final Point contextHeight = new NumberPointMultiplier(256, densityMultiplier);
+    private final Point contextHeight = new NumberPointMultiplier(256, dp);
 
     public ComboBox() {
         optionsPane.classes.add("combobox-options");
