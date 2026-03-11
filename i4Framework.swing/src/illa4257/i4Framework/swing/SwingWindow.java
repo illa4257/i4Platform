@@ -18,6 +18,7 @@ import java.awt.*;
 import java.awt.event.*;
 
 public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWindow {
+    volatile Font font;
     public final Window window;
     public final SwingFramework framework;
     public final Container root;
@@ -98,6 +99,7 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
                 if (!window.frameworkWindow.setIfNull(this))
                     return;
                 densityMultiplier.set(getToolkit().getScreenResolution() / 96f);
+                font = new Font(Font.DIALOG, Font.PLAIN, Math.round(16 * densityMultiplier.calcFloat()));
                 window.densityMultiplier.set(densityMultiplier);
                 window.link();
                 window.fire(new StyleUpdateEvent(window));
@@ -114,6 +116,8 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
                 framework.remove(this);
             }
             super.setVisible(b);
+            if (b)
+                framework.updateTheme(window);
         }
         if (window.isVisible() != b) {
             window.setVisible(b);

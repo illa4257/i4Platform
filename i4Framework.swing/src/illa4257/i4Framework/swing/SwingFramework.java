@@ -22,7 +22,6 @@ import java.util.function.Function;
 import static java.awt.RenderingHints.*;
 
 public class SwingFramework extends DesktopFramework {
-    static Font font;
     public static final Map<RenderingHints.Key, Object> BEST;
     static Map<RenderingHints.Key, Object> current;
 
@@ -96,14 +95,16 @@ public class SwingFramework extends DesktopFramework {
         BEST = Collections.unmodifiableMap(m);
 
         current = BEST;
-
-        font = new Font(Font.DIALOG, Font.PLAIN, 16);
     }
 
     private final ConcurrentLinkedQueue<SwingWindow> frames = new ConcurrentLinkedQueue<>();
 
     public SwingFramework(final String appName) {
         super(appName);
+    }
+
+    public void updateTheme(final Window window) {
+        setDarkMode(window, getBaseTheme() == BaseTheme.DARK);
     }
 
     @Override

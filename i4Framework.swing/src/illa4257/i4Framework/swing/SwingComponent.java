@@ -238,6 +238,9 @@ public class SwingComponent extends JComponent implements ISwingComponent {
     protected void paintComponent(final Graphics graphics) {
         final Graphics2D g = (Graphics2D) graphics.create();
         g.setRenderingHints(SwingFramework.BEST);
+        final JFrame f = getFrame();
+        if (f instanceof SwingWindow)
+            g.setFont(((SwingWindow) f).font);
         g.translate(offset, offset);
         try {
             component.paint(new SwingContext(g));

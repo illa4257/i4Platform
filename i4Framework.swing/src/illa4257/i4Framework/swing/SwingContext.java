@@ -20,7 +20,6 @@ public class SwingContext implements Context {
         graphics = g;
         clip = g.getClip();
         g.setRenderingHints(SwingFramework.current);
-        g.setFont(SwingFramework.font);
     }
 
     @Override
