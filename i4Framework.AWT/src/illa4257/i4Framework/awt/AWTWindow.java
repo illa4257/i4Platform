@@ -47,9 +47,7 @@ public class AWTWindow extends Frame implements FrameworkWindow {
 
         w.addEventListener(RepaintEvent.class, e -> repaint = true);
         w.addDirectEventListener(VisibleEvent.class, e -> setVisible(e.value));
-        w.addEventListener(ChangeTextEvent.class, e -> {
-            setTitle(w.getTitle());
-        });
+        w.addEventListener(ChangeTextEvent.class, e -> setTitle(w.getTitle()));
         w.addEventListener(ChangePointEvent.class, e -> {
             if (e.isSystem)
                 return;
