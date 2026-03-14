@@ -144,4 +144,19 @@ public class Image implements Closeable {
             System.arraycopy(src, (y + row) * this.width + x, r, row * width, width);
         return new Image(width, r);
     }
+
+    public Image scale(final int width, final int height) {
+        final int srcW = this.width, srcH = this.height;
+        if (srcW == width && srcH == height)
+            return this;
+        final int[] src = directIntArray(), r = new int[width * height];
+
+        for (int y = 0; y < height; y++) {
+            final int so = y * srcH / height * srcW, ro = y * width;
+            for (int x = 0; x < width; x++)
+                r[ro + x] = src[so + x * srcW / width];
+        }
+
+        return new Image(width, r);
+    }
 }
