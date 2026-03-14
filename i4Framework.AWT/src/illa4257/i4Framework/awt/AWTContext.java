@@ -19,8 +19,12 @@ public class AWTContext implements Context {
     public AWTContext(final Graphics2D g) {
         graphics = g;
         clip = g.getClip();
-        g.setRenderingHints(AWTFramework.current);
-        g.setFont(AWTFramework.font);
+        //g.setRenderingHints(AWTFramework.current);
+    }
+
+    @Override
+    public Context sub(float x, float y, float w, float h) {
+        return new AWTContext((Graphics2D) graphics.create(Math.round(x), Math.round(y), Math.round(w), Math.round(h)));
     }
 
     @Override
@@ -91,13 +95,9 @@ public class AWTContext implements Context {
 
     @Override
     public void setClip(final Object path) {
-        final Shape shape = unify(path);
+        graphics.setClip(unify(path));
         if (clip != null)
-            if (shape != null) {
-                graphics.setClip(shape);
-                graphics.clip(clip);
-            } else
-                graphics.setClip(clip);
+            graphics.clip(clip);
     }
 
     @Override
@@ -138,6 +138,13 @@ public class AWTContext implements Context {
     public void drawString(final char[] str, final float x, final float y) {
         final FontMetrics metrics = graphics.getFontMetrics();
         graphics.drawChars(str, 0, str.length, (int) x, (int) y + metrics.getLeading() + metrics.getAscent());
+    }
+
+    @Override
+    public void drawImage(Image image, float x, float y) {
+        graphics.drawImage(((BufImgRef) image.imageMap.computeIfAbsent(BufImgRef.class,
+                        ignored -> BufImgRef.compute(image))).image,
+                Math.round(x), Math.round(y), null);
     }
 
     @Override

@@ -2,188 +2,121 @@ package illa4257.i4Framework.awt;
 
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
-import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
-import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.components.*;
-import illa4257.i4Framework.base.events.components.FocusEvent;
-import illa4257.i4Framework.base.events.mouse.MouseButton;
-import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
-import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
-import illa4257.i4Framework.base.events.window.CenterWindowEvent;
+import illa4257.i4Framework.base.points.numbers.NumberPoint;
+import illa4257.i4Utils.Arch;
 
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
-public class AWTWindow extends Frame implements IAWTComponent, FrameworkWindow {
-    public final Window window;
+public class AWTWindow extends Frame implements FrameworkWindow {
+    protected volatile boolean repaint = false;
     public final AWTFramework framework;
-    public final AWTComponent root;
-    @SuppressWarnings("rawtypes")
-    public EventListener[] l;
-    private volatile boolean center = false;
+    public final Window window;
+    protected volatile Font font;
 
-    public AWTWindow(final AWTFramework framework) { this(framework, null); }
     public AWTWindow(final AWTFramework framework, final Window window) {
-        if (framework == null)
-            throw new IllegalArgumentException("Framework is null");
         this.framework = framework;
-        this.window = window == null ? new Window() : window;
-        root = new AWTComponent(this.window);
+        final Window w = this.window = window != null ? window : new Window();
+
+        setBackground(Color.BLACK);
         setIgnoreRepaint(true);
-        setLayout(null);
-        add(root);
+        setVisible(w.isVisible());
+
         addWindowListener(new WindowAdapter() {
             @Override
-            public void windowClosed(final WindowEvent windowEvent) {
-                if (!AWTWindow.this.window.frameworkWindow.setIfEquals(null, AWTWindow.this))
-                    return;
-                AWTWindow.this.window.unlink();
-                framework.remove(AWTWindow.this);
+            public void windowClosing(WindowEvent e) {
+                super.windowClosing(e);
                 setVisible(false);
             }
         });
-        addWindowFocusListener(new WindowFocusListener() {
-            @Override
-            public void windowGainedFocus(final WindowEvent windowEvent) {
-                if (!AWTWindow.this.window.isFocused())
-                    AWTWindow.this.window.fire(new FocusEvent(AWTWindow.this.window, true, true));
-            }
 
-            @Override
-            public void windowLostFocus(WindowEvent windowEvent) {
-                if (AWTWindow.this.window.isFocused())
-                    AWTWindow.this.window.fire(new FocusEvent(AWTWindow.this.window, false, true));
-            }
-        });
-        setBackground(Color.BLACK);
-        root.addComponentListener(new ComponentAdapter() {
-            public void componentResized(final ComponentEvent e) {
-                AWTWindow.this.window.setSize(root.getWidth(), root.getHeight(), true);
-            }
-        });
-        addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(final MouseEvent mouseEvent) {
-                AWTWindow.this.window.fire(new MouseDownEvent(AWTWindow.this.window, mouseEvent.getX(), mouseEvent.getY(), MouseButton.fromCode(mouseEvent.getButton() - 1)));
-            }
-
-            @Override
-            public void mouseReleased(final MouseEvent mouseEvent) {
-                AWTWindow.this.window.fire(new MouseUpEvent(AWTWindow.this.window, mouseEvent.getX(), mouseEvent.getY(), MouseButton.fromCode(mouseEvent.getButton() - 1)));
-            }
-        });
         addComponentListener(new ComponentAdapter() {
             @Override
-            public void componentResized(final ComponentEvent componentEvent) {
+            public void componentResized(ComponentEvent e) {
+                super.componentResized(e);
                 final Insets insets = getInsets();
-                AWTWindow.this.window.setSize(getWidth() - insets.left - insets.right, getHeight() - insets.top - insets.bottom, true);
+                repaint = true;
+                w.setSize(getWidth() - insets.left - insets.right, getHeight() - insets.top - insets.bottom, true);
             }
         });
-        l = registerListeners();
-        setVisible(this.window.isVisible());
-        setTitle(this.window.getTitle());
+
+        w.addEventListener(RepaintEvent.class, e -> repaint = true);
+        w.addDirectEventListener(VisibleEvent.class, e -> setVisible(e.value));
+        w.addEventListener(ChangeTextEvent.class, e -> {
+            setTitle(w.getTitle());
+        });
+        w.addEventListener(ChangePointEvent.class, e -> {
+            if (e.isSystem)
+                return;
+            final Insets insets = getInsets();
+            setSize(w.width.calcInt() + insets.left + insets.right, w.height.calcInt() + insets.top + insets.bottom);
+        });
+        setTitle(w.getTitle());
     }
 
-    @Override public Component getComponent() { return window; }
-    @Override public Framework getFramework() { return framework; }
-    @Override public Window getWindow() { return window; }
+    @Override
+    public void paint(final Graphics g) {
+        Image buffer = framework.buffer;
+        if (buffer == null)
+            framework.buffer = buffer = getGraphicsConfiguration().createCompatibleImage(getWidth(), getHeight());
+        else if (buffer.getWidth(null) < getWidth() || buffer.getHeight(null) < getHeight()) {
+            framework.buffer = buffer = getGraphicsConfiguration().createCompatibleImage(
+                    Math.max(buffer.getWidth(null), getWidth()),
+                    Math.max(buffer.getHeight(null), getHeight()));
+            System.gc();
+        }
+        final Insets insets = getInsets();
+        final AWTContext ctx = new AWTContext((Graphics2D) buffer.getGraphics());
+        ctx.translate(insets.left, insets.top);
+        ctx.graphics.setRenderingHints(AWTFramework.BEST);
+        ctx.graphics.setFont(font);
+        window.paint(ctx);
+        window.paintComponents(ctx);
+        g.drawImage(buffer, 0, 0, null);
+    }
 
     @Override
-    public void pack() {
-        setSize(window.width.calcInt(), window.height.calcInt());
-        super.pack();
+    public void update(Graphics g) {
+        paint(g);
     }
 
     @Override
     public void setVisible(final boolean b) {
-        if (isVisible() != b) {
-            if (b) {
-                if (!window.frameworkWindow.setIfNull(this))
-                    return;
-                window.link();
-                window.fire(new StyleUpdateEvent(window));
-                pack();
-                framework.add(this);
-                if (center) {
-                    center = false;
-                    setLocationRelativeTo(null);
-                }
-            } else {
-                if (!window.frameworkWindow.setIfEquals(null, this))
-                    return;
-                window.unlink();
-                framework.remove(this);
-            }
-            super.setVisible(b);
+        if (b == isVisible())
+            return;
+        if (b) {
+            if (!window.frameworkWindow.setIfNull(this))
+                return;
+            window.dp.set(new NumberPoint(getToolkit().getScreenResolution() / 96f));
+            window.sp.set(window.dp);
+            final Insets insets = getInsets();
+            setSize(window.width.calcInt() + insets.left + insets.right, window.height.calcInt() + insets.top + insets.bottom);
+            if (Arch.REAL.IS_WINDOWS)
+                setLocationRelativeTo(null);
         }
-        if (window.isVisible() != b) {
-            window.setVisible(b);
-            framework.updated();
+        super.setVisible(b);
+        if (b) {
+            framework.updateTheme(window);
+            createBufferStrategy(1);
+            window.link();
+            font = new Font(Font.DIALOG, Font.PLAIN, Math.round(16 * window.dp.calcFloat()));
+            framework.windows.offer(this);
+            window.fire(new StyleUpdateEvent(window));
+            framework.check();
+        } else {
+            framework.windows.remove(this);
+            framework.check();
+            window.unlink();
+            window.frameworkWindow.set(null);
+            dispose();
         }
     }
 
-    @Override
-    public void setSize(final int i, final int i1) {
-        final Insets insets = getInsets();
-        super.setSize(i + insets.left + insets.right, i1 + insets.top + insets.bottom);
-    }
-
-    @Override
-    public void update(Graphics graphics) {
-        paint(graphics);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private EventListener[] registerListeners() {
-        window.addDirectEventListener(ChangeTextEvent.class, e -> {
-            if (e.component == AWTWindow.this.window)
-                setTitle(String.valueOf(e.newValue));
-        });
-        window.addDirectEventListener(VisibleEvent.class, e -> {
-            if (e.component == AWTWindow.this.window && isVisible() != e.value)
-                setVisible(e.value);
-        });
-
-        return new EventListener[] {
-                window.addEventListener(FocusEvent.class, e -> {
-                    if (e.component == AWTWindow.this.window && e.value && !isFocused()) {
-                        toFront();
-                        requestFocus();
-                    }
-                }),
-                window.addEventListener(RepaintEvent.class, e -> {
-                    if (e.component == AWTWindow.this.window)
-                        repaint();
-                }),
-                window.addDirectEventListener(CenterWindowEvent.class, e -> {
-                    if (e.component != AWTWindow.this.window)
-                        return;
-                    if (isVisible())
-                        setLocationRelativeTo(null);
-                    else
-                        center = true;
-                })
-        };
-    }
-
-    @Override
-    public void asContextMenu() {
-        setUndecorated(true);
-        setLocation(MouseInfo.getPointerInfo().getLocation());
-        addWindowFocusListener(new WindowAdapter() {
-            @Override
-            public void windowLostFocus(final WindowEvent windowEvent) {
-                dispose();
-            }
-        });
-    }
-
-    @Override
-    public void dispose() {
-        super.dispose();
-        for (@SuppressWarnings("rawtypes") final EventListener li : l)
-            //noinspection unchecked
-            window.removeEventListener(li);
-    }
+    @Override public Framework getFramework() { return framework; }
+    @Override public Window getWindow() { return window; }
 }
