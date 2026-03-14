@@ -13,6 +13,7 @@ import illa4257.i4Framework.base.events.mouse.MouseLeaveEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchDownEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
+import illa4257.i4Framework.base.utils.Cache;
 import illa4257.i4Utils.media.Color;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Framework.base.math.Orientation;
@@ -419,30 +420,10 @@ public class Component extends Destructor {
             f.updated();
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     protected void invokeAll() {
         IEvent event;
-        m:
-        while ((event = events.poll()) != null) {
-            final Class<? extends IEvent> c = event.getClass();
-            for (final Map.Entry<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
-                if (c.isAssignableFrom(e.getKey()))
-                    for (final EventListener l : e.getValue()) {
-                        try {
-                            l.run(event);
-                        } catch (final Throwable ex) {
-                            i4Logger.INSTANCE.log(ex);
-                        }
-                        if (event.isPrevented())
-                            continue m;
-                    }
-            if (!event.isParentPrevented()) {
-                final Container p = getParent();
-                if (p == null)
-                    continue;
-                p.fire(event);
-            }
-        }
+        while ((event = events.poll()) != null)
+            invoke(event);
 
         for (final Runnable r : invoke)
             try {
@@ -456,6 +437,28 @@ public class Component extends Destructor {
             } catch (final Throwable ex) {
                 i4Logger.INSTANCE.log(ex);
             }
+    }
+
+    public void invoke(final IEvent event) {
+        final Class<? extends IEvent> c = event.getClass();
+        for (final Map.Entry<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
+            if (c.isAssignableFrom(e.getKey()))
+                for (@SuppressWarnings("rawtypes") final EventListener l : e.getValue()) {
+                    try {
+                        //noinspection unchecked
+                        l.run(event);
+                    } catch (final Throwable ex) {
+                        i4Logger.INSTANCE.log(ex);
+                    }
+                    if (event.isPrevented())
+                        return;
+                }
+        if (!event.isParentPrevented()) {
+            final Container p = getParent();
+            if (p == null)
+                return;
+            p.invoke(event);
+        }
     }
 
     public void invokeLater(final Runnable runnable) { invoke.add(runnable); updated(); }
@@ -785,6 +788,6 @@ public class Component extends Destructor {
 
         final Image img = getImage("background-image");
         if (img != null)
-            context.drawImage(img, 0, 0, w, h);
+            context.drawImage(Cache.scale(img, w, h), 0, 0);
     }
 }
