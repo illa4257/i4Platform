@@ -136,6 +136,13 @@ public class SwingContext implements Context {
     }
 
     @Override
+    public void drawImage(Image image, float x, float y) {
+        graphics.drawImage(((BufImgRef) image.imageMap.computeIfAbsent(BufImgRef.class,
+                        ignored -> BufImgRef.compute(image))).image,
+                Math.round(x), Math.round(y), null);
+    }
+
+    @Override
     public void drawImage(Image image, float x, float y, float width, float height) {
         graphics.drawImage(((BufImgRef) image.imageMap.computeIfAbsent(BufImgRef.class,
                 ignored -> BufImgRef.compute(image))).image,

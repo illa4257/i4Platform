@@ -99,6 +99,13 @@ public class AndroidGContext implements Context {
     }
 
     @Override
+    public void drawImage(Image image, float x, float y) {
+        canvas.drawBitmap(((AndroidImage) image.imageMap.computeIfAbsent(AndroidImage.class, ignored -> AndroidImage.compute(image))).bitmap,
+                Math.round(x), Math.round(y),
+                paint);
+    }
+
+    @Override
     public void drawImage(Image image, float x, float y, float width, float height) {
         canvas.drawBitmap(((AndroidImage) image.imageMap.computeIfAbsent(AndroidImage.class, ignored -> AndroidImage.compute(image))).bitmap, null,
                 new Rect(Math.round(x), Math.round(y), Math.round(x + width), Math.round(y + height)),
