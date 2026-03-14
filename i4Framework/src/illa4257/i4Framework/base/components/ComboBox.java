@@ -145,6 +145,7 @@ public class ComboBox<T> extends TextField {
                 ex = width.calcFloat() - o, cx = ex - szX / 2, sx = ex - szX,
                 p1 = a ? ey : oY, p2 = a ? oY : ey;
         context.setColor(c);
+        context.setStrokeWidth(dp.calcFloat());
         context.drawLine(sx, p1, cx, p2);
         context.drawLine(ex, p1, cx, p2);
     }
