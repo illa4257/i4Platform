@@ -55,7 +55,7 @@ public abstract class Framework implements ResourceProvider {
     public final ConcurrentLinkedQueue<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> stylesheet = new ConcurrentLinkedQueue<>();
 
     protected final Object updateNotifier = new Object();
-    protected boolean isUpdated;
+    protected volatile boolean isUpdated = true;
 
     protected volatile boolean isSystemTheme = true;
     protected volatile String systemTheme = "light", customTheme = "light";
@@ -113,12 +113,26 @@ public abstract class Framework implements ResourceProvider {
     public boolean removeThemeListener(final Consumer2<String, BaseTheme> listener) { return themeListeners.remove(listener); }
 
     public void updated() {
+        isUpdated = true;
         synchronized (updateNotifier) {
-            if (isUpdated)
-                return;
-            isUpdated = true;
-            updateNotifier.notifyAll();
+            updateNotifier.notify();
         }
+    }
+
+    public boolean nextUpdate() throws InterruptedException {
+        if (isUpdated) {
+            isUpdated = false;
+            return true;
+        }
+        synchronized (updateNotifier) {
+            if (isUpdated) {
+                isUpdated = false;
+                return true;
+            }
+            updateNotifier.wait();
+        }
+        isUpdated = false;
+        return false;
     }
 
     public abstract boolean isUIThread(final Component component);
