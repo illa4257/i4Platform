@@ -81,13 +81,13 @@ public class i4Test {
         l.setStartX(w.safeStartX);
         l.setEndX(w.safeEndX);
         l.setStartY(w.safeStartY);
-        l.setHeight(32 * 3, DP);
+        l.setHeight(24 * 3, DP);
         w.add(l);
 
         final Panel pc = new Panel();
-        final Point pcw = new NumberPointMultiplier(288, w.dp), pch = new NumberPointMultiplier(112, w.dp), pcho = new NumberPointMultiplier(120, w.dp);
+        final Point pcw = new NumberPointMultiplier(288, w.dp), d8 = new NumberPointMultiplier(8, w.dp), pch = new NumberPointMultiplier(112, w.dp);
         pc.setStartX(new NumberPointMultiplier(new PPointSubtract(w.width, pcw), .5f));
-        pc.setStartY(new PPointSubtract(w.safeEndY, pcho));
+        pc.setEndY(new PPointSubtract(w.safeEndY, d8));
         pc.setWidth(pcw);
         pc.setHeight(pch);
         pc.styles.put("border-radius", new StyleSetting("16dp"));
@@ -125,7 +125,10 @@ public class i4Test {
 
         w.add(pc);
 
-        w.setSize(720, 480);
+        //w.onTick(() -> {});
+
+        w.setWidth(720, DP);
+        w.setHeight(480, DP);
         w.center();
         w.setVisible(true);
     }
