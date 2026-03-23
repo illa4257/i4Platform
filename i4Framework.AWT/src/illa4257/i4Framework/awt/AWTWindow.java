@@ -5,7 +5,6 @@ import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.components.*;
 import illa4257.i4Framework.base.points.numbers.NumberPoint;
-import illa4257.i4Utils.Arch;
 
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
@@ -25,6 +24,7 @@ public class AWTWindow extends Frame implements FrameworkWindow {
 
         setBackground(Color.BLACK);
         setIgnoreRepaint(true);
+        setExtendedState(Frame.NORMAL);
         setVisible(w.isVisible());
 
         addWindowListener(new WindowAdapter() {
@@ -92,10 +92,10 @@ public class AWTWindow extends Frame implements FrameworkWindow {
                 return;
             window.dp.set(new NumberPoint(getToolkit().getScreenResolution() / 96f));
             window.sp.set(window.dp);
+            setLocationByPlatform(true);
             final Insets insets = getInsets();
             setSize(window.width.calcInt() + insets.left + insets.right, window.height.calcInt() + insets.top + insets.bottom);
-            if (Arch.REAL.IS_WINDOWS)
-                setLocationRelativeTo(null);
+            setLocationRelativeTo(null);
         }
         super.setVisible(b);
         if (b) {
