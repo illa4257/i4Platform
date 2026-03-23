@@ -114,7 +114,7 @@ public class i4Test {
                         })
                         .show())
                 .add("test 2", () -> {
-                    System.out.println("test 2");
+                    framework.newFileChooser(w).start(() -> {});
                 })
                 .show());
         b.setX(16, DP);
