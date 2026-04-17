@@ -31,19 +31,24 @@ public class JavaInfo {
     public final File path;
     public final Distribution distribution;
 
+    public final boolean canLoadClass, canLoadDex, canDynamicLoad;
+
     public enum Distribution {
-        /** OpenJDK */
+        /// Dalvik
+        DALVIK("Dalvik"),
+
+        /// OpenJDK
         OPEN_JDK("OpenJDK"),
-        /** AdoptOpenJDK */
+        /// AdoptOpenJDK
         ADOPT_OPEN_JDK("AdoptOpenJDK"),
 
-        /** CheerpJ */
+        /// CheerpJ
         CHEERPJ("CheerpJ"),
 
-        /** GraalVM */
+        /// GraalVM
         GRAALVM("GraalVM"),
 
-        /** Oracle */
+        /// Oracle
         ORACLE("Oracle"),
 
         UNKNOWN("Unknown");
@@ -61,6 +66,11 @@ public class JavaInfo {
         this.pathSeparator = pathSeparator;
         this.path = path;
         this.distribution = distribution;
+
+        canLoadDex = distribution == Distribution.DALVIK;
+        canLoadClass = !canLoadDex;
+
+        canDynamicLoad = canLoadClass || canLoadDex;
     }
 
     public static Distribution getDistribution(String vendor, String vendorVersion, String runtimeName, final Arch arch) {
@@ -83,6 +93,8 @@ public class JavaInfo {
             return Distribution.GRAALVM;
         if (runtimeName.equals("openjdk runtime environment"))
             return Distribution.OPEN_JDK;
+        if (runtimeName.equals("android runtime"))
+            return Distribution.DALVIK;
         i4Logger.INSTANCE.log(Level.WARN, "Unknown java distribution: " + vendor + " / " + vendorVersion + " / " + runtimeName);
         return Distribution.UNKNOWN;
     }
@@ -90,6 +102,8 @@ public class JavaInfo {
     public static int getMajor(String version) {
         if (version.startsWith("1."))
             version = version.substring(2);
+        if (version.startsWith("0."))
+            return 0;
         return Integer.parseInt(version);
     }
 
