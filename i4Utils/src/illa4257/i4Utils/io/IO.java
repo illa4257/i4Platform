@@ -5,6 +5,7 @@ import illa4257.i4Utils.Recycler;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -324,12 +325,17 @@ public class IO {
      * @param stream OutputStream
      * @param number Short
      */
-    public static void writeBEShort(final OutputStream stream, int number) throws IOException {
+    public static void writeBEShort(final OutputStream stream, final int number) throws IOException {
         stream.write(number >> 8);
         stream.write(number);
     }
 
-    public static void writeBEShort(final byte[] buff, int number, final int offset) {
+    public static void writeBEShort(final ByteBuffer buf, final int number) {
+        buf.put((byte) ((number >> 8) & 0xFF));
+        buf.put((byte) (number & 0xFF));
+    }
+
+    public static void writeBEShort(final byte[] buff, final int number, final int offset) {
         buff[offset] = (byte) ((number >> 8) & 0xFF);
         buff[offset + 1] = (byte) (number & 0xFF);
     }
@@ -347,12 +353,12 @@ public class IO {
      * @param stream OutputStream
      * @param number Short
      */
-    public static void writeLEShort(final OutputStream stream, int number) throws IOException {
+    public static void writeLEShort(final OutputStream stream, final int number) throws IOException {
         stream.write(number & 0xFF);
         stream.write((number >> 8)  & 0xFF);
     }
 
-    public static void writeLEShort(final byte[] buff, int number, final int offset) {
+    public static void writeLEShort(final byte[] buff, final int number, final int offset) {
         buff[offset] = (byte) number;
         buff[offset + 1] = (byte) (number >> 8);
     }
@@ -372,21 +378,21 @@ public class IO {
      * @param stream OutputStream
      * @param number Integer
      */
-    public static void writeBEInt(final OutputStream stream, int number) throws IOException {
+    public static void writeBEInt(final OutputStream stream, final int number) throws IOException {
         stream.write(number >> 24);
         stream.write(number >> 16);
         stream.write(number >> 8);
         stream.write(number);
     }
 
-    public static void writeBEInt(final byte[] buff, int number, final int offset) {
+    public static void writeBEInt(final byte[] buff, final int number, final int offset) {
         buff[offset] = (byte) ((number >> 24) & 0xFF);
         buff[offset + 1] = (byte) ((number >> 16) & 0xFF);
         buff[offset + 2] = (byte) ((number >> 8) & 0xFF);
         buff[offset + 3] = (byte) (number & 0xFF);
     }
 
-    public static void writeLEInt(final OutputStream stream, int number) throws IOException {
+    public static void writeLEInt(final OutputStream stream, final int number) throws IOException {
         stream.write(number);
         stream.write(number >> 8);
         stream.write(number >> 16);
@@ -412,7 +418,7 @@ public class IO {
      * @param stream OutputStream
      * @param number Long
      */
-    public static void writeBELong(final OutputStream stream, long number) throws IOException {
+    public static void writeBELong(final OutputStream stream, final long number) throws IOException {
         stream.write((int) (number >> 56));
         stream.write((int) (number >> 48));
         stream.write((int) (number >> 40));
@@ -423,7 +429,18 @@ public class IO {
         stream.write((int) number);
     }
 
-    public static void writeBELong(final byte[] buff, long number, final int offset) {
+    public static void writeBELong(final ByteBuffer buf, final long number) {
+        buf.put((byte) ((number >> 56) & 0xFF));
+        buf.put((byte) ((number >> 48) & 0xFF));
+        buf.put((byte) ((number >> 40) & 0xFF));
+        buf.put((byte) ((number >> 32) & 0xFF));
+        buf.put((byte) ((number >> 24) & 0xFF));
+        buf.put((byte) ((number >> 16) & 0xFF));
+        buf.put((byte) ((number >> 8) & 0xFF));
+        buf.put((byte) (number & 0xFF));
+    }
+
+    public static void writeBELong(final byte[] buff, final long number, final int offset) {
         buff[offset] = (byte) ((number >> 56) & 0xFF);
         buff[offset + 1] = (byte) ((number >> 48) & 0xFF);
         buff[offset + 2] = (byte) ((number >> 40) & 0xFF);
