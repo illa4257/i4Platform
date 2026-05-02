@@ -15,7 +15,7 @@ public class i4URI {
     public final char[][] userInfo;
 
     /// Any changes will not be represented in the field called `path`.
-    public final Map<String, List<String>> queries;
+    public final Map<String, List<String>> queries = new HashMap<>();
 
     private static boolean isEmpty(final String str) { return str == null || str.isEmpty(); }
 
@@ -64,11 +64,9 @@ public class i4URI {
         this.port = port;
         this.fullPath = isEmpty(fullPath) ? null : fullPath;
         if (this.fullPath == null) {
-            this.queries = new HashMap<>();
             this.path = null;
             return;
         }
-        this.queries = new HashMap<>();
         final int q = this.fullPath.indexOf('?');
         if (q == -1) {
             this.path = this.fullPath;
@@ -101,7 +99,6 @@ public class i4URI {
         domain = uri.getHost();
         port = uri.getPort();
         path = uri.getPath();
-        queries = new HashMap<>();
         final String q = uri.getQuery();
         if (q == null) {
             fullPath = path;
@@ -168,7 +165,6 @@ public class i4URI {
                 domain = uri;
                 port = defaultPort;
                 fullPath = path = null;
-                queries = new HashMap<>();
                 return;
             }
             if (colon > -1 && (colon < min || min == -1)) {
@@ -177,7 +173,6 @@ public class i4URI {
                 if (min == -1) {
                     port = Integer.parseInt(uri.substring(colon));
                     fullPath = path = null;
-                    queries = new HashMap<>();
                     return;
                 }
                 port = Integer.parseInt(uri.substring(colon, min));
@@ -192,7 +187,6 @@ public class i4URI {
             userInfo = defaultUserInfo;
         }
 
-        queries = new HashMap<>();
         String tmp1 = splash == min ? uri.substring(splash) : '/' + uri.substring(min), tmp2;
         query = tmp1.indexOf('?');
         if (query == -1) {
