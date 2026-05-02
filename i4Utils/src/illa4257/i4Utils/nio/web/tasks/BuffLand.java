@@ -5,6 +5,8 @@ import illa4257.i4Utils.lists.ArrStack;
 import java.nio.ByteBuffer;
 
 public class BuffLand {
+    public static ByteBuffer ZERO = ByteBuffer.allocateDirect(0);
+
     public static final int S0 = 13, S1 = 32 * 1024, S2 = 1024 * 1024, BIGGEST = S2;
 
     private final ArrStack<ByteBuffer> bl0 = new ArrStack<>(), bl1 = new ArrStack<>(), bl2 = new ArrStack<>();
