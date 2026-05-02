@@ -1,10 +1,11 @@
 package illa4257.i4Utils.nio.web.tasks;
 
 import illa4257.i4Utils.io.IO;
+import illa4257.i4Utils.nio.web.WSHandler;
 import illa4257.i4Utils.nio.web.WSProtocol;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.nio.*;
 import java.nio.channels.SelectionKey;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -18,6 +19,15 @@ public class WSTask extends Task implements WSProtocol {
     public static final SecureRandom RND = new SecureRandom();
 
     public final ReentrantLock lock = new ReentrantLock();
+
+    public WSHandler handler = null;
+
+    private final byte[] maskRead = new byte[4];
+    private int state = 0, b0;
+    private boolean finalRead, maskingRead, monitorBuffer;
+    private byte frameType;
+    private int oldPos, oldLimit, i0, i1;
+    private volatile long l0 = 0;
 
     public void mask(final byte[] arr) {
         final byte[] mask = WSTask.mask.get();
@@ -100,13 +110,6 @@ public class WSTask extends Task implements WSProtocol {
         }
     }
 
-    private final byte[] maskRead = new byte[4];
-    private int state = 0, b0;
-    private boolean finalRead, maskingRead, z0;
-    private byte frameType;
-    private int i0, i1;
-    private volatile long l0 = 0;
-
     @Override
     public void tick() throws Exception {
         ByteBuffer b = buffer != null ? buffer : worker.bl1;
@@ -143,7 +146,6 @@ public class WSTask extends Task implements WSProtocol {
                             state = 1;
                             i0 = 6;
                             i1 = 10;
-                            z0 = false;
                             continue;
                         case 10: // Pong
                             if (!finalRead) {
@@ -205,7 +207,7 @@ public class WSTask extends Task implements WSProtocol {
                             b.clear();
                             return;
                         }
-                        if (l0 > b.remaining()) {
+                        if (l0 < 0 || l0 > b.remaining()) {
                             l0 -= b.remaining();
                             b.clear();
                             return;
@@ -344,6 +346,20 @@ public class WSTask extends Task implements WSProtocol {
                         lock.unlock();
                     }
                 case 7:
+                    monitorBuffer = false;
+                    handler.tick();
+                    if (monitorBuffer) {
+                        if (b.position() != b.limit())
+                            throw new RuntimeException("Half reading isn't supported");
+                        b.limit(oldLimit);
+                        l0 -= b.position() - oldPos;
+                    }
+                    if (l0 == 0) {
+                        state = 0;
+                        if (isCurrent())
+                            break;
+                    }
+                    b.compact();
                     return;
             }
     }
@@ -356,6 +372,27 @@ public class WSTask extends Task implements WSProtocol {
     @Override
     public long remainingFrameBytes() {
         return l0;
+    }
+
+    @Override
+    public ByteBuffer getBody() {
+        final ByteBuffer b = buffer != null ? buffer : worker.bl1;
+        if (monitorBuffer)
+            return b;
+        monitorBuffer = true;
+        oldPos = b.position();
+        oldLimit = b.limit();
+        if (l0 >= 0 && l0 < b.remaining())
+            b.limit(b.position() + (int) l0);
+        if (maskingRead) {
+            final int d = b.limit();
+            for (int i = b.position(); i < d; i++) {
+                b.put(i, (byte) (b.get(i) ^ maskRead[b0++]));
+                if (b0 == 4)
+                    b0 = 0;
+            }
+        }
+        return b;
     }
 
     @Override

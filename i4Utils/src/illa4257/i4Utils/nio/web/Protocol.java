@@ -1,5 +1,6 @@
-package illa4257.i4Utils.nio.web.tasks;
+package illa4257.i4Utils.nio.web;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public interface Protocol {
@@ -14,5 +15,10 @@ public interface Protocol {
     void noContent(final ByteBuffer buffer);
     void content(final ByteBuffer buffer, final int len);
 
-    void end();
+    boolean isBodyOpen();
+    boolean isLastPart() throws IOException;
+    ByteBuffer getBody() throws IOException;
+    void updateBody() throws IOException;
+
+    void end() throws IOException;
 }

@@ -15,4 +15,6 @@ public interface WSProtocol {
     long remainingFrameBytes();
 
     void skipRest();
+
+    ByteBuffer getBody();
 }

@@ -1,11 +1,14 @@
 package illa4257.i4Utils.nio.web.tasks;
 
+import illa4257.i4Utils.nio.web.Protocol;
+import illa4257.i4Utils.nio.web.WSHandler;
 import illa4257.i4Utils.nio.web.WebHandler;
 import illa4257.i4Utils.nio.web.transports.SSLTransport;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import java.io.IOException;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.charset.StandardCharsets;
@@ -47,18 +50,30 @@ public class AcceptTask extends Task implements Protocol {
 
     static {
         STATUS_CODES[101] = "101 Switching Protocols".getBytes(StandardCharsets.US_ASCII);
+
         STATUS_CODES[200] = "200 OK".getBytes(StandardCharsets.US_ASCII);
+
+        STATUS_CODES[301] = "301 Moved Permanently".getBytes(StandardCharsets.US_ASCII);
+        STATUS_CODES[302] = "302 Found".getBytes(StandardCharsets.US_ASCII);
+        STATUS_CODES[303] = "303 See Other".getBytes(StandardCharsets.US_ASCII);
+
         STATUS_CODES[400] = "400 Bad Request".getBytes(StandardCharsets.US_ASCII);
+        STATUS_CODES[401] = "401 Unauthorized".getBytes(StandardCharsets.US_ASCII);
+        STATUS_CODES[402] = "402 Payment Required".getBytes(StandardCharsets.US_ASCII);
+        STATUS_CODES[403] = "403 Forbidden".getBytes(StandardCharsets.US_ASCII);
         STATUS_CODES[404] = "404 Not Found".getBytes(StandardCharsets.US_ASCII);
         STATUS_CODES[405] = "405 Method Not Allowed".getBytes(StandardCharsets.US_ASCII);
+
+        STATUS_CODES[500] = "500 Internal Server Error".getBytes(StandardCharsets.US_ASCII);
         STATUS_CODES[501] = "501 Not Implemented".getBytes(StandardCharsets.US_ASCII);
     }
 
     public final StringBuilder s = new StringBuilder();
 
-    private byte httpLvl = 0, upgrade = 0;
-    private int state = 0;
-    private boolean r = false, n = false, keepAlive = false, upgrading;
+    private byte httpLvl = 0, upgrade = 0, contentType;
+    private int state = 0, i0, i1;
+    private boolean r = false, monitorBuffer = false, setLimit = false, n = false, keepAlive = false, upgrading, skipN = false;
+    private long len;
 
     private String s1, s2;
     private WebHandler handler = null;
@@ -71,7 +86,7 @@ public class AcceptTask extends Task implements Protocol {
     @Override
     public void tick() throws Exception {
         ByteBuffer b = buffer != null ? buffer : worker.bl1;
-        {
+        try {
             final int c = transport.read(b);
             if (c == -1) {
                 if (state == 1) {
@@ -80,6 +95,16 @@ public class AcceptTask extends Task implements Protocol {
                 }
                 throw new IOException("End of Stream");
             }
+        } catch (final SocketException ex) {
+            if (ex.getMessage().contains("reset")) {
+                if (buffer != null)
+                    worker.land.bl1(buffer);
+                else
+                    b.clear();
+                transport.close();
+                return;
+            }
+            throw ex;
         }
         b.flip();
         char ch;
@@ -132,6 +157,7 @@ public class AcceptTask extends Task implements Protocol {
                             state = 2;
                             upgrading = false;
                             upgrade = 0;
+                            contentType = 0;
                             s1 = s.toString();
                             s.setLength(0);
                             break;
@@ -241,6 +267,7 @@ public class AcceptTask extends Task implements Protocol {
                             }
                             state = upgrading && upgrade == UPGRADE_WEBSOCKET ? 8 : 6;
                             r = ch == '\r';
+                            skipN = r && n;
                             continue mainLoop;
                         }
                         if (ch >= 'A' && ch <= 'Z')
@@ -273,6 +300,10 @@ public class AcceptTask extends Task implements Protocol {
                             }
                             s.setLength(++i);
                             switch (s1) {
+                                case "content-length":
+                                    len = Long.parseUnsignedLong(s.toString());
+                                    contentType = len != 0 ? 1 : (byte) 0;
+                                    break;
                                 case "sec-websocket-version":
                                     wsVer = s.toString();
                                     break;
@@ -311,7 +342,21 @@ public class AcceptTask extends Task implements Protocol {
                         s.append(ch);
                     }
                 case 6: { // BODY
+                    if (skipN && b.hasRemaining()) {
+                        skipN = false;
+                        if (b.get(b.position()) == '\n')
+                            b.get();
+                    }
+                    setLimit = false;
+                    monitorBuffer = false;
                     handler.tick();
+                    if (setLimit)
+                        b.limit(i1);
+                    if (monitorBuffer) {
+                        len -= b.position() - i0;
+                        if (len == 0)
+                            contentType = 0;
+                    }
                     if (isCurrent())
                         break;
                     if (b.hasRemaining()) {
@@ -390,8 +435,26 @@ public class AcceptTask extends Task implements Protocol {
                 }
                 case 10: { // WEBSOCKET_ACCEPT
                     final WSTask t = new WSTask();
+                    final WSHandler h = handler.websocket(t);
+                    if (h == null) {
+                        transport.interestOps(SelectionKey.OP_WRITE);
+                        final ByteBuffer buf = worker.land.bl1();
+                        status(buf, 404);
+                        noContent(buf);
+                        buf.flip();
+                        state = 7;
+                        if (write(buf, true)) {
+                            if (buffer != null)
+                                worker.land.bl1(buffer);
+                            else
+                                b.clear();
+                            return;
+                        } else
+                            break;
+                    }
                     t.r = r;
                     t.n = n;
+                    t.handler = h;
                     if (buffer != null) {
                         t.buffer = buffer;
                         buffer.compact();
@@ -415,14 +478,30 @@ public class AcceptTask extends Task implements Protocol {
 
                     buf.flip();
                     write(buf, true);
-                    t.sendText("Hello, world!");
 
-                    t.sendBinary(ByteBuffer.wrap(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 }), false);
+                    h.open();
                     return;
                 }
                 case 11: // KEEP_ALIVE
                     state = 1;
                     transport.interestOps(SelectionKey.OP_READ);
+                    break;
+                case 12: // SKIP REST
+                    switch (contentType) {
+                        case 1:
+                            if (len < 0 || len > b.remaining()) {
+                                len -= b.remaining();
+                                b.clear();
+                                return;
+                            }
+                            b.position(b.position() + (int) len);
+                            len = 0;
+                            break;
+                        default:
+                            throw new IOException("Unsupported " + contentType);
+                    }
+                    contentType = 0;
+                    state = keepAlive ? 11 : 7;
                     break;
                 default:
                     throw new RuntimeException("End");
@@ -492,12 +571,90 @@ public class AcceptTask extends Task implements Protocol {
     }
 
     @Override
-    public void end() {
+    public boolean isBodyOpen() {
+        return contentType != 0;
+    }
+
+    @Override
+    public boolean isLastPart() throws IOException {
+        switch (contentType) {
+            case 1:
+                final ByteBuffer b = buffer != null ? buffer : worker.bl1;
+                return len > 0 && len == b.remaining();
+            default: throw new IOException("Unknown content state");
+        }
+    }
+
+    @Override
+    public ByteBuffer getBody() throws IOException {
+        switch (contentType) {
+            case 0: return BuffLand.ZERO;
+            case 1:
+                final ByteBuffer b = buffer != null ? buffer : worker.bl1;
+                if (!monitorBuffer) {
+                    monitorBuffer = true;
+                    i0 = b.position();
+                    if (len >= 0 && len <= b.remaining()) {
+                        setLimit = true;
+                        i1 = b.limit();
+                        b.limit(b.position() + (int) len);
+                    }
+                }
+                return b;
+            default: throw new IOException("Unknown content state");
+        }
+    }
+
+    @Override
+    public void updateBody() throws IOException {
+        if (!monitorBuffer)
+            return;
+        switch (contentType) {
+            case 0: return;
+            case 1:
+                final ByteBuffer b = buffer != null ? buffer : worker.bl1;
+                len -= b.position() - i0;
+                if (len == 0)
+                    contentType = 0;
+                i0 = b.position();
+                return;
+            default: throw new IOException("Unknown content state");
+        }
+    }
+
+    /*@Override
+    public int readBody(final ByteBuffer buffer) throws IOException {
+        switch (contentType) {
+            case 0: return 0;
+            case 1:
+                System.out.println(len + " | " + buffer.remaining());
+                if (len < 0 || len > buffer.remaining()) {
+                    final int n = transport.read(buffer);
+                    if (n > 0)
+                        len -= n;
+                    return n;
+                }
+                final int l = buffer.limit();
+                buffer.limit(buffer.position() + (int) len);
+                final int n = transport.read(buffer);
+                System.out.println(n + " | " + l + " | " + buffer.position() + " | " + buffer.limit());
+                buffer.limit(l);
+                if (n > 0)
+                    len -= n;
+                return n;
+
+            default: throw new IOException("Unknown content state");
+        }
+    }*/
+
+    @Override
+    public void end() throws IOException {
         if (state != 6)
             return;
-        if (keepAlive)
-            state = 11;
-        else
+        if (keepAlive) {
+            updateBody();
+            state = isBodyOpen() ? 12 : 11;
+        } else
             state = 7;
     }
 
