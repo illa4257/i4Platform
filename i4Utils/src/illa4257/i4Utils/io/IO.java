@@ -217,6 +217,10 @@ public class IO {
         return (readByteI(stream) << 8) | readByteI(stream);
     }
 
+    public static int readBEShortI(final ByteBuffer buffer) {
+        return ((buffer.get() & 0xFF) << 8) | (buffer.get() & 0xFF);
+    }
+
     /**
      * Reads short in big endian order.
      *
@@ -294,6 +298,17 @@ public class IO {
                 ((long) (stream[offset + 5] & 0xFF) << 16) |
                 ((long) (stream[offset + 6] & 0xFF) <<  8) |
                  (long) (stream[offset + 7] & 0xFF);
+    }
+
+    public static long readBELong(final ByteBuffer buffer) {
+        return ((long) (buffer.get() & 0xFF) << 56) |
+                ((long) (buffer.get() & 0xFF) << 48) |
+                ((long) (buffer.get() & 0xFF) << 40) |
+                ((long) (buffer.get() & 0xFF) << 32) |
+                ((long) (buffer.get() & 0xFF) << 24) |
+                ((long) (buffer.get() & 0xFF) << 16) |
+                ((long) (buffer.get() & 0xFF) << 8) |
+                (long) (buffer.get() & 0xFF);
     }
 
     public static float readBEFloat(final InputStream stream) throws IOException {
