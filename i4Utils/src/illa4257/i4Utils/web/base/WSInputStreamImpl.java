@@ -29,17 +29,18 @@ public class WSInputStreamImpl extends WSInputStream {
             this.frameType = frameType;
         b = IO.readByteI(inputStream);
         masking = (b | 0x80) == b;
-        if (masking) {
+        if (masking)
             b ^= 0x80;
-            IO.readByteArray(inputStream, mask);
-            maskIndex = 0;
-        }
         if (b < 0x7E)
             remaining = b;
         else if (b == 0x7E)
             remaining = IO.readBEShortI(inputStream);
         else
             remaining = IO.readBELong(inputStream);
+        if (masking) {
+            IO.readByteArray(inputStream, mask);
+            maskIndex = 0;
+        }
         if (frameType == 0x08) {
             if (remaining >= 2) {
                 closeCode = IO.readBEShort(inputStream);
