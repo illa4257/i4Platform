@@ -177,19 +177,55 @@ public class WSTask extends Task implements WSProtocol {
                     if (maskingRead = (s & 0x80) != 0)
                         s ^= (byte) 0x80;
                     if (s <= 125) {
+                        l0 = s;
                         if (maskingRead) {
                             state = 4;
                             b0 = 0;
                         } else
                             state = i0;
-                        l0 = s;
                         continue;
                     }
-                    throw new RuntimeException("Length " + s);
+                    state = s == 126 ? 2 : 3;
+                    b0 = 0;
+                    l0 = 0;
+                    break;
                 }
                 case 2:
+                    while (b0 < 2) {
+                        if (!b.hasRemaining()) {
+                            b.clear();
+                            return;
+                        }
+                        //noinspection NonAtomicOperationOnVolatileField
+                        l0 <<= 8;
+                        //noinspection NonAtomicOperationOnVolatileField
+                        l0 |= buffer.get() & 0xFF;
+                        b0++;
+                    }
+                    if (maskingRead) {
+                        state = 4;
+                        b0 = 0;
+                    } else
+                        state = i0;
+                    break;
                 case 3:
-                    throw new RuntimeException("Stub");
+                    while (b0 < 8) {
+                        if (!b.hasRemaining()) {
+                            b.clear();
+                            return;
+                        }
+                        //noinspection NonAtomicOperationOnVolatileField
+                        l0 <<= 8;
+                        //noinspection NonAtomicOperationOnVolatileField
+                        l0 |= buffer.get() & 0xFF;
+                        b0++;
+                    }
+                    if (maskingRead) {
+                        state = 4;
+                        b0 = 0;
+                    } else
+                        state = i0;
+                    break;
                 case 4: // READ MASK
                     while (b0 < 4) {
                         if (!b.hasRemaining()) {
