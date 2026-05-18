@@ -76,6 +76,15 @@ public class MiniUtil {
         return map;
     }
 
+    public static <M extends Map<K, V>, K, V> M put(final M map, final Function<Object, V> convertor, final Object... pairs) {
+        if (pairs.length % 2 != 0)
+            throw new IllegalArgumentException("Not even amount of values: " + pairs.length);
+        for (int i = 0; i < pairs.length; i++)
+            //noinspection unchecked
+            map.put((K) pairs[i++], convertor.apply(pairs[i]));
+        return map;
+    }
+
     public static <T> int indexOfF(final Function<T, Boolean> func, final Iterator<T> iterator) {
         int i = 0;
         while (iterator.hasNext()) {
