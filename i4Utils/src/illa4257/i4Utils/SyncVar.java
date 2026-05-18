@@ -1,9 +1,9 @@
 package illa4257.i4Utils;
 
-import illa4257.i4Utils.runnables.Provider;
-
 import java.util.Objects;
+import java.util.function.Supplier;
 
+@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 public class SyncVar<T> {
     public final Object locker = new Object();
 
@@ -44,10 +44,10 @@ public class SyncVar<T> {
         }
     }
 
-    public T computeIfAbsentP(final Provider<T> provider) {
+    public T computeIfAbsentP(final Supplier<T> provider) {
         synchronized (locker) {
             if (v == null)
-                return v = provider.run();
+                return v = provider.get();
             return v;
         }
     }

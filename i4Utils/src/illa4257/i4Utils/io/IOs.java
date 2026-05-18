@@ -7,13 +7,17 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.CompletionHandler;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 
-public class IO {
+public class IOs {
     public static final int BUFFER_SIZE = 1024 * 1024;
 
-    private static final ThreadLocal<byte[]> BUFF = ThreadLocal.withInitial(() -> new byte[BUFFER_SIZE]);
+    private static final ThreadLocal<byte[]> BA = ThreadLocal.withInitial(() -> new byte[BUFFER_SIZE]);
+
+    private static final ByteBuffer BB = ByteBuffer.allocateDirect(BUFFER_SIZE);
 
     public static final Recycler<ByteArrayOutputStream>
             BYTE_ARRAY_OUTPUT_STREAM = new Recycler<>(ByteArrayOutputStream::new, ByteArrayOutputStream::reset);
@@ -22,7 +26,7 @@ public class IO {
         byte[] run(final InputStream inputStream) throws IOException;
     }
 
-    @SuppressWarnings("JavaReflectionMemberAccess")
+    @SuppressWarnings({"JavaReflectionMemberAccess", "RedundantSuppression"})
     private static IReader detectReader() {
         try {
             final Method m = InputStream.class.getMethod("readAllBytes");
@@ -43,7 +47,7 @@ public class IO {
         try {
             final Class<?> c = Class.forName("sun.misc.IOUtils");
             try {
-                final Method m = c.getDeclaredMethod("readFully", InputStream.class);
+                final Method m = c.getDeclaredMethod("readAllBytes", InputStream.class);
                 return is -> {
                     try {
                         return (byte[]) m.invoke(null, is);
@@ -75,7 +79,7 @@ public class IO {
                 };
             } catch (final NoSuchMethodException ignored) {}
             try {
-                final Method m = c.getDeclaredMethod("readFully", InputStream.class, int.class, boolean.class);
+                final Method m = c.getDeclaredMethod("readAllBytes", InputStream.class, int.class, boolean.class);
                 return is -> {
                     try {
                         return (byte[]) m.invoke(null, is, -1, true);
@@ -96,7 +100,7 @@ public class IO {
                 throw new NullPointerException("InputStream is null!");
             final ByteArrayOutputStream r = BYTE_ARRAY_OUTPUT_STREAM.get();
             try {
-                final byte[] buff = BUFF.get();
+                final byte[] buff = BA.get();
                 for (int len = is.read(buff, 0, buff.length); len > -1; len = is.read(buff, 0, buff.length))
                     r.write(buff, 0, len);
                 return r.toByteArray();
@@ -112,7 +116,7 @@ public class IO {
         reader = detectReader();
     }
 
-    public static byte[] readFully(final InputStream inputStream, final boolean close) throws IOException {
+    public static byte[] readAllBytes(final InputStream inputStream, final boolean close) throws IOException {
         try {
             return reader.run(inputStream);
         } finally {
@@ -121,7 +125,9 @@ public class IO {
         }
     }
 
-    public static byte[] readFully(final InputStream inputStream) throws IOException {
+    @SuppressWarnings("RedundantSuppression")
+    public static byte[] readAllBytes(final InputStream inputStream) throws IOException {
+        //noinspection TryFinallyCanBeTryWithResources
         try {
             return reader.run(inputStream);
         } finally {
@@ -129,10 +135,36 @@ public class IO {
         }
     }
 
-    public static byte[] readFully(final File path) throws IOException {
+    public static byte[] readAllBytes(final File path) throws IOException {
         try (final InputStream fis = Files.newInputStream(path.toPath())) {
             return reader.run(fis);
         }
+    }
+
+    public static <A> void preallocate(final AsynchronousFileChannel channel, final long offset, final long length,
+                                       final A attachment, final CompletionHandler<Long, A> handler) {
+        if (length == 0)
+            return;
+        final ByteBuffer b = BB.duplicate();
+        new CompletionHandler<Integer, Void>() {
+            private long l = offset, r = length;
+
+            @Override
+            public void completed(final Integer result, final Void ignored) {
+                r -= result;
+                l += result;
+                b.position(0);
+                if (r == 0) {
+                    handler.completed(length, attachment);
+                    return;
+                }
+                if (r > 0)
+                    b.limit((int) Math.min(b.capacity(), r));
+                channel.write(b, l, null, this);
+            }
+
+            @Override public void failed(final Throwable exc, final Void ignored) { handler.failed(exc, attachment); }
+        }.completed(0, null);
     }
 
     public static byte[] toBytes(final Charset charset, final char[] charArray) {

@@ -20,7 +20,7 @@ public class MultiSocketServer implements Closeable {
             final int a = is.read();
             if (a == -1)
                 throw new IOException("End");
-            final byte[] code = IO.readByteArray(is, 4);
+            final byte[] code = IOs.readByteArray(is, 4);
             final Socket s = m.internalConnect();
             if (s == null)
                 throw new IOException("Failed to accept");

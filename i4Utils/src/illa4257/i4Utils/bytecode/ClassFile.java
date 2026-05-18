@@ -1,6 +1,6 @@
 package illa4257.i4Utils.bytecode;
 
-import illa4257.i4Utils.io.IO;
+import illa4257.i4Utils.io.IOs;
 import illa4257.i4Utils.io.TrackInputStream;
 import illa4257.i4Utils.ir.*;
 import illa4257.i4Utils.ir.IRExc;
@@ -193,21 +193,21 @@ public class ClassFile {
                 final HashMap<Stack<Object>, Inst> stackStarters = new HashMap<>();
                 activeStacks.add(new Stack<>());
                 try (final TrackInputStream is = new TrackInputStream(new ByteArrayInputStream(attr.info))) {
-                    IO.readBEShort(is); // Max Stack
-                    IO.readBEShort(is); // Max Locals
+                    IOs.readBEShort(is); // Max Stack
+                    IOs.readBEShort(is); // Max Locals
 
-                    final int totalCodeLen = IO.readBEInt(is);
+                    final int totalCodeLen = IOs.readBEInt(is);
                     is.mark(attr.info.length);
                     //noinspection ResultOfMethodCallIgnored
                     is.skip(totalCodeLen);
-                    final int exceptionTableLen = IO.readBEShortI(is);
+                    final int exceptionTableLen = IOs.readBEShortI(is);
                     for (int i = 0; i < exceptionTableLen; i++) {
                         final Exc exc = new Exc();
-                        exc.start = IO.readBEShortI(is);
-                        exc.end = IO.readBEShortI(is);
-                        exc.offset = IO.readBEShortI(is);
+                        exc.start = IOs.readBEShortI(is);
+                        exc.end = IOs.readBEShortI(is);
+                        exc.offset = IOs.readBEShortI(is);
                         //catchOffsets.add(exc.offset = IO.readBEShortI(is)); // handler
-                        final int type = IO.readBEShortI(is); // type
+                        final int type = IOs.readBEShortI(is); // type
                         if (type != 0)
                             exc.exc.cls = (String) cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(type - 1)).nameIndex - 1);
                         else
@@ -372,7 +372,7 @@ public class ClassFile {
                                     pushOperand.accept(Const.EXCEPTION, false);
                                 }
                         }
-                        final int b = IO.readByteI(is);
+                        final int b = IOs.readByteI(is);
                         switch (b) {
                             case 0: { // NOOP
                                 instructions.add(new Inst(Opcode.NO_OP, 0));
@@ -429,7 +429,7 @@ public class ClassFile {
 
                             case 16: // bipush
                             {
-                                final Inst inst = new Inst(Opcode.STORE, Const.STACK_1, new Object[]{ (byte) (IO.readByte(is)) });
+                                final Inst inst = new Inst(Opcode.STORE, Const.STACK_1, new Object[]{ (byte) (IOs.readByte(is)) });
                                 instructions.add(inst);
                                 push.accept(false);
                                 break;
@@ -437,7 +437,7 @@ public class ClassFile {
 
                             case 17: // sipush
                             {
-                                final Inst inst = new Inst(Opcode.STORE, Const.STACK_1, new Object[]{ (short) (IO.readBEShort(is)) });
+                                final Inst inst = new Inst(Opcode.STORE, Const.STACK_1, new Object[]{ (short) (IOs.readBEShort(is)) });
                                 instructions.add(inst);
                                 push.accept(false);
                                 break;
@@ -449,9 +449,9 @@ public class ClassFile {
                             {
                                 Object v;
                                 if (b == 18)
-                                    v = cf.constantPool.get(IO.readByteI(is) - 1);
+                                    v = cf.constantPool.get(IOs.readByteI(is) - 1);
                                 else
-                                    v = cf.constantPool.get(IO.readBEShortI(is) - 1);
+                                    v = cf.constantPool.get(IOs.readBEShortI(is) - 1);
 
                                 if (v instanceof ClsTag)
                                     v = new IRClassRef((String) cf.constantPool.get(((ClsTag) v).nameIndex - 1));
@@ -481,7 +481,7 @@ public class ClassFile {
                             case 24: // dload
                             case 25: // aload
                             {
-                                instructions.add(new Inst(Opcode.STORE, b == 22 || b == 24 ? Const.STACK_2 : Const.STACK_1, new Object[]{ new IRRegister(IO.readByteI(is)) }));
+                                instructions.add(new Inst(Opcode.STORE, b == 22 || b == 24 ? Const.STACK_2 : Const.STACK_1, new Object[]{ new IRRegister(IOs.readByteI(is)) }));
                                 push.accept(b == 22 || b == 24);
                                 break;
                             }
@@ -563,7 +563,7 @@ public class ClassFile {
                             case 57: // dstore
                             case 58: // astore
                             {
-                                instructions.add(new Inst(Opcode.STORE, new IRRegister(IO.readByteI(is)), new Object[]{ popOperand.get() }));
+                                instructions.add(new Inst(Opcode.STORE, new IRRegister(IOs.readByteI(is)), new Object[]{ popOperand.get() }));
                                 break;
                             }
 
@@ -876,8 +876,8 @@ public class ClassFile {
 
                             case 132: // iinc
                             {
-                                final int i = IO.readByteI(is);
-                                instructions.add(new Inst(Opcode.ADD, new IRRegister(i), new Object[] { new IRRegister(i), new IRInt(IO.readByte(is)), IRType.Kind.INT }));
+                                final int i = IOs.readByteI(is);
+                                instructions.add(new Inst(Opcode.ADD, new IRRegister(i), new Object[] { new IRRegister(i), new IRInt(IOs.readByte(is)), IRType.Kind.INT }));
                                 break;
                             }
 
@@ -953,7 +953,7 @@ public class ClassFile {
                             case 158: // if_le
                             {
                                 final Object v = popOperand.get();
-                                final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
+                                final IRAnchor anchor = newAnchor.apply((int) IOs.readBEShort(is));
                                 instructions.add(new Inst(
                                         b == 153 ? Opcode.IF_EQ :
                                         b == 154 ? Opcode.IF_NE :
@@ -977,7 +977,7 @@ public class ClassFile {
                             case 166: // if_acmpne
                             {
                                 Object val2 = popOperand.get(), val1 = popOperand.get();
-                                final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
+                                final IRAnchor anchor = newAnchor.apply((int) IOs.readBEShort(is));
                                 instructions.add(new Inst(
                                         b == 159 || b == 165 ? Opcode.IF_EQ :
                                                 b == 160 || b == 166 ? Opcode.IF_NE :
@@ -991,7 +991,7 @@ public class ClassFile {
                             }
 
                             case 167: { // goto
-                                final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
+                                final IRAnchor anchor = newAnchor.apply((int) IOs.readBEShort(is));
                                 instructions.add(new Inst(Opcode.GOTO, new Object[] { anchor }));
                                 newBranch.accept(anchor);
                                 activeStacks.clear();
@@ -1000,14 +1000,14 @@ public class ClassFile {
 
                             case 168: // jsr
                             { // TODO: Check it with java -5
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IO.readBEShort(is)) }));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IOs.readBEShort(is)) }));
                                 // TODO: Check the operand stack.
                                 break;
                             }
 
                             case 169: // ret
                             {
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { new IRAnchor(new IRRegister(IO.readByteI(is))) }));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { new IRAnchor(new IRRegister(IOs.readByteI(is))) }));
                                 break;
                             }
 
@@ -1017,8 +1017,8 @@ public class ClassFile {
                                 is.skip((4 - ((is.position - codeStart) % 4)) % 4);
                                 final Inst inst = new Inst(Opcode.TABLESWITCH, 5);
                                 inst.params[0] = popOperand.get();
-                                inst.params[1] = newAnchor.apply(IO.readBEInt(is));
-                                final int low = IO.readBEInt(is), high = IO.readBEInt(is);
+                                inst.params[1] = newAnchor.apply(IOs.readBEInt(is));
+                                final int low = IOs.readBEInt(is), high = IOs.readBEInt(is);
                                 if (low > high)
                                     throw new RuntimeException("low > high: " + low + ", " + high);
                                 inst.params[2] = low;
@@ -1026,7 +1026,7 @@ public class ClassFile {
                                 final IRAnchor[] jumps = new IRAnchor[high - low + 1];
                                 inst.params[4] = jumps;
                                 for (int i = 0; i < jumps.length; i++)
-                                    jumps[i] = newAnchor.apply(IO.readBEInt(is));
+                                    jumps[i] = newAnchor.apply(IOs.readBEInt(is));
                                 instructions.add(inst);
                                 newBranch.accept((IRAnchor) inst.params[1]);
                                 for (final IRAnchor anchor : jumps)
@@ -1041,14 +1041,14 @@ public class ClassFile {
                                 is.skip((4 - ((is.position - codeStart) % 4)) % 4);
                                 final Inst inst = new Inst(Opcode.LOOKUPSWITCH, 4);
                                 inst.params[0] = popOperand.get();
-                                inst.params[1] = newAnchor.apply(IO.readBEInt(is));
-                                final int[] keys = new int[IO.readBEInt(is)];
+                                inst.params[1] = newAnchor.apply(IOs.readBEInt(is));
+                                final int[] keys = new int[IOs.readBEInt(is)];
                                 final IRAnchor[] jumps = new IRAnchor[keys.length];
                                 inst.params[2] = keys;
                                 inst.params[3] = jumps;
                                 for (int i = 0; i < keys.length; i++) {
-                                    keys[i] = IO.readBEInt(is);
-                                    jumps[i] = newAnchor.apply(IO.readBEInt(is));
+                                    keys[i] = IOs.readBEInt(is);
+                                    jumps[i] = newAnchor.apply(IOs.readBEInt(is));
                                 }
                                 instructions.add(inst);
                                 newBranch.accept((IRAnchor) inst.params[1]);
@@ -1075,7 +1075,7 @@ public class ClassFile {
                                 break;
 
                             case 178: { // getstatic
-                                final IRFieldRef ref = fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IO.readBEShort(is) - 1));
+                                final IRFieldRef ref = fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IOs.readBEShort(is) - 1));
                                 final boolean isLong = ref.type.kind == IRType.Kind.LONG || ref.type.kind == IRType.Kind.DOUBLE;
                                 final Inst inst = new Inst(Opcode.GET_STATIC, isLong ? Const.STACK_2 : Const.STACK_1, new Object[] { ref });
                                 instructions.add(inst);
@@ -1084,13 +1084,13 @@ public class ClassFile {
                             }
 
                             case 179: { // putstatic
-                                instructions.add(new Inst(Opcode.PUT_STATIC, new Object[] { fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IO.readBEShort(is) - 1)), popOperand.get() }));
+                                instructions.add(new Inst(Opcode.PUT_STATIC, new Object[] { fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IOs.readBEShort(is) - 1)), popOperand.get() }));
                                 break;
                             }
 
                             case 180: // getfield
                             {
-                                final IRFieldRef ref = fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IO.readBEShort(is) - 1));
+                                final IRFieldRef ref = fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IOs.readBEShort(is) - 1));
                                 final boolean isLong = ref.type.kind == IRType.Kind.LONG || ref.type.kind == IRType.Kind.DOUBLE;
                                 final Inst inst = new Inst(Opcode.GET_FIELD, isLong ? Const.STACK_2 : Const.STACK_1, new Object[] { ref, popOperand.get() });
                                 instructions.add(inst);
@@ -1101,7 +1101,7 @@ public class ClassFile {
                             case 181: // putfield
                             {
                                 Object val = popOperand.get();
-                                instructions.add(new Inst(Opcode.PUT_FIELD, new Object[] { fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IO.readBEShort(is) - 1)), popOperand.get(), val }));
+                                instructions.add(new Inst(Opcode.PUT_FIELD, new Object[] { fieldRef(cf, (ClassFile.FieldRef) cf.constantPool.get(IOs.readBEShort(is) - 1)), popOperand.get(), val }));
                                 break;
                             }
 
@@ -1109,7 +1109,7 @@ public class ClassFile {
                             case 183: // invokespecial
                             case 184: // invokestatic
                             {
-                                final ClassFile.MethodRef ref = (ClassFile.MethodRef) cf.constantPool.get(IO.readBEShortI(is) - 1);
+                                final ClassFile.MethodRef ref = (ClassFile.MethodRef) cf.constantPool.get(IOs.readBEShortI(is) - 1);
                                 final ClassFile.NameAndType nt = (ClassFile.NameAndType) cf.constantPool.get(ref.nameAndTypeIndex - 1);
                                 final Descriptor d = new Descriptor((String) cf.constantPool.get(nt.descriptorIndex - 1));
                                 final IRMethodRef mr = methodRef(cf, ref);
@@ -1129,12 +1129,12 @@ public class ClassFile {
 
                             case 185: // invokeinterface
                             {
-                                final InterfaceMethodRef ref = (ClassFile.InterfaceMethodRef) cf.constantPool.get(IO.readBEShortI(is) - 1);
+                                final InterfaceMethodRef ref = (ClassFile.InterfaceMethodRef) cf.constantPool.get(IOs.readBEShortI(is) - 1);
                                 final ClassFile.NameAndType nt = (ClassFile.NameAndType) cf.constantPool.get(ref.nameAndTypeIndex - 1);
                                 final Descriptor d = new Descriptor((String) cf.constantPool.get(nt.descriptorIndex - 1));
                                 final IRMethodRef mr = methodRef(cf, ref);
-                                IO.readByteI(is); // stack size
-                                if (IO.readByte(is) != 0)
+                                IOs.readByteI(is); // stack size
+                                if (IOs.readByte(is) != 0)
                                     throw new RuntimeException("Not valid the invoke interface instruction.");
                                 final Inst inst = new Inst(Opcode.INVOKE_INTERFACE, d.parameters.size() + 2);
                                 inst.params[0] = mr;
@@ -1151,8 +1151,8 @@ public class ClassFile {
 
                             case 186: // invokedynamic
                             {
-                                final InvokeDynamic ref = (ClassFile.InvokeDynamic) cf.constantPool.get(IO.readBEShortI(is) - 1);
-                                if (IO.readByte(is) != 0 || IO.readByte(is) != 0)
+                                final InvokeDynamic ref = (ClassFile.InvokeDynamic) cf.constantPool.get(IOs.readBEShortI(is) - 1);
+                                if (IOs.readByte(is) != 0 || IOs.readByte(is) != 0)
                                     throw new RuntimeException("Not valid the invoke interface instruction.");
                                 final BootstrapMethod me = cf.bootstrapMethods.get(ref.bootstrapMethodAttrIndex);
                                 final MethodHandle handle = (MethodHandle) cf.constantPool.get(me.methodRef - 1);
@@ -1222,14 +1222,14 @@ public class ClassFile {
                             }
 
                             case 187: { // new
-                                final Inst inst = new Inst(Opcode.ALLOCATE, Const.STACK_1, new Object[] { cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShort(is) - 1)).nameIndex - 1) });
+                                final Inst inst = new Inst(Opcode.ALLOCATE, Const.STACK_1, new Object[] { cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IOs.readBEShort(is) - 1)).nameIndex - 1) });
                                 instructions.add(inst);
                                 push.accept(false);
                                 break;
                             }
 
                             case 188: { // newarray
-                                final byte t = IO.readByte(is);
+                                final byte t = IOs.readByte(is);
                                 IRType.Kind kind;
                                 switch (t) {
                                     case 4: kind = IRType.Kind.BOOLEAN; break;
@@ -1249,7 +1249,7 @@ public class ClassFile {
                             }
 
                             case 189: { // anewarray
-                                final Inst inst = new Inst(Opcode.NEW_ARRAY, Const.STACK_1, new Object[] { cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShortI(is) - 1)).nameIndex - 1), popOperand.get() });
+                                final Inst inst = new Inst(Opcode.NEW_ARRAY, Const.STACK_1, new Object[] { cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IOs.readBEShortI(is) - 1)).nameIndex - 1), popOperand.get() });
                                 instructions.add(inst);
                                 push.accept(false);
                                 break;
@@ -1271,13 +1271,13 @@ public class ClassFile {
                             case 192: { // checkcast
                                 final Object operand = popOperand.get();
                                 pushOperand.accept(operand, !isNot64Bit.apply(operand));
-                                instructions.add(new Inst(Opcode.CHECK_CAST, new Object[]{ operand, cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShort(is) - 1)).nameIndex - 1) }));
+                                instructions.add(new Inst(Opcode.CHECK_CAST, new Object[]{ operand, cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IOs.readBEShort(is) - 1)).nameIndex - 1) }));
                                 break;
                             }
 
                             case 193: { // instanceof
                                 final Object operand = popOperand.get();
-                                final Inst inst = new Inst(Opcode.INSTANCEOF, Const.STACK_1, new Object[]{ operand, cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShort(is) - 1)).nameIndex - 1) });
+                                final Inst inst = new Inst(Opcode.INSTANCEOF, Const.STACK_1, new Object[]{ operand, cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IOs.readBEShort(is) - 1)).nameIndex - 1) });
                                 instructions.add(inst);
                                 push.accept(false);
                                 break;
@@ -1292,7 +1292,7 @@ public class ClassFile {
 
                             case 196: // wide
                             {
-                                final int b2 = IO.readByteI(is);
+                                final int b2 = IOs.readByteI(is);
                                 switch (b2) {
                                     case 21: // iload
                                     case 22: // lload
@@ -1300,7 +1300,7 @@ public class ClassFile {
                                     case 24: // dload
                                     case 25: // aload
                                     {
-                                        final Inst inst = new Inst(Opcode.STORE, b2 == 22 || b2 == 24 ? Const.STACK_2 : Const.STACK_1, new Object[]{ new IRRegister(IO.readBEShortI(is)) });
+                                        final Inst inst = new Inst(Opcode.STORE, b2 == 22 || b2 == 24 ? Const.STACK_2 : Const.STACK_1, new Object[]{ new IRRegister(IOs.readBEShortI(is)) });
                                         instructions.add(inst);
                                         push.accept(b2 == 22 || b2 == 24);
                                         break;
@@ -1311,13 +1311,13 @@ public class ClassFile {
                                     case 57: // dstore
                                     case 58: // astore
                                     {
-                                        instructions.add(new Inst(Opcode.STORE, new IRRegister(IO.readBEShortI(is)), new Object[]{ popOperand.get() }));
+                                        instructions.add(new Inst(Opcode.STORE, new IRRegister(IOs.readBEShortI(is)), new Object[]{ popOperand.get() }));
                                         break;
                                     }
                                     case 132: // iinc
                                     {
-                                        final int i = IO.readBEShortI(is);
-                                        instructions.add(new Inst(Opcode.ADD, new IRRegister(i), new Object[] { new IRRegister(i), new IRInt(IO.readBEShortI(is)), IRType.Kind.INT }));
+                                        final int i = IOs.readBEShortI(is);
+                                        instructions.add(new Inst(Opcode.ADD, new IRRegister(i), new Object[] { new IRRegister(i), new IRInt(IOs.readBEShortI(is)), IRType.Kind.INT }));
                                         break;
                                     }
                                     default: throw new RuntimeException("Unknown wide opcode " + b);
@@ -1327,8 +1327,8 @@ public class ClassFile {
 
                             case 197: // multianewarray
                             {
-                                final Object cls = cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IO.readBEShortI(is) - 1)).nameIndex - 1);
-                                int dim = IO.readByteI(is);
+                                final Object cls = cf.constantPool.get(((ClassFile.ClsTag) cf.constantPool.get(IOs.readBEShortI(is) - 1)).nameIndex - 1);
+                                int dim = IOs.readByteI(is);
                                 final Inst inst = new Inst(Opcode.NEW_ARRAY, Const.STACK_1, new Object[dim + 1]);
                                 inst.params[0] = cls;
                                 for (int i = dim; i > 0; i--)
@@ -1342,14 +1342,14 @@ public class ClassFile {
                             case 199: // if_nonnull
                             {
                                 final Object v = popOperand.get();
-                                final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
+                                final IRAnchor anchor = newAnchor.apply((int) IOs.readBEShort(is));
                                 instructions.add(new Inst(b == 198 ? Opcode.IF_NULL : Opcode.IF_NONNULL, new Object[] { v, anchor }));
                                 newBranch.accept(anchor);
                                 break;
                             }
 
                             case 200: { // goto_w
-                                final IRAnchor anchor = newAnchor.apply((int) IO.readBEShort(is));
+                                final IRAnchor anchor = newAnchor.apply((int) IOs.readBEShort(is));
                                 instructions.add(new Inst(Opcode.GOTO, new Object[] { anchor }));
                                 newBranch.accept(anchor);
                                 activeStacks.clear();
@@ -1358,7 +1358,7 @@ public class ClassFile {
 
                             case 201: // jsr_w
                             { // TODO: Check it with java -5
-                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IO.readBEShort(is)) }));
+                                instructions.add(new Inst(Opcode.GOTO, new Object[] { newAnchor.apply((int) IOs.readBEShort(is)) }));
                                 // TODO: Check the operand stack.
                                 break;
                             }
@@ -1470,114 +1470,114 @@ public class ClassFile {
     }
 
     public static ClassFile parse(final InputStream inputStream) throws IOException {
-        if (IO.readBEInt(inputStream) != MAGIC)
+        if (IOs.readBEInt(inputStream) != MAGIC)
             throw new UnsupportedOperationException("Not a class file");
 
         final ClassFile cls = new ClassFile();
-        cls.minorVersion = IO.readBEShort(inputStream);
-        cls.majorVersion = IO.readBEShort(inputStream);
+        cls.minorVersion = IOs.readBEShort(inputStream);
+        cls.majorVersion = IOs.readBEShort(inputStream);
 
-        short poolSize = IO.readBEShort(inputStream);
+        short poolSize = IOs.readBEShort(inputStream);
         for (poolSize--; poolSize != 0; poolSize--) {
-            final int tag = IO.readByteI(inputStream);
+            final int tag = IOs.readByteI(inputStream);
             switch (tag) {
                 case 1: // utf8
-                    cls.constantPool.add(new String(IO.readByteArray(inputStream, IO.readBEShortI(inputStream)),
+                    cls.constantPool.add(new String(IOs.readByteArray(inputStream, IOs.readBEShortI(inputStream)),
                             StandardCharsets.UTF_8));
                     break;
                 case 3: // int
-                    cls.constantPool.add(new IntTag(IO.readBEInt(inputStream)));
+                    cls.constantPool.add(new IntTag(IOs.readBEInt(inputStream)));
                     break;
                 case 4: // float
-                    cls.constantPool.add(new FloatTag(IO.readBEFloat(inputStream)));
+                    cls.constantPool.add(new FloatTag(IOs.readBEFloat(inputStream)));
                     break;
                 case 5: // long
-                    cls.constantPool.add(new LongTag(IO.readBELong(inputStream)));
+                    cls.constantPool.add(new LongTag(IOs.readBELong(inputStream)));
                     cls.constantPool.add(null);
                     poolSize--;
                     break;
                 case 6: // double
-                    cls.constantPool.add(new DoubleTag(IO.readBEDouble(inputStream)));
+                    cls.constantPool.add(new DoubleTag(IOs.readBEDouble(inputStream)));
                     cls.constantPool.add(null);
                     poolSize--;
                     break;
                 case 7: // class
-                    cls.constantPool.add(new ClsTag(IO.readBEShortI(inputStream)));
+                    cls.constantPool.add(new ClsTag(IOs.readBEShortI(inputStream)));
                     break;
                 case 8: // String
-                    cls.constantPool.add(new StrTag(IO.readBEShortI(inputStream)));
+                    cls.constantPool.add(new StrTag(IOs.readBEShortI(inputStream)));
                     break;
                 case 9: // FieldRef
-                    cls.constantPool.add(new FieldRef(IO.readBEShortI(inputStream), IO.readBEShortI(inputStream)));
+                    cls.constantPool.add(new FieldRef(IOs.readBEShortI(inputStream), IOs.readBEShortI(inputStream)));
                     break;
                 case 10: // MethodRef
-                    cls.constantPool.add(new MethodRef(IO.readBEShortI(inputStream), IO.readBEShortI(inputStream)));
+                    cls.constantPool.add(new MethodRef(IOs.readBEShortI(inputStream), IOs.readBEShortI(inputStream)));
                     break;
                 case 11: // InterfaceMethodRef
-                    cls.constantPool.add(new InterfaceMethodRef(IO.readBEShortI(inputStream), IO.readBEShortI(inputStream)));
+                    cls.constantPool.add(new InterfaceMethodRef(IOs.readBEShortI(inputStream), IOs.readBEShortI(inputStream)));
                     break;
                 case 12: // NameAndType
-                    cls.constantPool.add(new NameAndType(IO.readBEShortI(inputStream), IO.readBEShortI(inputStream)));
+                    cls.constantPool.add(new NameAndType(IOs.readBEShortI(inputStream), IOs.readBEShortI(inputStream)));
                     break;
                 case 15: // MethodHandle
-                    cls.constantPool.add(new MethodHandle(IO.readByteI(inputStream), IO.readBEShortI(inputStream)));
+                    cls.constantPool.add(new MethodHandle(IOs.readByteI(inputStream), IOs.readBEShortI(inputStream)));
                     break;
                 case 16: // MethodType
-                    cls.constantPool.add(new MethodType(IO.readBEShortI(inputStream)));
+                    cls.constantPool.add(new MethodType(IOs.readBEShortI(inputStream)));
                     break;
                 case 18: // InvokeDynamic
-                    cls.constantPool.add(new InvokeDynamic(IO.readBEShortI(inputStream), IO.readBEShortI(inputStream)));
+                    cls.constantPool.add(new InvokeDynamic(IOs.readBEShortI(inputStream), IOs.readBEShortI(inputStream)));
                     break;
                 default:
                     throw new UnsupportedOperationException("Unknown tag: " + tag);
             }
         }
 
-        cls.accessFlags = IO.readBEShort(inputStream);
-        cls.thisIndex = IO.readBEShort(inputStream);
-        cls.superIndex = IO.readBEShort(inputStream);
+        cls.accessFlags = IOs.readBEShort(inputStream);
+        cls.thisIndex = IOs.readBEShort(inputStream);
+        cls.superIndex = IOs.readBEShort(inputStream);
 
-        for (int i = IO.readBEShortI(inputStream); i > 0; i--)
-            cls.interfaces.add(IO.readBEShortI(inputStream));
+        for (int i = IOs.readBEShortI(inputStream); i > 0; i--)
+            cls.interfaces.add(IOs.readBEShortI(inputStream));
 
-        for (short fieldsCount = IO.readBEShort(inputStream); fieldsCount != 0; fieldsCount--) {
-            final Field f = new Field(IO.readBEShort(inputStream), IO.readBEShort(inputStream), IO.readBEShort(inputStream));
-            for (short attributesCount = IO.readBEShort(inputStream); attributesCount != 0; attributesCount--) {
-                final short nameIndex = IO.readBEShort(inputStream);
+        for (short fieldsCount = IOs.readBEShort(inputStream); fieldsCount != 0; fieldsCount--) {
+            final Field f = new Field(IOs.readBEShort(inputStream), IOs.readBEShort(inputStream), IOs.readBEShort(inputStream));
+            for (short attributesCount = IOs.readBEShort(inputStream); attributesCount != 0; attributesCount--) {
+                final short nameIndex = IOs.readBEShort(inputStream);
                 final Object k = cls.constantPool.get(nameIndex - 1);
                 if ("ConstantValue".equals(k)) {
-                    final int len = IO.readBEInt(inputStream);
+                    final int len = IOs.readBEInt(inputStream);
                     if (len != 2)
                         throw new RuntimeException("ConstantValue Length isn't 2: " + len);
-                    f.value = cls.constantPool.get(IO.readBEShortI(inputStream) - 1);
+                    f.value = cls.constantPool.get(IOs.readBEShortI(inputStream) - 1);
                 } else
-                    f.attributes.add(new Attr(nameIndex, IO.readByteArray(inputStream, IO.readBEInt(inputStream))));
+                    f.attributes.add(new Attr(nameIndex, IOs.readByteArray(inputStream, IOs.readBEInt(inputStream))));
             }
             cls.fields.add(f);
         }
 
-        for (short methodsCount = IO.readBEShort(inputStream); methodsCount != 0; methodsCount--) {
-            final Method m = new Method(IO.readBEShort(inputStream), IO.readBEShort(inputStream), IO.readBEShort(inputStream));
-            for (short attributesCount = IO.readBEShort(inputStream); attributesCount != 0; attributesCount--)
-                m.attributes.add(new Attr(IO.readBEShort(inputStream), IO.readByteArray(inputStream, IO.readBEInt(inputStream))));
+        for (short methodsCount = IOs.readBEShort(inputStream); methodsCount != 0; methodsCount--) {
+            final Method m = new Method(IOs.readBEShort(inputStream), IOs.readBEShort(inputStream), IOs.readBEShort(inputStream));
+            for (short attributesCount = IOs.readBEShort(inputStream); attributesCount != 0; attributesCount--)
+                m.attributes.add(new Attr(IOs.readBEShort(inputStream), IOs.readByteArray(inputStream, IOs.readBEInt(inputStream))));
             cls.methods.add(m);
         }
 
-        for (short attributesCount = IO.readBEShort(inputStream); attributesCount != 0; attributesCount--) {
-            final short nameIndex = IO.readBEShort(inputStream);
-            final int len = IO.readBEInt(inputStream);
+        for (short attributesCount = IOs.readBEShort(inputStream); attributesCount != 0; attributesCount--) {
+            final short nameIndex = IOs.readBEShort(inputStream);
+            final int len = IOs.readBEInt(inputStream);
             final Object k = cls.constantPool.get(nameIndex - 1);
             if ("SourceFile".equals(k))
-                cls.fileNameIndex = IO.readBEShort(inputStream);
+                cls.fileNameIndex = IOs.readBEShort(inputStream);
             else if ("BootstrapMethods".equals(k))
-                for (int i = IO.readBEShortI(inputStream); i > 0; i--) {
-                    final BootstrapMethod m = new BootstrapMethod(IO.readBEShortI(inputStream), new int[IO.readBEShortI(inputStream)]);
+                for (int i = IOs.readBEShortI(inputStream); i > 0; i--) {
+                    final BootstrapMethod m = new BootstrapMethod(IOs.readBEShortI(inputStream), new int[IOs.readBEShortI(inputStream)]);
                     for (int n = 0; n < m.bootstrapArgs.length; n++)
-                        m.bootstrapArgs[n] = IO.readBEShortI(inputStream);
+                        m.bootstrapArgs[n] = IOs.readBEShortI(inputStream);
                     cls.bootstrapMethods.add(m);
                 }
             else
-                cls.attributes.add(new Attr(nameIndex, IO.readByteArray(inputStream, len)));
+                cls.attributes.add(new Attr(nameIndex, IOs.readByteArray(inputStream, len)));
         }
 
         return cls;

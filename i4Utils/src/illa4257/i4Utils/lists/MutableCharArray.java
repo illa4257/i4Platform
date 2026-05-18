@@ -1,6 +1,6 @@
 package illa4257.i4Utils.lists;
 
-import illa4257.i4Utils.io.IO;
+import illa4257.i4Utils.io.IOs;
 
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -498,7 +498,7 @@ public class MutableCharArray implements CharSequence {
         }
     }
 
-    public byte[] getBytes(final Charset charset) { return IO.toBytes(charset, getChars()); }
+    public byte[] getBytes(final Charset charset) { return IOs.toBytes(charset, getChars()); }
 
     /**
      * Returns the text contained in this MutableCharArray.
