@@ -1,6 +1,6 @@
 package illa4257.i4Utils.nio.web.tasks;
 
-import illa4257.i4Utils.io.IO;
+import illa4257.i4Utils.io.IOs;
 import illa4257.i4Utils.nio.web.WSHandler;
 import illa4257.i4Utils.nio.web.WSProtocol;
 
@@ -46,11 +46,11 @@ public class WSTask extends Task implements WSProtocol {
         }
         if (length >= 0 && length < 65536) {
             buffer.put((byte) (masking ? 0xFE : 0x7E));
-            IO.writeBEShort(buffer, (int) length);
+            IOs.writeBEShort(buffer, (int) length);
             return;
         }
         buffer.put((byte) (masking ? 0xFF : 0x7F));
-        IO.writeBELong(buffer, length);
+        IOs.writeBELong(buffer, length);
     }
 
     @Override

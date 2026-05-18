@@ -108,6 +108,7 @@ public class SSLTransport extends RawTransport {
                     channel.write(netOut);
                     if (netOut.hasRemaining()) {
                         status = 1;
+                        key.interestOps(SelectionKey.OP_WRITE);
                         return true;
                     } else
                         netOut.clear();
@@ -145,8 +146,8 @@ public class SSLTransport extends RawTransport {
         if (l == -1)
             return -1;
         netIn.flip();
-        if (l == 0)
-            return 0;
+        //if (l == 0)
+        //    return 0;
         return engine.unwrap(netIn, buffer).bytesProduced();
     }
 
@@ -162,11 +163,20 @@ public class SSLTransport extends RawTransport {
             key.attach(new Task() {
                 @Override
                 public void tick() throws Exception {
+                    key.interestOps(SelectionKey.OP_WRITE);
                     channel.write(netOut);
                     if (netOut.hasRemaining())
                         return;
                     l.bl1(netOut);
                     SSLTransport.super.close();
+                }
+
+                @Override
+                public void recycle() {
+                    super.recycle();
+                    try {
+                        SSLTransport.super.close();
+                    } catch (final Exception ignored) {}
                 }
             });
             return;

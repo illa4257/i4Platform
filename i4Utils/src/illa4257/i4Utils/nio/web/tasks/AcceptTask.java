@@ -137,10 +137,12 @@ public class AcceptTask extends Task implements Protocol {
                         final int c = read(b = worker.bl1 = worker.land.bl1());
                         if (c == -1)
                             throw new IOException("End of Stream");
+                        state = 1;
                         if (c == 0)
                             return;
-                    }
-                    state = 1;
+                        b.flip();
+                    } else
+                        state = 1;
                 case 1: // METHOD
                     while (true) {
                         if (!b.hasRemaining()) {
@@ -311,12 +313,13 @@ public class AcceptTask extends Task implements Protocol {
                                     wsKey = s.toString();
                                     break;
                                 case "upgrade":
+                                    L.d("HEADER UPGRADE: ", s);
                                     switch (s.toString().toLowerCase()) {
                                         case "websocket":
                                             upgrade = UPGRADE_WEBSOCKET;
                                             break;
                                         default:
-                                            System.out.println("Unknown upgrade: " + s);
+                                            L.d("Unknown upgrade: ", s);
                                             break;
                                     }
                                     break;
@@ -324,6 +327,7 @@ public class AcceptTask extends Task implements Protocol {
                                     final String con = s.toString().toLowerCase();
                                     keepAlive = con.equals("keep-alive");
                                     upgrading = con.equals("upgrade");
+                                    L.d("HEADER CONNECTION: " + con);
                                     //System.out.println("Con=" + s);
                                     break;
                                 }
