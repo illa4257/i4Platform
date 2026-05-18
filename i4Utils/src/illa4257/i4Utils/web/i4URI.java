@@ -1,8 +1,8 @@
 package illa4257.i4Utils.web;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class i4URI {
@@ -45,7 +45,11 @@ public class i4URI {
                 map.put(query, null);
                 continue;
             }
-            map.computeIfAbsent(query.substring(0, eq), ignored -> new ArrayList<>()).add(URLDecoder.decode(query.substring(eq + 1), StandardCharsets.UTF_8));
+            try {
+                map.computeIfAbsent(query.substring(0, eq), ignored -> new ArrayList<>()).add(URLDecoder.decode(query.substring(eq + 1), "UTF-8"));
+            } catch (final UnsupportedEncodingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
