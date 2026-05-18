@@ -19,13 +19,26 @@ public class FormDataBuilder {
         return this;
     }
 
+    public FormDataBuilder put(final String key, final char[] value) {
+        map.put(key, new String(value));
+        return this;
+    }
+
     public FormDataBuilder putAll(final Map<? extends String, ? extends String> map) {
         this.map.putAll(map);
         return this;
     }
 
     public FormDataBuilder putAll(final Object... pairs) {
-        MiniUtil.put(map, pairs);
+        MiniUtil.put(map, o -> {
+            if (o instanceof String)
+                return ((String) o);
+            if (o instanceof char[])
+                return new String((char[]) o);
+            if (o == null)
+                return null;
+            return o.toString();
+        }, pairs);
         return this;
     }
 
