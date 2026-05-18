@@ -2,16 +2,15 @@ package illa4257.i4Utils.web;
 
 import illa4257.i4Utils.PreservedKeyMap;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-public class WebRequest {
+public class WebRequest implements Closeable {
     public Object reserved = null;
     public boolean keepAlive = true, hasContent = false, isClient = true;
     public int responseCode = -1, timeout = 15000;
@@ -150,4 +149,19 @@ public class WebRequest {
     public byte[] getBodyOutput() { return bodyOutput; }
     public OutputStream getOutputStream() { return outputStream; }
     public InputStream getInputStream() { return inputStream; }
+
+    public void clear() {
+        if (this.bodyOutput != null) {
+            hasContent = false;
+            Arrays.fill(this.bodyOutput, (byte) 0);
+            this.bodyOutput = null;
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        final InputStream is = inputStream;
+        if (is != null)
+            is.close();
+    }
 }
