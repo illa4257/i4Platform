@@ -1,6 +1,6 @@
 package illa4257.i4Utils.web.base;
 
-import illa4257.i4Utils.io.IO;
+import illa4257.i4Utils.io.IOs;
 import illa4257.i4Utils.web.WSOutputStream;
 
 import java.io.IOException;
@@ -26,11 +26,11 @@ public class WSOutputStreamImpl extends WSOutputStream {
         }
         if (len < 65536) {
             outputStream.write(masking ? 0xFE : 0x7E);
-            IO.writeBEShort(outputStream, (int) len);
+            IOs.writeBEShort(outputStream, (int) len);
             return;
         }
         outputStream.write(masking ? 0xFF : 0x7F);
-        IO.writeBELong(outputStream, len);
+        IOs.writeBELong(outputStream, len);
     }
 
     public void mask(final byte[] arr, int from, int len, int i) {

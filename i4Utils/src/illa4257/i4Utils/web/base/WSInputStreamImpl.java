@@ -1,6 +1,6 @@
 package illa4257.i4Utils.web.base;
 
-import illa4257.i4Utils.io.IO;
+import illa4257.i4Utils.io.IOs;
 import illa4257.i4Utils.web.WSInputStream;
 
 import java.io.IOException;
@@ -27,23 +27,23 @@ public class WSInputStreamImpl extends WSInputStream {
         final int frameType = b;
         if (frameType != 0x00)
             this.frameType = frameType;
-        b = IO.readByteI(inputStream);
+        b = IOs.readByteI(inputStream);
         masking = (b | 0x80) == b;
         if (masking)
             b ^= 0x80;
         if (b < 0x7E)
             remaining = b;
         else if (b == 0x7E)
-            remaining = IO.readBEShortI(inputStream);
+            remaining = IOs.readBEShortI(inputStream);
         else
-            remaining = IO.readBELong(inputStream);
+            remaining = IOs.readBELong(inputStream);
         if (masking) {
-            IO.readByteArray(inputStream, mask);
+            IOs.readByteArray(inputStream, mask);
             maskIndex = 0;
         }
         if (frameType == 0x08) {
             if (remaining >= 2) {
-                closeCode = IO.readBEShort(inputStream);
+                closeCode = IOs.readBEShort(inputStream);
                 remaining -= 2;
             } else
                 closeCode = 1005;
@@ -73,12 +73,12 @@ public class WSInputStreamImpl extends WSInputStream {
                         if (remaining > Integer.MAX_VALUE || remaining < 0)
                             throw new IOException("More than integer " + remaining); // TODO: implement streaming
                         else if (masking) {
-                            final byte[] payload = IO.readByteArray(inputStream, (int) remaining);
+                            final byte[] payload = IOs.readByteArray(inputStream, (int) remaining);
                             for (; maskIndex < mask.length; maskIndex++)
                                 payload[maskIndex] ^= mask[maskIndex % mask.length];
                             onPing.accept(payload);
                         } else
-                            onPing.accept(IO.readByteArray(inputStream, (int) remaining));
+                            onPing.accept(IOs.readByteArray(inputStream, (int) remaining));
                     }
                     continue;
                 }

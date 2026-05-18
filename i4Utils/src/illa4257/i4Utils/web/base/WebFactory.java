@@ -2,12 +2,12 @@ package illa4257.i4Utils.web.base;
 
 import illa4257.i4Utils.Arch;
 import illa4257.i4Utils.CloseableSyncVar;
-import illa4257.i4Utils.io.IO;
+import illa4257.i4Utils.io.IOs;
 import illa4257.i4Utils.io.NullInputStream;
+import illa4257.i4Utils.runnables.FunctionEx;
 import illa4257.i4Utils.str.Str;
 import illa4257.i4Utils.io.NullOutputStream;
 import illa4257.i4Utils.logger.i4Logger;
-import illa4257.i4Utils.runnables.FuncIOEx;
 import illa4257.i4Utils.web.IWebClientFactory;
 import illa4257.i4Utils.web.WebRequest;
 import illa4257.i4Utils.web.i4URI;
@@ -35,7 +35,7 @@ import java.util.zip.InflaterInputStream;
 import static illa4257.i4Utils.logger.Level.WARN;
 
 public class WebFactory implements IWebClientFactory {
-    public static final ConcurrentHashMap<String, FuncIOEx<InputStream, InputStream>> DECOMPRESSORS = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, FunctionEx<InputStream, IOException, InputStream>> DECOMPRESSORS = new ConcurrentHashMap<>();
     public static volatile String DECOMPRESSORS_VALUE;
     public static final Charset CHARSET = StandardCharsets.US_ASCII;
     private static final ThreadLocal<MessageDigest> SHA1 = ThreadLocal.withInitial(() -> {
@@ -98,9 +98,9 @@ public class WebFactory implements IWebClientFactory {
                                 if (changed) {
                                     changed = false;
                                     sysKeepAliveWait = (
-                                            Long.parseLong(new String(IO.readFully(keepaliveTime), StandardCharsets.UTF_8).trim()) +
-                                                    Long.parseLong(new String(IO.readFully(keepaliveIntVL), StandardCharsets.UTF_8).trim()) *
-                                                (Long.parseLong(new String(IO.readFully(keepaliveProbes), StandardCharsets.UTF_8).trim()) - 1)
+                                            Long.parseLong(new String(IOs.readAllBytes(keepaliveTime), StandardCharsets.UTF_8).trim()) +
+                                                    Long.parseLong(new String(IOs.readAllBytes(keepaliveIntVL), StandardCharsets.UTF_8).trim()) *
+                                                (Long.parseLong(new String(IOs.readAllBytes(keepaliveProbes), StandardCharsets.UTF_8).trim()) - 1)
                                     ) * 1000;
                                 }
                                 final WatchKey k = s.take();
@@ -280,7 +280,7 @@ public class WebFactory implements IWebClientFactory {
             oldByte.set(-1);
             return r;
         }
-        return IO.readByteI(is);
+        return IOs.readByteI(is);
     }
 
     private static String readStr(final InputStream is, final int max) throws IOException {
@@ -395,7 +395,7 @@ public class WebFactory implements IWebClientFactory {
 
         final String contentEncoding = WebRequest.getHeader(r.clientHeaders, "content-encoding");
         if (contentEncoding != null) {
-            final FuncIOEx<InputStream, InputStream> decompressor = DECOMPRESSORS.get(contentEncoding);
+            final FunctionEx<InputStream, IOException, InputStream> decompressor = DECOMPRESSORS.get(contentEncoding);
             if (decompressor != null)
                 r.inputStream = decompressor.accept(r.inputStream);
             else
@@ -616,7 +616,7 @@ public class WebFactory implements IWebClientFactory {
 
                 final String contentEncoding = WebRequest.getHeader(r.serverHeaders, "content-encoding");
                 if (contentEncoding != null && !contentEncoding.isEmpty()) {
-                    final FuncIOEx<InputStream, InputStream> decompressor = DECOMPRESSORS.get(contentEncoding);
+                    final FunctionEx<InputStream, IOException, InputStream> decompressor = DECOMPRESSORS.get(contentEncoding);
                     if (decompressor != null)
                         r.inputStream = decompressor.accept(r.inputStream);
                     else

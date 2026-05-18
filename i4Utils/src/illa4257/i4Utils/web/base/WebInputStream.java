@@ -1,6 +1,6 @@
 package illa4257.i4Utils.web.base;
 
-import illa4257.i4Utils.io.IO;
+import illa4257.i4Utils.io.IOs;
 import illa4257.i4Utils.logger.Level;
 import illa4257.i4Utils.logger.i4Logger;
 
@@ -42,7 +42,7 @@ public abstract class WebInputStream extends InputStream {
                 oldByte = -1;
                 return r;
             }
-            return IO.readByteI(inputStream);
+            return IOs.readByteI(inputStream);
         }
 
         private void nextChunk() throws IOException {
