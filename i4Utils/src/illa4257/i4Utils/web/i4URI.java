@@ -1,6 +1,8 @@
 package illa4257.i4Utils.web;
 
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class i4URI {
@@ -43,7 +45,7 @@ public class i4URI {
                 map.put(query, null);
                 continue;
             }
-            map.computeIfAbsent(query.substring(0, eq), ignored -> new ArrayList<>()).add(query.substring(eq + 1));
+            map.computeIfAbsent(query.substring(0, eq), ignored -> new ArrayList<>()).add(URLDecoder.decode(query.substring(eq + 1), StandardCharsets.UTF_8));
         }
     }
 
