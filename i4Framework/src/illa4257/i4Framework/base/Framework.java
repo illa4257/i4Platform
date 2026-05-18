@@ -21,7 +21,6 @@ import illa4257.i4Framework.base.styling.StyleSetting;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.res.ResourceManager;
 import illa4257.i4Utils.res.ResourceProvider;
-import illa4257.i4Utils.runnables.Consumer2;
 import illa4257.i4Utils.web.i4URI;
 
 import java.io.File;
@@ -32,6 +31,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import static illa4257.i4Framework.base.math.Unit.DP;
@@ -62,7 +62,7 @@ public abstract class Framework implements ResourceProvider {
     protected volatile BaseTheme systemBaseTheme = BaseTheme.LIGHT, customBaseTheme = BaseTheme.LIGHT;
 
     private final Object systemThemeLocker = new Object();
-    private final ConcurrentLinkedQueue<Consumer2<String, BaseTheme>> themeListeners = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<BiConsumer<String, BaseTheme>> themeListeners = new ConcurrentLinkedQueue<>();
 
     public boolean isSystemTheme() { return isSystemTheme; }
 
@@ -109,8 +109,8 @@ public abstract class Framework implements ResourceProvider {
 
     public abstract void fireAllWindows(final Function<Window, Event> event);
 
-    public boolean addThemeListener(final Consumer2<String, BaseTheme> listener) { return themeListeners.add(listener); }
-    public boolean removeThemeListener(final Consumer2<String, BaseTheme> listener) { return themeListeners.remove(listener); }
+    public boolean addThemeListener(final BiConsumer<String, BaseTheme> listener) { return themeListeners.add(listener); }
+    public boolean removeThemeListener(final BiConsumer<String, BaseTheme> listener) { return themeListeners.remove(listener); }
 
     public void updated() {
         isUpdated = true;

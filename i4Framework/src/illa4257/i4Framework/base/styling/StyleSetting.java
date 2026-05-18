@@ -5,12 +5,12 @@ import illa4257.i4Utils.media.Color;
 import illa4257.i4Utils.media.Image;
 import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Utils.logger.i4Logger;
-import illa4257.i4Utils.runnables.Provider;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 @SuppressWarnings("unchecked")
 public class StyleSetting {
@@ -31,9 +31,9 @@ public class StyleSetting {
         return r != null ? r : alt;
     }
 
-    public <T> T getP(final Class<T> type, final Provider<T> alt) {
+    public <T> T getP(final Class<T> type, final Supplier<T> alt) {
         final T r = get(type);
-        return r != null ? r : alt.run();
+        return r != null ? r : alt.get();
     }
 
     public <T> T getF(final Class<T> type, final Function<StyleSetting, T> alt) {
@@ -57,13 +57,13 @@ public class StyleSetting {
         return (T) values.computeIfAbsent(type, k -> computeValue);
     }
 
-    public <T> T computeIfAbsentP(final Class<T> type, final Provider<T> computeFunction) {
-        return (T) values.computeIfAbsent(type, k -> computeFunction.run());
+    public <T> T computeIfAbsentP(final Class<T> type, final Supplier<T> computeFunction) {
+        return (T) values.computeIfAbsent(type, k -> computeFunction.get());
     }
 
-    public <T> T computeIfAbsentP(final Class<T> type, final Provider<T> computeFunction, final T defaultValue) {
-        final T r = (T) values.computeIfAbsent(type, k -> computeFunction.run());
-        return r != null ? computeFunction.run() : defaultValue;
+    public <T> T computeIfAbsentP(final Class<T> type, final Supplier<T> computeFunction, final T defaultValue) {
+        final T r = (T) values.computeIfAbsent(type, k -> computeFunction.get());
+        return r != null ? computeFunction.get() : defaultValue;
     }
 
     public <T> T computeIfAbsentF(final Class<T> type, final Function<StyleSetting, T> computeFunction) {
