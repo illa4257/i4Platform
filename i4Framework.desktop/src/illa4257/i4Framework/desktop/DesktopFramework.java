@@ -18,7 +18,6 @@ import illa4257.i4Framework.desktop.win32.WinFileChooser;
 import illa4257.i4Framework.desktop.win32.WinThemeDetector;
 import illa4257.i4Utils.Arch;
 import illa4257.i4Utils.logger.i4Logger;
-import illa4257.i4Utils.runnables.Consumer2;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -31,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.function.BiConsumer;
 
 public abstract class DesktopFramework extends Framework {
     public static Pointer getWindowPointer(final Window window) {
@@ -90,7 +90,7 @@ public abstract class DesktopFramework extends Framework {
     }
 
     @Override
-    public boolean addThemeListener(final Consumer2<String, BaseTheme> listener) {
+    public boolean addThemeListener(final BiConsumer<String, BaseTheme> listener) {
         if (!super.addThemeListener(listener))
             return false;
         if (startThemeDetector) {
