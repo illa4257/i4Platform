@@ -1,9 +1,10 @@
-package illa4257.i4Utils.media;
+package illa4257.i4Framework.base.graphics;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Objects;
 
-public class Color {
+public class Color implements Paint {
     public static Color repeat3(final int value) { return new Color(value, value, value); }
     public static Color repeat3(final float value) { return new Color(value, value, value); }
     public static Color repeat4(final int value) { return new Color(value, value, value, value); }
@@ -74,6 +75,21 @@ public class Color {
         this.alpha = color.getAlpha() / 255f;
     }
 
+    @SuppressWarnings("SpellCheckingInspection")
+    public static Color getConstant(String name) {
+        name = Objects.requireNonNull(name).replace("-", "_").toUpperCase();
+        switch (name) {
+            case "NAVYBLUE": return NAVY_BLUE;
+            case "DEEPSKYBLUE": return DEEP_SKY_BLUE;
+        }
+        try {
+            final Field f = Color.class.getDeclaredField(name);
+            if (Modifier.isPublic(f.getModifiers()) && Modifier.isStatic(f.getModifiers()))
+                return (Color) f.get(null);
+        } catch (final Exception ignored) {}
+        return null;
+    }
+
     public static Color parse(final String s) {
         try {
             final int l = s.length();
@@ -102,11 +118,9 @@ public class Color {
                     return new Color(Integer.parseInt(s.substring(2), 16));
             }
         } catch (final Exception ignored) {}
-        try {
-            final Field f = Color.class.getDeclaredField(s.toUpperCase());
-            if (Modifier.isPublic(f.getModifiers()) && Modifier.isStatic(f.getModifiers()))
-                return (Color) f.get(null);
-        } catch (final Exception ignored) {}
+        final Color co = getConstant(s);
+        if (co != null)
+            return co;
         throw new IllegalArgumentException("Invalid color format: " + s);
     }
 

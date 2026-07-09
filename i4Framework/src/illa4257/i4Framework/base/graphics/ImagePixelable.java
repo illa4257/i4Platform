@@ -1,4 +1,4 @@
-package illa4257.i4Utils.media;
+package illa4257.i4Framework.base.graphics;
 
 public interface ImagePixelable {
     int[] getPixels();
