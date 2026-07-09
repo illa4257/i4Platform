@@ -9,15 +9,13 @@ import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.VisibleEvent;
-import illa4257.i4Framework.base.points.PPointAdd;
-import illa4257.i4Framework.base.points.PPointSubtract;
+import illa4257.i4Framework.base.points.ops.PPointAdd;
+import illa4257.i4Framework.base.points.ops.PPointSubtract;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.PointSet;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
-import illa4257.i4Utils.media.Image;
-import illa4257.i4Framework.base.styling.BaseTheme;
-import illa4257.i4Framework.base.styling.StyleSelector;
-import illa4257.i4Framework.base.styling.StyleSetting;
+import illa4257.i4Framework.base.styling.*;
+import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.res.ResourceManager;
 import illa4257.i4Utils.res.ResourceProvider;
@@ -27,9 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -37,6 +33,8 @@ import java.util.function.Function;
 import static illa4257.i4Framework.base.math.Unit.DP;
 
 public abstract class Framework implements ResourceProvider {
+    public static final i4Logger L = new i4Logger("i4Framework")
+            .registerHandler(i4Logger.INSTANCE);
     private static final boolean IS_DEV = "dev".equals(System.getProperty("env", "production"));
     private static final ConcurrentLinkedQueue<Framework> frameworks = new ConcurrentLinkedQueue<>();
 
@@ -52,7 +50,8 @@ public abstract class Framework implements ResourceProvider {
     }
 
     /// Global stylesheet
-    public final ConcurrentLinkedQueue<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> stylesheet = new ConcurrentLinkedQueue<>();
+    //public final ConcurrentLinkedQueue<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> stylesheet = new ConcurrentLinkedQueue<>();
+    public final Stylesheet stylesheet = new Stylesheet();
 
     protected final Object updateNotifier = new Object();
     protected volatile boolean isUpdated = true;
@@ -158,6 +157,9 @@ public abstract class Framework implements ResourceProvider {
     public File getAppDataDir() { return null; }
     public File getLocalAppDataDir() { return null; }
     public File getAppDir() { return null; }
+
+    public File getTmpDir() { return null; }
+    public File getCacheDir() { return null; }
 
     @Override
     public void addTo(final ResourceManager mgr) {
