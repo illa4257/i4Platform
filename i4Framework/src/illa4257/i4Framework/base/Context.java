@@ -1,10 +1,10 @@
 package illa4257.i4Framework.base;
 
+import illa4257.i4Framework.base.graphics.Paint;
 import illa4257.i4Framework.base.utils.Geom;
 import illa4257.i4Utils.math.Vector2;
-import illa4257.i4Utils.media.Color;
 import illa4257.i4Framework.base.graphics.IPath;
-import illa4257.i4Utils.media.Image;
+import illa4257.i4Framework.base.graphics.Image;
 
 import java.io.InputStream;
 
@@ -22,7 +22,7 @@ public interface Context {
     Vector2 bounds(final String string);
     Vector2 bounds(final char[] string);
 
-    void setColor(final Color color);
+    void setPaint(final Paint paint);
     float getStrokeWidth();
     void setStrokeWidth(final float newWidth);
     void setClip(final Object path);
