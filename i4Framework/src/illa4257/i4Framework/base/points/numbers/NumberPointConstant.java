@@ -14,5 +14,10 @@ public class NumberPointConstant extends Point {
     @Override public boolean subscribe(final Runnable listener) { return false; }
     @Override public boolean unsubscribe(final Runnable listener) { return false; }
     @Override public void reset() {}
-    @Override protected float calc() { return value; }
+    @Override public float calcFloat() { return value; }
+
+    @Override
+    public String toString() {
+        return "NPConst(" + value + ")";
+    }
 }

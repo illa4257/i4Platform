@@ -1,21 +1,14 @@
 package illa4257.i4Framework.base.points;
 
-public class PointSet extends Point {
+public class CachePoint extends ACachePoint {
     private final Object locker = new Object();
     private volatile Point point;
 
-    public PointSet() { point = null; }
-    public PointSet(final Point point) { this.point = point; }
-
-    @Override
-    public float calcFloat() {
-        final Point p = point;
-        return p != null ? p.calcFloat() : 0;
+    public CachePoint(final Point point) {
+        this.point = point;
     }
 
-    public Point get() { return point; }
-
-    public void set(final Point newValue) {
+    public void setPoint(final Point newValue) {
         if (point == newValue)
             return;
         synchronized (locker) {
@@ -28,15 +21,20 @@ public class PointSet extends Point {
             if (isConstructed() && newValue != null)
                 newValue.subscribe(this::reset);
         }
-        reset();
+    }
+
+    @Override
+    protected float calc() {
+        final Point p = point;
+        return p != null ? p.calcFloat() : 0;
     }
 
     @Override
     public void onConstruct() {
         synchronized (locker) {
-            final Point o = point;
-            if (o != null)
-                o.subscribe(this::reset);
+            final Point p = point;
+            if (p != null)
+                p.subscribe(this::reset);
         }
         super.onConstruct();
     }
@@ -44,15 +42,10 @@ public class PointSet extends Point {
     @Override
     public void onDestruct() {
         synchronized (locker) {
-            final Point o = point;
-            if (o != null)
-                o.unsubscribe(this::reset);
+            final Point p = point;
+            if (p != null)
+                p.unsubscribe(this::reset);
         }
         super.onDestruct();
-    }
-
-    @Override
-    public String toString() {
-        return "PointSet(" + point + ")";
     }
 }

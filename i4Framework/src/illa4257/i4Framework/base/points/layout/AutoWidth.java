@@ -13,28 +13,26 @@ public class AutoWidth extends Point {
     public AutoWidth(final Container container, final Point gap) { this.container = container; this.gap = gap; }
 
     @Override
-    protected float calc() {
+    public float calcFloat() {
         final Point p = gap;
         final float g = p != null ? p.calcFloat() : 0;
         final int n = container.getComponentCount();
         return (container.width.calcFloat() - g) / n - g;
     }
 
-    private void onChangeAmount(final IEvent e) {
-        reset();
-    }
+    private void onChangeAmount(final IEvent e) { reset(); }
 
     @Override
     public void onConstruct() {
-        super.onDestruct();
         container.width.subscribe(this::reset);
         container.addEventListener(AddComponentEvent.class, this::onChangeAmount);
+        super.onConstruct();
     }
 
     @Override
     public void onDestruct() {
-        super.onDestruct();
         container.width.unsubscribe(this::reset);
         container.removeEventListener(this::onChangeAmount);
+        super.onDestruct();
     }
 }

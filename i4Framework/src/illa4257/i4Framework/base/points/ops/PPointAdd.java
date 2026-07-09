@@ -2,11 +2,11 @@ package illa4257.i4Framework.base.points.ops;
 
 import illa4257.i4Framework.base.points.Point;
 
-public class PPointMax extends Point {
+public class PPointAdd extends Point {
     private final Object locker = new Object();
     private volatile Point point1, point2;
 
-    public PPointMax(final Point point1, final Point point2) {
+    public PPointAdd(final Point point1, final Point point2) {
         this.point1 = point1;
         this.point2 = point2;
     }
@@ -46,7 +46,7 @@ public class PPointMax extends Point {
     @Override
     public float calcFloat() {
         final Point p1 = point1, p2 = point2;
-        return Math.max(p1 != null ? point1.calcFloat() : 0, p2 != null ? point2.calcFloat() : 0);
+        return (p1 != null ? p1.calcFloat() : 0) + (p2 != null ? p2.calcFloat() : 0);
     }
 
     @Override
@@ -77,6 +77,6 @@ public class PPointMax extends Point {
 
     @Override
     public String toString() {
-        return "PPointMax(" + point1 + ", " + point2 + ")";
+        return "PPointAdd(" + point1 + " + " + point2 + ")";
     }
 }

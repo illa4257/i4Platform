@@ -4,12 +4,12 @@ import illa4257.i4Framework.base.points.Point;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class NumberPointMultiplier extends Point {
+public class NumberPointDivider extends Point {
     private final AtomicInteger number = new AtomicInteger();
     private volatile Point point;
 
-    public NumberPointMultiplier(float number, final Point point) { this.number.set(Float.floatToRawIntBits(number)); this.point = point; }
-    public NumberPointMultiplier(final Point point, float number) { this.point = point; this.number.set(Float.floatToRawIntBits(number)); }
+    public NumberPointDivider(float number, final Point point) { this.number.set(Float.floatToRawIntBits(number)); this.point = point; }
+    public NumberPointDivider(final Point point, float number) { this.point = point; this.number.set(Float.floatToRawIntBits(number)); }
 
     public void setPoint(final Point newValue) {
         if (point == newValue)
@@ -36,7 +36,7 @@ public class NumberPointMultiplier extends Point {
     @Override
     public float calcFloat() {
         final Point p = point;
-        return p != null ? p.calcFloat() * Float.intBitsToFloat(number.get()) : 0;
+        return p != null ? p.calcFloat() / Float.intBitsToFloat(number.get()) : 0;
     }
 
     @Override
@@ -61,6 +61,6 @@ public class NumberPointMultiplier extends Point {
 
     @Override
     public String toString() {
-        return "NPointMul(" + point + " * " + Float.intBitsToFloat(number.get()) + ")";
+        return "NPointDiv(" + point + " / " + Float.intBitsToFloat(number.get()) + ")";
     }
 }

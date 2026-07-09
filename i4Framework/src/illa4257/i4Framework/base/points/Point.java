@@ -5,14 +5,9 @@ import illa4257.i4Utils.Destructor;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public abstract class Point extends Destructor {
-    private volatile float cacheFloat;
-    private volatile int cacheInt;
-    private volatile boolean cf = false, ci = false;
-
     private final ConcurrentLinkedQueue<Runnable> subscribed = new ConcurrentLinkedQueue<>();
 
     public void reset() {
-        ci = cf = false;
         for (final Runnable s : subscribed)
             s.run();
     }
@@ -25,7 +20,7 @@ public abstract class Point extends Destructor {
     public boolean subscribe(final Runnable listener) {
         if (listener == null)
             return false;
-        if (subscribed.add(listener))
+        if (subscribed.offer(listener))
             link();
         else
             return false;
@@ -42,23 +37,6 @@ public abstract class Point extends Destructor {
         return true;
     }
 
-    protected abstract float calc();
-
-    public float calcFloat() {
-        if (cf)
-            return cacheFloat;
-        cacheFloat = calc();
-        cf = true;
-        return cacheFloat;
-    }
-
-    public int calcInt() {
-        if (ci)
-            return cacheInt;
-        cacheInt = Math.round(calcFloat());
-        ci = true;
-        return cacheInt;
-    }
-
-    @Override public void onConstruct() { reset(); }
+    public abstract float calcFloat();
+    public int calcInt() { return Math.round(calcFloat()); }
 }

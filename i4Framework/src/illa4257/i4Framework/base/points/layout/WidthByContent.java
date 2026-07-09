@@ -8,25 +8,21 @@ import illa4257.i4Framework.base.events.components.RemoveComponentEvent;
 import illa4257.i4Framework.base.points.Point;
 
 public class WidthByContent extends Point {
-    public static final WidthByContent ZERO = new WidthByContent(0, null);
-
-    public final float value;
     public final Container container;
 
-    public WidthByContent(final float value, final Container container) {
-        this.value = value;
+    public WidthByContent(final Container container) {
         this.container = container;
     }
 
     @Override
-    protected float calc() {
+    public float calcFloat() {
         float mx = 0;
         for (final Component c : container) {
             final float x = c.endX.calcFloat();
             if (x > mx)
                 mx = x;
         }
-        return mx + value;
+        return mx;
     }
 
     private void clChange(final Event e) { reset(); }
@@ -41,5 +37,6 @@ public class WidthByContent extends Point {
     @Override
     public void onDestruct() {
         container.removeEventListener(this::clChange);
+        super.onDestruct();
     }
 }

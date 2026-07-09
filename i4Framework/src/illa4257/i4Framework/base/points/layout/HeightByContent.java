@@ -8,8 +8,6 @@ import illa4257.i4Framework.base.events.components.RemoveComponentEvent;
 import illa4257.i4Framework.base.points.Point;
 
 public class HeightByContent extends Point {
-    public static final HeightByContent ZERO = new HeightByContent(0, null);
-
     public final float value;
     public final Container container;
 
@@ -19,7 +17,7 @@ public class HeightByContent extends Point {
     }
 
     @Override
-    protected float calc() {
+    public float calcFloat() {
         float my = 0;
         for (final Component c : container) {
             final float y = c.endY.calcFloat();
@@ -39,15 +37,15 @@ public class HeightByContent extends Point {
     private void ac(final AddComponentEvent e) {
         if (e.container != container)
             return;
-        reset();
         e.child.addEventListener(RecalculateEvent.class, this::r);
+        reset();
     }
 
     private void rc(final RemoveComponentEvent e) {
         if (e.container != container)
             return;
-        reset();
         e.child.removeEventListener(this::r);
+        reset();
     }
 
     @Override
@@ -65,5 +63,6 @@ public class HeightByContent extends Point {
         container.removeEventListener(this::rc);
         for (final Component c : container)
             c.removeEventListener(this::r);
+        super.onDestruct();
     }
 }

@@ -1,53 +1,69 @@
 package illa4257.i4Framework.base.points.numbers;
 
 import illa4257.i4Framework.base.points.Point;
-import illa4257.i4Utils.SyncVar;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class NumberPointAdd extends Point {
-    private final SyncVar<Point> point = new SyncVar<>();
-    private final AtomicReference<Float> number = new AtomicReference<>();
+    private final AtomicInteger number = new AtomicInteger();
+    private volatile Point point;
 
-    public NumberPointAdd(float number, final Point point) { this.number.set(number); this.point.set(point); }
-    public NumberPointAdd(final Point point, float number) { this.point.set(point); this.number.set(number); }
+    public NumberPointAdd(float number, final Point point) { this.number.set(Float.floatToRawIntBits(number)); this.point = point; }
+    public NumberPointAdd(final Point point, float number) { this.point = point; this.number.set(Float.floatToRawIntBits(number)); }
+
+    public Point getPoint() { return point; }
+    public float getNumber() { return Float.intBitsToFloat(number.get()); }
 
     public void setPoint(final Point newValue) {
-        if (getLinkNumber() > 0)
-            newValue.subscribe(this::reset);
-        final Point old = point.getAndSet(newValue);
-        if (old != null)
-            old.unsubscribe(this::reset);
-        if (old != newValue)
-            reset();
-    }
-
-    public void setNumber(final float newValue) {
-        number.set(newValue);
+        if (point == newValue)
+            return;
+        synchronized (number) {
+            final Point old = point;
+            if (old == newValue)
+                return;
+            if (old != null)
+                old.unsubscribe(this::reset);
+            point = newValue;
+            if (isConstructed() && newValue != null)
+                newValue.subscribe(this::reset);
+        }
         reset();
     }
 
+    public void setNumber(final float newValue) {
+        final int r = Float.floatToRawIntBits(newValue);
+        if (number.getAndSet(r) != r)
+            reset();
+    }
+
     @Override
-    protected float calc() {
-        final Point p = point.get();
-        return p != null ? p.calcFloat() + number.get() : 0;
+    public float calcFloat() {
+        final Point p = point;
+        return (p != null ? p.calcFloat() : 0) + Float.intBitsToFloat(number.get());
     }
 
     @Override
     public void onConstruct() {
+        synchronized (number) {
+            final Point p = point;
+            if (p != null)
+                p.subscribe(this::reset);
+        }
         super.onConstruct();
-        final Point p = point.get();
-        if (p == null)
-            return;
-        p.subscribe(this::reset);
-        reset();
     }
 
     @Override
     public void onDestruct() {
+        synchronized (number) {
+            final Point p = point;
+            if (p != null)
+                p.unsubscribe(this::reset);
+        }
         super.onDestruct();
-        final Point p = point.get();
-        if (p != null)
-            p.unsubscribe(this::reset);
+    }
+
+    @Override
+    public String toString() {
+        return "NPointAdd(" + point + " + " + Float.intBitsToFloat(number.get()) + ")";
     }
 }
