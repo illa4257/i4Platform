@@ -4,7 +4,7 @@ import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.base.math.Vector2D;
-import illa4257.i4Utils.media.Image;
+import illa4257.i4Framework.base.graphics.Image;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
@@ -62,7 +62,7 @@ public class LWJGL3Context implements Context {
     }
 
     @Override
-    public void setColor(final Color color) {
+    public void setPaint(final Color color) {
         GL11.glColor4f(color.red, color.green, color.blue, color.alpha);
     }
 
