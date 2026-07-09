@@ -1,16 +1,19 @@
 package illa4257.i4Framework.awt;
 
 import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.graphics.Paint;
 import illa4257.i4Framework.desktop.BufImgRef;
 import illa4257.i4Framework.desktop.DesktopFramework;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.math.Vector2;
-import illa4257.i4Utils.media.Color;
-import illa4257.i4Utils.media.Image;
+import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.graphics.Image;
 
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.io.InputStream;
+
+import static illa4257.i4Framework.awt.AWTFramework.L;
 
 public class AWTContext implements Context {
     public final Graphics2D graphics;
@@ -68,8 +71,13 @@ public class AWTContext implements Context {
     }
 
     @Override
-    public void setColor(final Color color) {
-        graphics.setColor((color != null ? color : Color.TRANSPARENT).toAwtColor());
+    public void setPaint(final Paint paint) {
+        if (paint instanceof Color)
+            graphics.setPaint(((Color) paint).toAwtColor());
+        else {
+            L.e("Unsupported paint type", paint.getClass());
+            graphics.setColor(Color.TRANSPARENT.toAwtColor());
+        }
     }
 
     @Override

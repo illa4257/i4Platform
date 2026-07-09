@@ -21,7 +21,7 @@ import java.util.function.Function;
 import static java.awt.RenderingHints.*;
 
 public class AWTFramework extends DesktopFramework {
-    public static final i4Logger L = new i4Logger("AWTFramework").registerHandler(i4Logger.INSTANCE);
+    public static final i4Logger L = new i4Logger("AWT").registerHandler(i4Logger.INSTANCE);
     public static final Map<RenderingHints.Key, Object> BEST = Collections.unmodifiableMap(MiniUtil.put(new HashMap<>(),
             KEY_ANTIALIASING, VALUE_ANTIALIAS_ON,
             KEY_TEXT_ANTIALIASING, VALUE_TEXT_ANTIALIAS_ON,
