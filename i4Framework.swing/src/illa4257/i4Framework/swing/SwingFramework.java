@@ -17,11 +17,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 
 import static java.awt.RenderingHints.*;
 
 public class SwingFramework extends DesktopFramework {
+    public static final i4Logger L = new i4Logger("Swing")
+            .registerHandler(i4Logger.INSTANCE);
     public static final Map<RenderingHints.Key, Object> BEST;
     static Map<RenderingHints.Key, Object> current;
 

@@ -11,7 +11,7 @@ import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Container;
 import illa4257.i4Framework.base.events.mouse.*;
-import illa4257.i4Framework.base.styling.StyleSetting;
+import illa4257.i4Framework.base.styling.StyleProperty;
 import illa4257.i4Utils.logger.i4Logger;
 
 import javax.swing.*;
@@ -19,6 +19,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.List;
 
 import static java.awt.Cursor.*;
 
@@ -27,7 +28,6 @@ public class SwingComponent extends JComponent implements ISwingComponent {
     public final Component component;
     public final EventListener[] listeners;
     public EventListener[] listeners2 = null;
-    private volatile int offset = 0;
 
     private JFrame getFrame() {
         java.awt.Container c = getParent();
@@ -123,7 +123,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         listeners = new EventListener[] {
                 component.addEventListener(RecalculateEvent.class, e -> {
                     if (e.component == component)
-                        updateLS(null);
+                        updateLS();
                 }),
                 component.addEventListener(RepaintEvent.class, e -> repaint()),
                 component.addEventListener(FocusEvent.class, e -> {
@@ -146,7 +146,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
                     if (e.component == component)
                         setEnabled(e.value);
                 }),
-                component.addEventListener(StyleUpdateEvent.class, e -> updateLS(null))
+                component.addEventListener(StyleUpdateEvent.class, e -> updateLS())
         };
 
         if (component instanceof Container) {
@@ -175,35 +175,26 @@ public class SwingComponent extends JComponent implements ISwingComponent {
            }
         }
 
-        component.subscribe("border-width", this::updateLS);
-        component.subscribe("border-color", this::updateLS);
         component.subscribe("cursor", this::onCursorChange);
 
         setDropTarget(ISwingComponent.wrapDropTarget(component));
         setVisible(component.isVisible());
         setEnabled(component.isEnabled());
-        updateLS(null);
-        StyleSetting s = component.getStyle("cursor");
-        if (s != null)
-            onCursorChange(s);
-        else
-            setCursor(getPredefinedCursor(DEFAULT_CURSOR));
+        updateLS();
+        onCursorChange(component.getProperty("cursor"));
     }
 
-    private int getBorderWidth() {
-        return component.getColor("border-color").alpha > 0 ? Math.round(Math.max(component.calcStyleNumber("border-width", Orientation.HORIZONTAL, 0), 0)) : 0;
+    private void updateLS() {
+        setLocation(component.renderStartX.calcInt(), component.renderStartY.calcInt());
+        setSize(component.renderWidth.calcInt(), component.renderHeight.calcInt());
     }
 
-    private void updateLS(final StyleSetting ignored) {
-        final java.awt.Container p = getParent();
-        final int bw = getBorderWidth(), o = p instanceof SwingComponent ? ((SwingComponent) p).getBorderWidth() : 0;
-        setLocation(component.startX.calcInt() - bw + o, component.startY.calcInt() - bw + o);
-        setSize(component.width.calcInt() + bw * 2, component.height.calcInt() + bw * 2);
-        offset = bw;
-    }
+    private void onCursorChange(final StyleProperty property) {
+        final List<Object> ss = Component.ss.get();
 
-    private void onCursorChange(final StyleSetting s) {
-        final Cursor c = s.cursor();
+        ss.clear();
+        Component.getEnumSet(component.evalVar(property), ss, Cursor.class, 0);
+        final Cursor c = component.getEnum(ss, Cursor.class, 0, Cursor.DEFAULT);
         final int cursor =
                 c == Cursor.TEXT ? TEXT_CURSOR :
                 c == Cursor.POINTER ? HAND_CURSOR :
@@ -221,7 +212,7 @@ public class SwingComponent extends JComponent implements ISwingComponent {
                 c == Cursor.SW_RESIZE ? SW_RESIZE_CURSOR :
                 c == Cursor.W_RESIZE ? W_RESIZE_CURSOR :
                 DEFAULT_CURSOR;
-        setCursor(getPredefinedCursor(cursor));
+        SwingUtilities.invokeLater(() -> setCursor(getPredefinedCursor(cursor)));
     }
 
     @Override
@@ -241,7 +232,6 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         final JFrame f = getFrame();
         if (f instanceof SwingWindow)
             g.setFont(((SwingWindow) f).font);
-        g.translate(offset, offset);
         try {
             component.paint(new SwingContext(g));
         } catch (final Exception ex) {
