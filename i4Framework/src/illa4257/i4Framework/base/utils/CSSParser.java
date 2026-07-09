@@ -1,16 +1,13 @@
 package illa4257.i4Framework.base.utils;
 
+import illa4257.i4Framework.base.styling.Style;
 import illa4257.i4Framework.base.styling.StyleSelector;
-import illa4257.i4Framework.base.styling.StyleSetting;
+import illa4257.i4Framework.base.styling.Stylesheet;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.rmi.UnexpectedException;
-import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class CSSParser {
     private static int r(final Reader reader) throws IOException {
@@ -50,12 +47,12 @@ public class CSSParser {
      * Parses CSS from reader and puts all results into provided stylesheet.
      *
      * @param stylesheet All parsed results will be stored here, it will not delete parsed results if it fails.<br>
-     *                   And it will not delete old styles.
+     *                   And it will not delete old style.
      * @param reader If your reader is not supporting marks, but you need to skip comments, use {@link java.io.BufferedReader}.
      * @throws IOException If reading is fails, or reached end of reader.
      * @throws UnexpectedException If unexpected characters are encountered during parsing.
      */
-    public static void parse(final ConcurrentLinkedQueue<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> stylesheet,
+    public static void parse(final Stylesheet stylesheet,
                              final Reader reader) throws IOException {
         final ArrayList<StyleSelector> selectors = new ArrayList<>();
         StyleSelector parent = null;
@@ -144,7 +141,7 @@ public class CSSParser {
                 }
                 if (ch == '{') {
                     selectors.add(selector);
-                    final ConcurrentHashMap<String, StyleSetting> style = new ConcurrentHashMap<>();
+                    final Style style = new Style();
                     while (true) {
                         do {
                             ch = re(reader);
@@ -173,10 +170,10 @@ public class CSSParser {
                         }
                         if (name.length() == 0 || value.length() == 0)
                             continue;
-                        style.put(name.toString(), new StyleSetting(value.toString()));
+                        style.set(name.toString(), value.toString());
                     }
                     for (final StyleSelector s : selectors)
-                        stylesheet.add(new AbstractMap.SimpleImmutableEntry<>(s, style));
+                        stylesheet.add(s, style);
                     selectors.clear();
                     break;
                 }
