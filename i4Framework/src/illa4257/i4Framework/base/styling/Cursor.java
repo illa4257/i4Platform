@@ -25,7 +25,7 @@ public enum Cursor {
     public static Cursor fromName(final String name) {
         if (name == null)
             return DEFAULT;
-        switch (name.replaceAll("_", "-").toLowerCase()) {
+        switch (name.replace("_", "-").toLowerCase()) {
             case "text": return TEXT;
             case "pointer": return POINTER;
             case "grab": return GRAB;

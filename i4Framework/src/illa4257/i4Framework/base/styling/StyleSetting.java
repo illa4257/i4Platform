@@ -1,8 +1,8 @@
 package illa4257.i4Framework.base.styling;
 
 import illa4257.i4Framework.base.utils.Cache;
-import illa4257.i4Utils.media.Color;
-import illa4257.i4Utils.media.Image;
+import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Utils.logger.i4Logger;
 
@@ -102,12 +102,13 @@ public class StyleSetting {
     public Cursor cursor() { return computeIfAbsentF(Cursor.class, Cursor::from); }
 
     public Image image(final Image defaultImage) {
-        return computeIfAbsentF(Image.class, k -> {
+        return null;
+        /*return computeIfAbsentF(Image.class, k -> {
             final String value = k.get(String.class);
             if (value == null)
                 return null;
             return Cache.images.get(value);
-        }, defaultImage);
+        }, defaultImage);*/
     }
 
     public StyleNumber number(final StyleNumber defaultValue) {
