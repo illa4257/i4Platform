@@ -1,11 +1,12 @@
 ## Example
 
 Usage:
+
 ```java
 package illa4257.i4Notepad;
 
 import illa4257.i4Framework.swing.SwingFramework;
-import illa4257.i4Utils.io.IO;
+import illa4257.i4Utils.io.IOs;
 import illa4257.i4Utils.logger.AnsiColoredPrintStreamLogHandler;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.web.WebClient;
@@ -39,7 +40,7 @@ public class Main {
 
         System.out.println(r.serverHeaders);
 
-        System.out.println(new String(IO.readFully(r.getInputStream())));
+        System.out.println(new String(IOs.readAllBytes(r.getInputStream())));
     }
 }
 ```
