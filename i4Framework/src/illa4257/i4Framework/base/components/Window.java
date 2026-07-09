@@ -5,7 +5,7 @@ import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.events.components.ChangeTextEvent;
 import illa4257.i4Framework.base.events.components.FocusEvent;
 import illa4257.i4Framework.base.events.window.CenterWindowEvent;
-import illa4257.i4Framework.base.points.PPointSubtract;
+import illa4257.i4Framework.base.points.ops.PPointSubtract;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.PointSet;
 import illa4257.i4Utils.SyncVar;

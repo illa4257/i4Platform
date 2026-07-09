@@ -8,13 +8,12 @@ import illa4257.i4Framework.base.components.*;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.VisibleEvent;
 import illa4257.i4Framework.base.math.Unit;
-import illa4257.i4Framework.base.points.PPointAdd;
-import illa4257.i4Framework.base.points.PPointSubtract;
+import illa4257.i4Framework.base.points.ops.PPointAdd;
+import illa4257.i4Framework.base.points.ops.PPointSubtract;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.res.FileRes;
 import illa4257.i4Framework.base.res.Res;
-import illa4257.i4Framework.base.styling.StyleSetting;
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
@@ -172,7 +171,7 @@ public class FileChooserFallback implements FileChooser {
                 setCurrentDir(f);
                 forceRefresh();
             });
-            btn.styles.put("text-align", new StyleSetting("left"));
+            btn.style.set("text-align", "left");
             btn.setText(f.getName());
             btn.setY(y);
             btn.setEndX(container.width);
@@ -197,7 +196,7 @@ public class FileChooserFallback implements FileChooser {
                     setCurrentDir(f);
                     forceRefresh();
                 });
-                btn.styles.put("text-align", new StyleSetting("left"));
+                btn.style.set("text-align", "left");
                 btn.setText(getSystemDisplayName(f) + " (" + f.getFreeSpace() + '/' + f.getTotalSpace() + ')');
                 btn.setY(y, Unit.DP);
                 btn.setEndX(container.width);

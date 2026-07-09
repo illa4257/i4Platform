@@ -2,9 +2,7 @@ package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.events.components.*;
-import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Utils.MiniUtil;
-import illa4257.i4Utils.media.Color;
 
 import java.util.Iterator;
 import java.util.Spliterator;
@@ -61,7 +59,7 @@ public class Container extends Component implements Iterable<Component> {
                 component.link();
             if (c != null && c != this)
                 c.remove(c);
-            component.fire(new ChangeParentEvent(component));
+            component.fire(new ChangeParentEvent(component, c, this));
             fire(new AddComponentEvent(this, component));
             updated();
             if (component.isRepeated())
@@ -76,7 +74,7 @@ public class Container extends Component implements Iterable<Component> {
             if (getLinkNumber() > 0)
                 component.unlink();
             component.parent.setIfEquals(null, this);
-            component.fire(new ChangeParentEvent(component));
+            component.fire(new ChangeParentEvent(component, this, null));
             fire(new RemoveComponentEvent(this, component));
             updated();
         }
@@ -217,10 +215,8 @@ public class Container extends Component implements Iterable<Component> {
 
     public final void paintComponents(final Context ctx) {
         for (final Component component : components) {
-            final Color bc = component.getColor("border-color");
-            final float o = bc.alpha > 0 ? component.calcStyleNumber("border-width", Orientation.HORIZONTAL, 0) : 0;
-            final Context c = ctx.sub(component.startX.calcFloat() - o, component.startY.calcFloat() - o, component.width.calcFloat() + o * 2, component.height.calcFloat() + o * 2);
-            c.translate(o, o);
+            final Context c = ctx.sub(component.renderStartX.calcFloat(), component.renderStartY.calcFloat(),
+                    component.renderWidth.calcFloat(), component.renderHeight.calcFloat());
             component.paint(c);
             if (component instanceof Container)
                 ((Container) component).paintComponents(c);

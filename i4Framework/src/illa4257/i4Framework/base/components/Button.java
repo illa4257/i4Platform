@@ -3,14 +3,17 @@ package illa4257.i4Framework.base.components;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.IMoveableInputEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
+import illa4257.i4Framework.base.graphics.Paint;
+import illa4257.i4Framework.base.styling.StyleProperty;
 import illa4257.i4Utils.math.Vector2;
-import illa4257.i4Utils.media.Color;
+import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.math.HorizontalAlign;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.ChangeTextEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 
+import java.util.List;
 import java.util.Objects;
 
 import static illa4257.i4Framework.base.math.HorizontalAlign.CENTER;
@@ -52,16 +55,25 @@ public class Button extends Component {
     public void paint(final Context ctx) {
         super.paint(ctx);
         final Object te = text;
-        final Color c = getColor("color");
-        if (te == null || c.alpha <= 0)
+        if (te == null)
+            return;
+        final List<Object> ss = Component.ss.get();
+
+        ss.clear();
+        getSet(evalVar("color"), ss, StyleProperty.paintFilter, 0);
+        final Paint c = getPaint(ss, 0, Color.TRANSPARENT);
+        if (c instanceof Color && ((Color) c).alpha <= 0)
             return;
         final String t = String.valueOf(te);
-        ctx.setColor(c);
+        ctx.setPaint(c);
         final Object f = font;
         if (f != null)
             ctx.setFont(f);
         final Vector2 s = ctx.bounds(t);
-        final HorizontalAlign a = getEnumValue("text-align", HorizontalAlign.class, LEFT);
+
+        ss.clear();
+        getEnumSet(evalVar("text-align"), ss, HorizontalAlign.class, 0);
+        final HorizontalAlign a = getEnum(ss, HorizontalAlign.class, 0, LEFT);
         ctx.drawString(t, a == LEFT ? 0 :
                         a == CENTER ? (width.calcFloat() - s.x) / 2 :
                 width.calcFloat() - s.x,

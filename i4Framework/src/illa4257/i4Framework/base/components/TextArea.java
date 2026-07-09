@@ -8,14 +8,17 @@ import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyUpEvent;
 import illa4257.i4Framework.base.events.mouse.*;
-import illa4257.i4Utils.media.Color;
+import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.graphics.Paint;
 import illa4257.i4Framework.base.math.Orientation;
-import illa4257.i4Framework.base.points.PointAttach;
+import illa4257.i4Framework.base.points.numbers.NumberPointAdd;
+import illa4257.i4Framework.base.styling.StyleProperty;
 import illa4257.i4Utils.lists.MutableCharArray;
 import illa4257.i4Utils.str.Str;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /// WIP
@@ -122,10 +125,15 @@ public class TextArea extends Container {
     }
 
     private int getCursorX(final Context ctx, final float cursorX, final int lineY) {
+        final List<Object> ss = Component.ss.get();
         final MutableCharArray arr = lines.get(lineY);
         final float cx = cursorX + posX;
+
+        ss.clear();
+        getSet(evalVar("--gutter-padding"), ss, StyleProperty.numberFilter, 0);
+
         float x = ctx.bounds(Integer.toString(lines.size())).x +
-                calcStyleNumber("--gutter-padding", Orientation.HORIZONTAL, 0) * 3;
+                calc(ss, 0, Orientation.HORIZONTAL, 0) * 3;
         int i = 0;
         Character ch = arr.getChar(i, null);
         if (ch != null) {
@@ -173,11 +181,14 @@ public class TextArea extends Container {
             fireLater(new ReCalc());
             return;
         }
-        final int scrollBarWidth = getInt("--scrollbar-width", 0);
+        final List<Object> ss = Component.ss.get();
+        ss.clear();
+        getSet(evalVar("--scrollbar-width"), ss, StyleProperty.numberFilter, 0);
+        final float scrollBarWidth = calc(ss, 0, Orientation.HORIZONTAL, 0);
         synchronized (lines) {
             int m = Math.round(Math.max(lines.size() * c.bounds(new char[] { 'H' }).y - height.calcFloat() + scrollBarWidth, 0));
             vBar.setMax(m);
-            vBar.setStartX(m > 0 ? new PointAttach(-scrollBarWidth, vBar.endX) : vBar.endX);
+            vBar.setStartX(m > 0 ? new NumberPointAdd(-scrollBarWidth, vBar.endX) : vBar.endX);
 
             final int l = lines.size();
             float r = 0;
@@ -188,7 +199,7 @@ public class TextArea extends Container {
             }
             m = Math.round(Math.max(r - width.calcFloat() + scrollBarWidth + 40 + c.bounds(Integer.toString(lines.size())).x, 0));
             hBar.setMax(m);
-            hBar.setStartY(m > 0 ? new PointAttach(-scrollBarWidth, hBar.endY) : hBar.endY);
+            hBar.setStartY(m > 0 ? new NumberPointAdd(-scrollBarWidth, hBar.endY) : hBar.endY);
         }
     }
 
@@ -221,15 +232,23 @@ public class TextArea extends Container {
     public void paint(final Context context) {
         super.paint(context);
         lastContext = context;
+        final List<Object> ss = Component.ss.get();
 
-        Color col = getColor("color");
-        if (col.alpha <= 0)
+        ss.clear();
+        getSet(evalVar("color"), ss, StyleProperty.paintFilter, 0);
+        Paint col = getPaint(ss, 0, Color.TRANSPARENT);
+        if (col == null || (col instanceof Color && ((Color) col).alpha <= 0))
             return;
-        context.setColor(col);
+        context.setPaint(col);
         synchronized (lines) {
             final char[] buff = new char[] { 'H' };
             final float w = width.calcFloat(), h = height.calcFloat(), textHeight = context.bounds(buff).y,
-                        gutterPaddingX = calcStyleNumber("--gutter-padding", Orientation.HORIZONTAL, 0);
+                        gutterPaddingX;
+
+            ss.clear();
+            getSet(evalVar("--gutter-padding"), ss, StyleProperty.numberFilter, 0);
+            gutterPaddingX = calc(ss, 0, Orientation.HORIZONTAL, 0);
+
             final int l = Math.min(lines.size(), (int) Math.ceil((posY + h) / textHeight));
             final float lineNumberEnd = context.bounds(Integer.toString(lines.size())).x + gutterPaddingX,
                     lineNumberWidth = lineNumberEnd + gutterPaddingX;
@@ -240,11 +259,13 @@ public class TextArea extends Container {
                 x = gutterPaddingX;
                 final MutableCharArray line = lines.get(lineIndex);
                 if (lineIndex == lineY) {
-                    final Color curLineCol = getColor("--current-line-background-color");
-                    if (curLineCol.alpha > 0) {
-                        context.setColor(curLineCol);
+                    ss.clear();
+                    getSet(evalVar("color"), ss, StyleProperty.paintFilter, 0);
+                    final Paint curLineCol = getPaint(ss, 0, Color.TRANSPARENT);
+                    if (curLineCol != null && (!(curLineCol instanceof Color) || ((Color) curLineCol).alpha > 0)) {
+                        context.setPaint(curLineCol);
                         context.drawRect(0, y, w, textHeight);
-                        context.setColor(col);
+                        context.setPaint(col);
                     }
                 }
                 i = 0;
@@ -271,15 +292,19 @@ public class TextArea extends Container {
                     x += context.charWidth(ch);
                 }
             }
-            col = getColor("--gutter-background-color");
-            if (col.alpha > 0) {
-                context.setColor(col);
+            ss.clear();
+            getSet(evalVar("--gutter-background-color"), ss, StyleProperty.paintFilter, 0);
+            col = getPaint(ss, 0, Color.TRANSPARENT);
+            if (col != null && (!(col instanceof Color) || ((Color) col).alpha > 0)) {
+                context.setPaint(col);
                 context.drawRect(0, 0, lineNumberWidth, h);
             }
-            col = getColor("--gutter-color");
-            if (col.alpha <= 0)
+            ss.clear();
+            getSet(evalVar("--gutter-color"), ss, StyleProperty.paintFilter, 0);
+            col = getPaint(ss, 0, Color.TRANSPARENT);
+            if (col == null || (col instanceof Color && ((Color) col).alpha <= 0))
                 return;
-            context.setColor(col);
+            context.setPaint(col);
             y = -posY + (int) Math.floor(posY / textHeight) * textHeight;
             for (int lineIndex = (int) Math.floor(posY / textHeight); lineIndex < l && y < h; y += textHeight)
                 context.drawString(Integer.toString(++lineIndex), lineNumberEnd - context.bounds(Integer.toString(lineIndex)).x, y);

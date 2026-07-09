@@ -6,15 +6,17 @@ import illa4257.i4Framework.base.events.components.ChangeParentEvent;
 import illa4257.i4Framework.base.events.components.FocusEvent;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchDownEvent;
-import illa4257.i4Framework.base.points.PPointSubtract;
+import illa4257.i4Framework.base.graphics.Paint;
+import illa4257.i4Framework.base.points.ops.PPointAdd;
+import illa4257.i4Framework.base.points.ops.PPointSubtract;
+import illa4257.i4Framework.base.styling.StyleProperty;
 import illa4257.i4Utils.MiniUtil;
-import illa4257.i4Utils.media.Color;
-import illa4257.i4Framework.base.math.Orientation;
+import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.points.Point;
-import illa4257.i4Framework.base.points.PointAttach;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.points.ops.PPointMin;
 
+import java.util.List;
 import java.util.function.Function;
 
 import static illa4257.i4Framework.base.math.Unit.DP;
@@ -120,11 +122,11 @@ public class ComboBox<T> extends TextField {
         }
 
         if (getWindow().safeEndY.calcFloat() >= windowEndY.calcFloat() + contextHeight.calcFloat()) {
-            optionsPane.setStartY(new PointAttach(calcStyleNumber("border-width", Orientation.VERTICAL, 0), windowEndY));
+            optionsPane.setStartY(new PPointAdd(windowEndY, offsetEY));
             optionsPane.setHeight(new PPointMin(op.height, contextHeight));
         } else {
             optionsPane.setStartY(new PPointSubtract(optionsPane.endY, new PPointMin(op.height, contextHeight)));
-            optionsPane.setEndY(new PointAttach(-calcStyleNumber("border-width", Orientation.VERTICAL, 0), windowStartY));
+            optionsPane.setEndY(new PPointSubtract(windowStartY, offsetSY));
         }
 
         optionsPane.setContent(op);
@@ -136,15 +138,19 @@ public class ComboBox<T> extends TextField {
     public void paint(final Context context) {
         super.paint(context);
         ctx = context;
-        final Color c = getColor("color");
-        if (c.alpha <= 0)
+        final List<Object> ss = Component.ss.get();
+
+        ss.clear();
+        getSet(evalVar("color"), ss, StyleProperty.paintFilter, 0);
+        Paint c = getPaint(ss, 0, Color.TRANSPARENT);
+        if (c == null || (c instanceof Color && ((Color) c).alpha <= 0))
             return;
         final boolean a = optionsPane.getParent() != null;
         final float h = height.calcFloat(),
                 o = h / 3, szX = h - o * 2, szY = szX / 2, oY = (h - szY) / 2, ey = oY + szY,
                 ex = width.calcFloat() - o, cx = ex - szX / 2, sx = ex - szX,
                 p1 = a ? ey : oY, p2 = a ? oY : ey;
-        context.setColor(c);
+        context.setPaint(c);
         context.setStrokeWidth(dp.calcFloat());
         context.drawLine(sx, p1, cx, p2);
         context.drawLine(ex, p1, cx, p2);

@@ -1,11 +1,16 @@
 package illa4257.i4Framework.base.components;
 
+import illa4257.i4Framework.base.graphics.Paint;
+import illa4257.i4Framework.base.styling.StyleProperty;
 import illa4257.i4Utils.math.Vector2;
-import illa4257.i4Utils.media.Color;
+import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.math.HorizontalAlign;
 
+import java.util.List;
 import java.util.Objects;
+
+import static illa4257.i4Framework.base.math.HorizontalAlign.LEFT;
 
 public class Label extends Component {
     public volatile Object text, font = null;
@@ -30,10 +35,14 @@ public class Label extends Component {
         }
         if (lines == null || lines.length == 0)
             return;
-        final Color tc = getColor("color");
-        if (tc.alpha <= 0)
+        final List<Object> ss = Component.ss.get();
+
+        ss.clear();
+        getSet(evalVar("color"), ss, StyleProperty.paintFilter, 0);
+        Paint tc = getPaint(ss, 0, Color.TRANSPARENT);
+        if (tc == null || (tc instanceof Color && ((Color) tc).alpha <= 0))
             return;
-        ctx.setColor(tc);
+        ctx.setPaint(tc);
         final Object f = font;
         if (f != null)
             ctx.setFont(font);
@@ -44,7 +53,10 @@ public class Label extends Component {
             h += v2d[i].y;
         }
         y = (height.calcFloat() - h) / 2;
-        final HorizontalAlign align = getEnumValue("text-align", HorizontalAlign.class, HorizontalAlign.LEFT);
+
+        ss.clear();
+        getEnumSet(evalVar("text-align"), ss, HorizontalAlign.class, 0);
+        final HorizontalAlign align = getEnum(ss, HorizontalAlign.class, 0, LEFT);
         m:
         for (int i = 0; i < lines.length; i++) {
             String l = lines[i];

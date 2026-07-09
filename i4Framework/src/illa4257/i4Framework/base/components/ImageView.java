@@ -1,7 +1,7 @@
 package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.Context;
-import illa4257.i4Utils.media.Image;
+import illa4257.i4Framework.base.graphics.Image;
 
 public class ImageView extends Component {
     public volatile Image image = null;

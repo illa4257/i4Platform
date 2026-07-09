@@ -1,6 +1,7 @@
 package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.*;
+import illa4257.i4Framework.base.curves.Curve;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.components.*;
 import illa4257.i4Framework.base.events.IEvent;
@@ -13,30 +14,39 @@ import illa4257.i4Framework.base.events.mouse.MouseLeaveEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchDownEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
-import illa4257.i4Framework.base.utils.Cache;
-import illa4257.i4Utils.media.Color;
-import illa4257.i4Utils.media.Image;
+import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.base.graphics.Paint;
+import illa4257.i4Framework.base.points.numbers.NumberPointAdd;
+import illa4257.i4Framework.base.points.ops.PPointAdd;
+import illa4257.i4Framework.base.points.ops.PPointSubtract;
+import illa4257.i4Framework.base.styling.*;
+import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.math.Orientation;
 import illa4257.i4Framework.base.math.Unit;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.numbers.NumberPointConstant;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
-import illa4257.i4Framework.base.styling.StyleNumber;
-import illa4257.i4Framework.base.styling.StyleSelector;
-import illa4257.i4Framework.base.styling.StyleSetting;
 import illa4257.i4Framework.base.points.*;
-import illa4257.i4Framework.base.styling.Cursor;
+import illa4257.i4Framework.base.utils.Cache;
 import illa4257.i4Utils.Destructor;
+import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Utils.SyncVar;
+import illa4257.i4Utils.lists.IntSet;
 import illa4257.i4Utils.lists.SwappableTmpQueue;
 import illa4257.i4Utils.logger.i4Logger;
 
+import java.io.IOException;
+import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+
+import static illa4257.i4Framework.base.Framework.L;
 
 @SuppressWarnings("UnusedReturnValue")
 public class Component extends Destructor {
@@ -46,13 +56,6 @@ public class Component extends Destructor {
     public volatile Object redirectFocus = null;
 
     protected final SyncVar<Container> parent = new SyncVar<>();
-
-    public final PointSet startX = new PointSet(), startY = new PointSet(), endX = new PointSet(), endY = new PointSet(),
-            dp = new PointSet(NumberPointConstant.ONE), sp = new PointSet(dp);
-
-    public final Point width = new PPointSubtract(endX, startX), height = new PPointSubtract(endY, startY),
-                    windowStartX = new PPointAdd(startX, null), windowStartY = new PPointAdd(startY, null),
-                    windowEndX = new PPointAdd(endX, null), windowEndY = new PPointAdd(endY, null);
 
     protected final ConcurrentLinkedQueue<Runnable> repeatedInvoke = new ConcurrentLinkedQueue<>();
     protected final AtomicBoolean isRepeated = new AtomicBoolean(false);
@@ -64,34 +67,63 @@ public class Component extends Destructor {
 
     private final ConcurrentLinkedQueue<IEvent> events = new ConcurrentLinkedQueue<>();
 
-    public final SyncVar<String> id = new SyncVar<>(), tag = new SyncVar<>();
+    public final AtomicReference<String> id = new AtomicReference<>(), tag = new AtomicReference<>();
     public final ConcurrentLinkedQueue<String> classes = new ConcurrentLinkedQueue<>(), pseudoClasses = new ConcurrentLinkedQueue<>();
-    public final ConcurrentHashMap<String, StyleSetting> styles = new ConcurrentHashMap<String, StyleSetting>() {
-        @SuppressWarnings("NullableProblems")
-        @Override
-        public StyleSetting put(final String key, final StyleSetting value) {
-            if (key == null || key.isEmpty() || value == null)
-                return null;
-            final Consumer<StyleSetting> c = subscribers.get(key);
-            if (c != null)
-                value.subscribed.offer(c);
-            final StyleSetting old = super.put(key, value);
-            if (old != null && c != null)
-                old.subscribed.remove(c);
-            if (c != null && old == getStyle(key))
-                c.accept(value);
-            return old;
-        }
-    };
-    public final ConcurrentLinkedQueue<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> stylesheet = new ConcurrentLinkedQueue<>();
-
-    private final ArrayList<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> cache = new ArrayList<>();
-
-    private final ConcurrentHashMap<String, ConcurrentLinkedQueue<Consumer<StyleSetting>>> subscribedProperties = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Consumer<StyleSetting>> subscribers = new ConcurrentHashMap<>();
 
     private final AtomicInteger lsx = new AtomicInteger(), lsy = new  AtomicInteger(),
             lex = new AtomicInteger(), ley = new  AtomicInteger();
+
+    public final Style style = new Style();
+    public final Stylesheet stylesheet = new Stylesheet();
+    private final ArrayList<Map.Entry<StyleSelector, Style>> cache = new ArrayList<>();
+    private final ConcurrentHashMap<String, List<List<Object>>> cachedEvals = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ConcurrentHashMap<ArrKeys, ConcurrentLinkedQueue<Consumer<StyleProperty>>>>
+            subscribers = new ConcurrentHashMap<>();
+
+    private static class ArrKeys {
+        public final String[] array;
+        public final int hashCode;
+
+        public ArrKeys(final String[] array) { this.array = array; this.hashCode = Arrays.hashCode(array); }
+
+        @Override
+        public int hashCode() {
+            return hashCode;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof ArrKeys)
+                return ((ArrKeys) obj).hashCode == hashCode;
+            return super.equals(obj);
+        }
+    }
+
+    private volatile Point propL = null, propT = null, propR = null, propB = null, propW = null, propH = null;
+    private final PointSet sx = new PointSet(), sy = new PointSet(), ex = new PointSet(), ey = new PointSet();
+    public final Point styleSX = sx, styleSY = sy, styleEX = ex, styleEY = ey;
+
+    public final PointSet
+            startX = new PointSet(styleSX),
+            startY = new PointSet(styleSY),
+            endX = new PointSet(styleEX),
+            endY = new PointSet(styleEY),
+            dp = new PointSet(NumberPointConstant.ONE), sp = new PointSet(dp);
+
+    public final Point
+            width = new PPointSubtract(endX, startX), height = new PPointSubtract(endY, startY),
+
+            offsetSX = getPoint(outlineWidthProperties, Orientation.HORIZONTAL, 0, 0, 0),
+            offsetSY = offsetSX,
+            offsetEX = offsetSX,
+            offsetEY = offsetSX,
+            renderStartX = new PPointSubtract(startX, offsetSX), renderStartY = new PPointSubtract(startY, offsetSY),
+            renderEndX = new PPointAdd(endX, offsetEX), renderEndY = new PPointAdd(endY, offsetEY),
+            renderWidth = new PPointSubtract(renderEndX, renderStartX),
+            renderHeight = new PPointSubtract(renderEndY, renderStartY),
+
+            windowStartX = new PPointAdd(startX, null), windowStartY = new PPointAdd(startY, null),
+            windowEndX = new PPointAdd(endX, null), windowEndY = new PPointAdd(endY, null);
 
     public Component() {
         Class<?> c = getClass();
@@ -100,8 +132,8 @@ public class Component extends Destructor {
         tag.set(c.getSimpleName());
         pseudoClasses.add("enabled");
         addEventListener(ReCalcCheckEvent.class, e -> {
-            final int sx = Float.floatToIntBits(startX.calcFloat()), sy = Float.floatToIntBits(startY.calcFloat()),
-                    ex = Float.floatToIntBits(endX.calcFloat()), ey = Float.floatToIntBits(endY.calcFloat());
+            final int sx = Float.floatToIntBits(renderStartX.calcFloat()), sy = Float.floatToIntBits(renderStartY.calcFloat()),
+                    ex = Float.floatToIntBits(renderEndX.calcFloat()), ey = Float.floatToIntBits(renderEndY.calcFloat());
             if (lsx.getAndSet(sx) != sx || lsy.getAndSet(sy) != sy || lex.getAndSet(ex) != ex || ley.getAndSet(ey) != ey)
                 fire(new RecalculateEvent(Component.this));
         });
@@ -117,31 +149,40 @@ public class Component extends Destructor {
         });
         addEventListener(StyleUpdateEvent.class, e -> {
             synchronized (cache) {
-                for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> entry : cache)
-                    for (final Map.Entry<String, StyleSetting> entry2 : entry.getValue().entrySet()) {
-                        final Consumer<StyleSetting> cons = subscribers.get(entry2.getKey());
-                        if (cons == null)
-                            continue;
-                        entry2.getValue().subscribed.remove(cons);
-                    }
+                for (final Map.Entry<StyleSelector, Style> entry : cache)
+                    entry.getValue().unsubscribe(this::onPropertyChange);
+                final String[] ok = cachedEvals.keySet().toArray(new String[0]);
+                Arrays.sort(ok);
+                final HashMap<ArrKeys, StyleProperty> m = new HashMap<>();
+                for (final ConcurrentHashMap<ArrKeys, ConcurrentLinkedQueue<Consumer<StyleProperty>>> entry : subscribers.values())
+                    for (final ArrKeys ak : entry.keySet())
+                        m.computeIfAbsent(ak, ignored -> {
+                            final StyleProperty p = getProperty(ak.array);
+                            return p != null && Arrays.binarySearch(ok, p.name) >= 0 ? p : null;
+                        });
                 cache.clear();
-                cache.add(new AbstractMap.SimpleImmutableEntry<>(null, styles));
+                cachedEvals.clear();
+                if (!isConstructed())
+                    return;
+                cache.add(new AbstractMap.SimpleImmutableEntry<>(null, style));
                 final ArrayList<StyleSelector> selectors = new ArrayList<>();
                 cacheStyles(this, selectors);
                 final Framework framework = getFramework();
                 if (framework != null)
                     cacheStyles(framework.stylesheet, selectors);
-                for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> entry : cache)
-                    for (final Map.Entry<String, StyleSetting> entry2 : entry.getValue().entrySet()) {
-                        final Consumer<StyleSetting> cons = subscribers.get(entry2.getKey());
-                        if (cons == null)
-                            continue;
-                        entry2.getValue().subscribed.offer(cons);
-                    }
+                for (final Map.Entry<StyleSelector, Style> entry : cache)
+                    entry.getValue().subscribe(this::onPropertyChange);
+                final IntSet set = new IntSet();
+                for (final ConcurrentHashMap<ArrKeys, ConcurrentLinkedQueue<Consumer<StyleProperty>>> le : subscribers.values())
+                    for (final Map.Entry<ArrKeys, ConcurrentLinkedQueue<Consumer<StyleProperty>>> entry : le.entrySet())
+                        if (set.add(entry.getKey().hashCode)) {
+                            final StyleProperty p = getProperty(entry.getKey().array);
+                            if (m.get(entry.getKey()) == p)
+                                continue;
+                            for (final Consumer<StyleProperty> l : entry.getValue())
+                                l.accept(p);
+                        }
             }
-            for (final Map.Entry<String, Consumer<StyleSetting>> cons : subscribers.entrySet())
-                cons.getValue().accept(getStyle(cons.getKey()));
-            repaint();
         });
         addEventListener(HoverEvent.class, e -> {
             if (e.component == this)
@@ -184,10 +225,10 @@ public class Component extends Destructor {
     }
 
     protected void cacheStyles(
-            final Queue<Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>>> stylesheet,
+            final Stylesheet stylesheet,
             final ArrayList<StyleSelector> selectors) {
         int l = selectors.size();
-        for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> e : stylesheet)
+        for (final Map.Entry<StyleSelector, Style> e : stylesheet.stylesheet)
             if (e.getKey().check(this)) {
                 int i = 0;
                 for (; i < l; i++) {
@@ -236,28 +277,60 @@ public class Component extends Destructor {
     public void setPseudoClass(final String pseudoClass, final boolean en) {
         if (pseudoClass == null || pseudoClass.isEmpty() || pseudoClasses.contains(pseudoClass) == en)
             return;
-        final HashMap<String, StyleSetting> old = new HashMap<>();
-        for (final String k : subscribers.keySet())
-            old.put(k, getStyle(k));
+        final HashMap<ArrKeys, StyleProperty> m = new HashMap<>();
+        for (final ConcurrentHashMap<ArrKeys, ConcurrentLinkedQueue<Consumer<StyleProperty>>> e : subscribers.values())
+            for (final ArrKeys ak : e.keySet())
+                m.computeIfAbsent(ak, ignored -> getProperty(ak.array));
         if (en)
-            pseudoClasses.add(pseudoClass);
+            pseudoClasses.offer(pseudoClass);
         else
             pseudoClasses.remove(pseudoClass);
-        for (final Map.Entry<String, Consumer<StyleSetting>> e : subscribers.entrySet()) {
-            final StyleSetting s = getStyle(e.getKey());
-            if (old.get(e.getKey()) != s)
-                e.getValue().accept(s);
+        cachedEvals.clear();
+        for (final Map.Entry<ArrKeys, StyleProperty> e : m.entrySet()) {
+            final StyleProperty n = getProperty(e.getKey().array);
+            if (n == e.getValue())
+                continue;
+            onPropertyChange(n);
         }
         repaint();
     }
 
-    public StyleSetting getStyle(final String name) {
+    private void onPropertyChange(final StyleProperty property) {
+        L.d("onPropertyChange", property);
+    }
+
+    /// @param properties It should be immutable and sorted via {@link Arrays#sort(Object[])}.
+    public void subscribe(final String[] properties, final Consumer<StyleProperty> listener) {
+        final ArrKeys ak = new ArrKeys(properties);
+        for (final String p : properties)
+            subscribers.computeIfAbsent(p, ignored -> new ConcurrentHashMap<>())
+                    .computeIfAbsent(ak, ignored -> new ConcurrentLinkedQueue<>())
+                    .offer(listener);
+    }
+
+    public void subscribe(final List<String> properties, final Consumer<StyleProperty> listener) {
+        final String[] arr = properties.toArray(new String[0]);
+        Arrays.sort(arr);
+        subscribe(arr, listener);
+    }
+
+    public void subscribe(final String property, final Consumer<StyleProperty> listener) {
+        subscribe(new String[] { property }, listener);
+    }
+
+    public void unsubscribe(final Consumer<StyleProperty> listener) {
+        for (final ConcurrentHashMap<ArrKeys, ConcurrentLinkedQueue<Consumer<StyleProperty>>> e1 : subscribers.values())
+            for (final ConcurrentLinkedQueue<Consumer<StyleProperty>> e2 : e1.values())
+                e2.remove(listener);
+    }
+
+    public StyleProperty getProperty(final String name) {
         synchronized (cache) {
-            for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> e : cache) {
+            for (final Map.Entry<StyleSelector, Style> e : cache) {
                 if (e.getKey() != null && !e.getKey().pseudoClasses.stream().allMatch(s -> pseudoClasses.stream()
                         .anyMatch(s::equalsIgnoreCase)))
                     continue;
-                final StyleSetting s = e.getValue().get(name);
+                final StyleProperty s = e.getValue().get(name);
                 if (s != null)
                     return s;
             }
@@ -265,90 +338,86 @@ public class Component extends Destructor {
         }
     }
 
-    public void subscribe(final String name, final Consumer<StyleSetting> listener) {
-        if (name == null || name.isEmpty() || listener == null)
-            return;
-        final ConcurrentLinkedQueue<Consumer<StyleSetting>> l =
-                subscribedProperties.computeIfAbsent(name, ignored -> new ConcurrentLinkedQueue<>());
-        if (!l.offer(listener))
-            return;
-        subscribers.computeIfAbsent(name, k -> {
-            final Consumer<StyleSetting> cons = s -> {
-                if (s == null || getStyle(k) != s)
-                    return;
-                l.forEach(c -> c.accept(s));
-            };
-            synchronized (cache) {
-                for (final Map.Entry<StyleSelector, ConcurrentHashMap<String, StyleSetting>> entry : cache) {
-                    final StyleSetting s = entry.getValue().get(name);
-                    if (s == null)
-                        continue;
-                    s.subscribed.offer(cons);
-                }
+    public StyleProperty getProperty(final List<String> names) {
+        synchronized (cache) {
+            for (final Map.Entry<StyleSelector, Style> e : cache) {
+                if (e.getKey() != null && !e.getKey().pseudoClasses.stream().allMatch(s -> pseudoClasses.stream()
+                        .anyMatch(s::equalsIgnoreCase)))
+                    continue;
+                final StyleProperty s = e.getValue().get(names);
+                if (s != null)
+                    return s;
             }
-            return cons;
+            return null;
+        }
+    }
+
+    public StyleProperty getProperty(final String[] names) {
+        synchronized (cache) {
+            for (final Map.Entry<StyleSelector, Style> e : cache) {
+                if (e.getKey() != null && !e.getKey().pseudoClasses.stream().allMatch(s -> pseudoClasses.stream()
+                        .anyMatch(s::equalsIgnoreCase)))
+                    continue;
+                final StyleProperty s = e.getValue().get(names);
+                if (s != null)
+                    return s;
+            }
+            return null;
+        }
+    }
+
+    public List<List<Object>> resolveVar(final String varName, final ArrayList<String> inProcess) {
+        if (varName == null)
+            return Collections.emptyList();
+        return cachedEvals.computeIfAbsent(varName, ignored -> {
+            final StyleProperty property = getProperty(varName);
+            if (property == null)
+                return Collections.emptyList();
+            if (inProcess.contains(varName))
+                return Collections.emptyList();
+            inProcess.add(varName);
+            final List<List<Object>> ll = new ArrayList<>();
+            for (final List<Object> l : property.objs) {
+                final ArrayList<Object> n = new ArrayList<>();
+                for (final Object o : l)
+                    if (StyleProperty.varFilter.test(o))
+                        for (final List<Object> nl : resolveVar(StyleProperty.getVarName(o), inProcess))
+                            n.addAll(nl);
+                    else
+                        n.add(o);
+                ll.add(n);
+            }
+            return ll;
         });
     }
 
-    public String getString(final String name, final String defaultValue) {
-        final StyleSetting s = getStyle(name);
-        if (s == null)
-            return defaultValue;
-        final String r = s.get(String.class);
-        return r != null ? r : defaultValue;
+    public List<List<Object>> evalVar(final StyleProperty property) {
+        if (property == null)
+            return null;
+        return cachedEvals.computeIfAbsent(property.name, ignored -> {
+            final ArrayList<String> inProcess = new ArrayList<>();
+            inProcess.add(property.name);
+            final List<List<Object>> ll = new ArrayList<>();
+            for (final List<Object> l : property.objs) {
+                final ArrayList<Object> n = new ArrayList<>();
+                for (final Object o : l)
+                    if (StyleProperty.varFilter.test(o))
+                        for (final List<Object> nl : resolveVar(StyleProperty.getVarName(o), inProcess))
+                            n.addAll(nl);
+                    else
+                        n.add(o);
+                ll.add(n);
+            }
+            return ll;
+        });
     }
 
-    public StyleNumber getNumber(final String name, final StyleNumber defaultValue) {
-        final StyleSetting s = getStyle(name);
-        return s != null ? s.number(defaultValue) : defaultValue;
+    public List<List<Object>> evalVar(final String name) {
+        return evalVar(getProperty(name));
     }
 
-    public float getFloat(final String name, final float defaultValue) {
-        final StyleNumber n = getNumber(name, null);
-        return n != null ? n.number : defaultValue;
-    }
-
-    public int getInt(final String name, final int defaultValue) {
-        final StyleNumber n = getNumber(name, null);
-        return n != null ? Math.round(n.unit == Unit.DP ? n.number * dp.calcFloat() : n.number) : defaultValue;
-    }
-
-    public float calcStyleNumber(final String name, final Orientation orientation, final float defaultValue) {
-        final StyleSetting s = getStyle(name);
-        if (s == null)
-            return defaultValue;
-        final StyleNumber r = s.number(null);
-        return r != null ? r.calc(this, orientation) : defaultValue;
-    }
-
-    public Color getColor(final String name, final Color defaultColor) {
-        final StyleSetting s = getStyle(name);
-        return s != null ? s.color(defaultColor) : defaultColor;
-    }
-
-    public Color getColor(final String name) {
-        final StyleSetting s = getStyle(name);
-        return s != null ? s.color(Color.TRANSPARENT) : Color.TRANSPARENT;
-    }
-
-    public Image getImage(final String name, final Image defaultImage) {
-        final StyleSetting s = getStyle(name);
-        return s != null ? s.image(defaultImage) : defaultImage;
-    }
-
-    public Image getImage(final String name) {
-        final StyleSetting s = getStyle(name);
-        return s != null ? s.image(null) : null;
-    }
-
-    public Cursor getCursor(final String name) {
-        final StyleSetting s = getStyle(name);
-        return s != null ? s.cursor() : Cursor.DEFAULT;
-    }
-
-    public <T extends Enum<T>> T getEnumValue(final String name, final Class<T> tEnum, final T defaultValue) {
-        final StyleSetting s = getStyle(name);
-        return s != null ? s.enumValue(tEnum, defaultValue) : defaultValue;
+    public List<List<Object>> evalVar(final List<String> names) {
+        return evalVar(getProperty(names));
     }
 
     private final ArrayList<EventListener<? extends IEvent>> focusListeners = new ArrayList<>();
@@ -385,14 +454,112 @@ public class Component extends Destructor {
 
     @Override
     public void onConstruct() {
-        width.subscribe(recalcCheck);
-        height.subscribe(recalcCheck);
+        renderWidth.subscribe(recalcCheck);
+        renderHeight.subscribe(recalcCheck);
+        subscribe("left", this::layoutLeft);
+        subscribe("right", this::layoutRight);
+        subscribe("width", this::layoutWidth);
+        subscribe("top", this::layoutTop);
+        subscribe("bottom", this::layoutBottom);
+        subscribe("height", this::layoutHeight);
+        synchronized (cache) {
+            for (final Map.Entry<StyleSelector, Style> entry : cache)
+                entry.getValue().subscribe(this::onPropertyChange);
+        }
     }
 
     @Override
     public void onDestruct() {
-        width.unsubscribe(recalcCheck);
-        height.unsubscribe(recalcCheck);
+        renderWidth.unsubscribe(recalcCheck);
+        renderHeight.unsubscribe(recalcCheck);
+        unsubscribe(this::layoutLeft);
+        unsubscribe(this::layoutRight);
+        unsubscribe(this::layoutWidth);
+        unsubscribe(this::layoutTop);
+        unsubscribe(this::layoutBottom);
+        unsubscribe(this::layoutHeight);
+        synchronized (cache) {
+            for (final Map.Entry<StyleSelector, Style> entry : cache)
+                entry.getValue().unsubscribe(this::onPropertyChange);
+        }
+    }
+
+    private Point glp(final StyleProperty property, final Orientation orientation) {
+        final List<Object> ss = Component.ss.get();
+
+        ss.clear();
+        getLayoutSet(evalVar(property), ss, 0);
+
+        final float r = calc(ss, 0, orientation, Float.NaN);
+        if (Float.isNaN(r))
+            return null;
+        return new NumberPointConstant(r);
+    }
+
+    private void layoutLeft(final StyleProperty property) {
+        propL = glp(property, Orientation.HORIZONTAL);
+        layoutH();
+    }
+
+    private void layoutTop(final StyleProperty property) {
+        propT = glp(property, Orientation.VERTICAL);
+        layoutV();
+    }
+
+    private void layoutRight(final StyleProperty property) {
+        final Point r = glp(property, Orientation.HORIZONTAL);
+        propR = r != null ? new PPointSubtract(new ParentPoint(this, Orientation.HORIZONTAL), r) : null;
+        layoutH();
+    }
+
+    private void layoutBottom(final StyleProperty property) {
+        final Point b = glp(property, Orientation.VERTICAL);
+        propB = b != null ? new PPointSubtract(new ParentPoint(this, Orientation.VERTICAL), b) : null;
+        layoutV();
+    }
+
+    private void layoutWidth(final StyleProperty property) {
+        propW = glp(property, Orientation.HORIZONTAL);
+        layoutH();
+    }
+
+    private void layoutHeight(final StyleProperty property) {
+        propH = glp(property, Orientation.VERTICAL);
+        layoutV();
+    }
+
+    private void layoutH() {
+        final Point w = propW;
+        if (w == null) {
+            sx.set(propL);
+            ex.set(propR);
+        } else {
+            final Point l = propL, r = propR;
+            if (l == null) {
+                ex.set(r);
+                sx.set(new PPointSubtract(endX, w));
+            } else {
+                sx.set(l);
+                ex.set(new PPointAdd(startX, w));
+            }
+        }
+    }
+
+    private void layoutV() {
+        final Point h = propH;
+        if (h == null) {
+            sy.set(propT);
+            ey.set(propB);
+        } else {
+            final Point t = propT, b = propB;
+            if (t == null) {
+                ey.set(b);
+                sy.set(new PPointSubtract(endY, h));
+            } else {
+                sy.set(t);
+                ey.set(new PPointAdd(startY, h));
+            }
+        }
     }
 
     public Object getLocker() { return locker; }
@@ -630,13 +797,13 @@ public class Component extends Destructor {
         if (unit == Unit.DP)
             startX.set(new NumberPointMultiplier(dp, x));
         else
-            startX.set(new PointAttach(x, null));
+            startX.set(new NumberPointAdd(x, null));
         fire(new ChangePointEvent(this));
     }
 
     public void setX(final float x) {
         lastX = false;
-        startX.set(new PointAttach(x, null));
+        startX.set(new NumberPointAdd(x, null));
         fire(new ChangePointEvent(this));
     }
 
@@ -645,21 +812,21 @@ public class Component extends Destructor {
         if (unit == Unit.DP)
             startY.set(new NumberPointMultiplier(dp, y));
         else
-            startY.set(new PointAttach(y, null));
+            startY.set(new NumberPointAdd(y, null));
         fire(new ChangePointEvent(this));
     }
 
     public void setY(final float y) {
         lastY = false;
-        startY.set(new PointAttach(y, null));
+        startY.set(new NumberPointAdd(y, null));
         fire(new ChangePointEvent(this));
     }
 
     public void setLocation(final float x, final float y) {
         lastX = false;
         lastY = false;
-        startX.set(new PointAttach(x, null));
-        startY.set(new PointAttach(y, null));
+        startX.set(new NumberPointAdd(x, null));
+        startY.set(new NumberPointAdd(y, null));
         fire(new ChangePointEvent(this));
     }
 
@@ -675,21 +842,21 @@ public class Component extends Destructor {
         if (lastX)
             startX.set(
                     unit == Unit.DP ? new PPointSubtract(endX, new NumberPointMultiplier(dp, width)) :
-                            new PointAttach(-width, endX)
+                            new NumberPointAdd(-width, endX)
             );
         else
             endX.set(
                     unit == Unit.DP ? new PPointAdd(startX, new NumberPointMultiplier(dp, width)) :
-                            new PointAttach(width, startX)
+                            new NumberPointAdd(width, startX)
             );
         fire(new ChangePointEvent(this));
     }
 
     public void setWidth(final float width) {
         if (lastX)
-            startX.set(new PointAttach(-width, endX));
+            startX.set(new NumberPointAdd(-width, endX));
         else
-            endX.set(new PointAttach(width, startX));
+            endX.set(new NumberPointAdd(width, startX));
         fire(new ChangePointEvent(this));
     }
 
@@ -703,17 +870,17 @@ public class Component extends Destructor {
 
     public void setHeight(final float height, final Unit unit) {
         if (lastY)
-            startY.set(unit == Unit.DP ? new PPointSubtract(endY, new NumberPointMultiplier(dp, height)) : new PointAttach(-height, endY));
+            startY.set(unit == Unit.DP ? new PPointSubtract(endY, new NumberPointMultiplier(dp, height)) : new NumberPointAdd(-height, endY));
         else
-            endY.set(unit == Unit.DP ? new PPointAdd(new NumberPointMultiplier(dp, height), startY) : new PointAttach(height, startY));
+            endY.set(unit == Unit.DP ? new PPointAdd(new NumberPointMultiplier(dp, height), startY) : new NumberPointAdd(height, startY));
         fire(new ChangePointEvent(this));
     }
 
     public void setHeight(final float height) {
         if (lastY)
-            startY.set(new PointAttach(-height, endY));
+            startY.set(new NumberPointAdd(-height, endY));
         else
-            endY.set(new PointAttach(height, startY));
+            endY.set(new NumberPointAdd(height, startY));
         fire(new ChangePointEvent(this));
     }
 
@@ -730,10 +897,10 @@ public class Component extends Destructor {
 
     private boolean aSet(final PointSet set, final float offset, final Point target) {
         final Point p = set.get();
-        if (!(p instanceof PointAttach))
+        if (!(p instanceof NumberPointAdd))
             return true;
-        final PointAttach a = (PointAttach) p;
-        return a.value != offset || a.getPoint() != target;
+        final NumberPointAdd a = (NumberPointAdd) p;
+        return a.getNumber() != offset || a.getPoint() != target;
     }
 
     @SuppressWarnings("AssignmentUsedAsCondition")
@@ -741,53 +908,296 @@ public class Component extends Destructor {
         final boolean x, y;
         if (lastX) {
             if (x = aSet(startX, -width, endX))
-                startX.set(new PointAttach(-width, endX));
+                startX.set(new NumberPointAdd(-width, endX));
         } else if (x = aSet(endX, width, startX))
-            endX.set(new PointAttach(width, startX));
+            endX.set(new NumberPointAdd(width, startX));
         if (lastY) {
             if (y = aSet(startY, -height, endY))
-                startY.set(new PointAttach(-height, endY));
+                startY.set(new NumberPointAdd(-height, endY));
         } else if (y = aSet(endY, height, startY))
-            endY.set(new PointAttach(height, startY));
+            endY.set(new NumberPointAdd(height, startY));
         if (x || y)
             fire(new ChangePointEvent(this, isSystem));
     }
 
+    public void animate(final Curve curve) {
+
+    }
+
+    private static final List<String>
+            outlineColorProperties = Arrays.asList("outline-color", "outline"),
+            outlineWidthProperties = Arrays.asList("outline-width", "outline"),
+            backgroundColorProperties = Arrays.asList("background-color", "background"),
+            backgroundImageProperties = Arrays.asList("background-image", "background");
+    public static final ThreadLocal<ArrayList<Object>> ss = ThreadLocal.withInitial(ArrayList::new);
     public void paint(final Context context) {
+        final List<Object> ss = Component.ss.get();
         final float
                 w = width.calcFloat(), h = height.calcFloat(),
-                borderRadius = calcStyleNumber("border-radius", Orientation.HORIZONTAL, 0),
-                borderWidth = calcStyleNumber("border-width", Orientation.HORIZONTAL, 0);
+                borderRadius, outlineWidth;
+        final Paint borderColor;
 
-        final Color borderColor = getColor("border-color"),
-                    bg = getColor("background-color");
+        context.translate(offsetSX.calcFloat(), offsetSY.calcFloat());
 
-        if (borderWidth >= 0.5f && borderColor.alpha > 0) {
-            context.setColor(borderColor);
+        ss.clear();
+        getSet(evalVar("border-radius"), ss, StyleProperty.numberFilter, 0);
+        borderRadius = calc(ss, 0, Orientation.HORIZONTAL, 0);
+        ss.clear();
+        getSet(evalVar(outlineWidthProperties), ss, StyleProperty.numberFilter, 0);
+        outlineWidth = calc(ss, 0, Orientation.HORIZONTAL, 0);
+        ss.clear();
+        getSet(evalVar(outlineColorProperties), ss, StyleProperty.paintFilter, 0);
+        borderColor = getPaint(ss, 0, Color.TRANSPARENT);
+
+        if (outlineWidth >= 0.5f && borderColor != null && (!(borderColor instanceof Color) || ((Color) borderColor).alpha > 0)) {
+            context.setPaint(borderColor);
 
             if (borderRadius >= 0.5f) {
-                final float offset = borderWidth / 2;
-                context.setStrokeWidth(borderWidth);
-                context.draw(context.newRoundShape(-offset, -offset, w + borderWidth, h + borderWidth, borderRadius + borderWidth));
+                final float offset = outlineWidth / 2;
+                context.setStrokeWidth(outlineWidth);
+                context.draw(context.newRoundShape(-offset, -offset, w + outlineWidth, h + outlineWidth, borderRadius + outlineWidth));
                 context.setStrokeWidth(1);
             } else {
-                context.drawRect(-borderWidth, -borderWidth, w + borderWidth * 2, borderWidth);
-                context.drawRect(-borderWidth, h, w + borderWidth * 2, borderWidth);
-                context.drawRect(-borderWidth, 0, borderWidth, h);
-                context.drawRect(w, 0, borderWidth, h);
+                context.drawRect(-outlineWidth, -outlineWidth, w + outlineWidth * 2, outlineWidth);
+                context.drawRect(-outlineWidth, h, w + outlineWidth * 2, outlineWidth);
+                context.drawRect(-outlineWidth, 0, outlineWidth, h);
+                context.drawRect(w, 0, outlineWidth, h);
             }
         }
 
         if (borderRadius >= 0.5f)
             context.setClip(context.newRoundShape(0, 0, w, h, borderRadius));
 
-        if (bg.alpha > 0) {
-            context.setColor(bg);
-            context.drawRect(0, 0, w, h);
-        }
+        List<List<Object>> vars = evalVar(backgroundColorProperties);
+        if (vars != null && !vars.isEmpty())
+            for (final List<Object> set : vars) {
+                ss.clear();
+                StyleProperty.filter(set, ss, StyleProperty.paintFilter);
+                if (!ss.isEmpty()) {
+                    final Paint bg = getPaint(ss, 0, Color.TRANSPARENT);
+                    if ((!(bg instanceof Color) || ((Color) bg).alpha > 0)) {
+                        context.setPaint(bg);
+                        context.drawRect(0, 0, w, h);
+                    }
+                    break;
+                }
+            }
 
-        final Image img = getImage("background-image");
-        if (img != null)
-            context.drawImage(Cache.scale(img, w, h), 0, 0);
+        vars = evalVar(backgroundImageProperties);
+        if (vars != null && !vars.isEmpty())
+            for (final List<Object> set : vars) {
+                ss.clear();
+                StyleProperty.filter(set, ss, StyleProperty.imageFilter);
+                if (!ss.isEmpty())
+                    for (final Object image : ss) {
+                        final Image img = getImage(image, null);
+                        if (img != null)
+                            context.drawImage(Cache.scale(img, w, h), 0, 0);
+                    }
+            }
+
+        //final Image img = getImage("background-image");
+        //if (img != null)
+        //    context.drawImage(Cache.scale(img, w, h), 0, 0);
+    }
+
+    public Point getPoint(final String name, final Orientation orientation, final int set, final int index, final float defValue) {
+        return getPoint(new String[] { name }, orientation, set, index, defValue);
+    }
+
+    public Point getPoint(final List<String> names, final Orientation orientation, final int set, final int index, final float defValue) {
+        final String[] l = names.toArray(new String[0]);
+        Arrays.sort(l);
+        return getPoint(l, orientation, set, index, defValue);
+    }
+
+    public Point getPoint(final String[] names, final Orientation orientation, final int set, final int index, final float defValue) {
+        return new Point() {
+            private volatile float v;
+
+            {
+                onChange(getProperty(names));
+            }
+
+            public void onChange(final StyleProperty property) {
+                final List<List<Object>> r = evalVar(property);
+                final List<Object> ss = Component.ss.get();
+                ss.clear();
+                getSet(r, ss, StyleProperty.numberFilter, set);
+                v = calc(ss, index, orientation, defValue);
+                reset();
+            }
+
+            @Override
+            public float calcFloat() {
+                return v;
+            }
+
+            @Override
+            public void onConstruct() {
+                Component.this.subscribe(names, this::onChange);
+                super.onConstruct();
+            }
+
+            @Override
+            public void onDestruct() {
+                Component.this.unsubscribe(this::onChange);
+                super.onDestruct();
+            }
+        };
+    }
+
+    public static void getSet(final List<List<Object>> l, final List<Object> o, final Predicate<Object> filter, final int index) {
+        if (l == null || index >= l.size())
+            return;
+        StyleProperty.filter(l.get(index), o, filter);
+    }
+
+    public static void getLayoutSet(final List<List<Object>> l, final List<Object> o, final int index) {
+        if (l == null || index >= l.size())
+            return;
+        StyleProperty.filter(l.get(index), o, obj -> {
+            if (obj instanceof String && ((String) obj).equalsIgnoreCase("auto"))
+                return true;
+            return StyleProperty.numberFilter.test(obj);
+        });
+    }
+
+    public static <T extends Enum<T>> void getEnumSet(final List<List<Object>> l, final List<Object> o, final Class<T> e, final int index) {
+        if (l == null || index >= l.size())
+            return;
+        StyleProperty.filterEnum(l.get(index), o, e);
+    }
+
+    public static Object get(final List<Object> l, final int index) {
+        if (index >= l.size())
+            return null;
+        return l.get(index);
+    }
+
+    public float calc(final List<Object> l, final int index, final Orientation orientation, final float defValue) {
+        if (index >= l.size())
+            return defValue;
+        return calc(l.get(index), orientation, defValue);
+    }
+
+    public float calc(final Object o, final Orientation orientation, final float defValue) {
+        if (o instanceof StyleCall) {
+            final StyleCall c = (StyleCall) o;
+            if ("calc".equals(c.name)) {
+                L.w("calc function isn't implemented!");
+            } else
+                L.w("Unknown function", c.name);
+        } else if (o instanceof String) {
+            final String s = (String) o;
+            if (s.endsWith("deg"))
+                return Float.parseFloat(s.substring(0, s.length() - 3));
+            if (s.endsWith("%")) {
+                final Container c = getParent();
+                final float v = Float.parseFloat(s.substring(0, s.length() - 1));
+                return c != null ?
+                        v * (orientation == Orientation.HORIZONTAL ? width.calcFloat() : height.calcFloat()) : v;
+            }
+            if (s.endsWith("px"))
+                return Float.parseFloat(s.substring(0, s.length() - 2));
+            if (s.endsWith("dp"))
+                return Float.parseFloat(s.substring(0, s.length() - 2)) * dp.calcFloat();
+            if (s.endsWith("sp"))
+                return Float.parseFloat(s.substring(0, s.length() - 2)) * sp.calcFloat();
+            return Float.parseFloat(s);
+        } else if (o != null)
+            L.w("Unknown number type", o.getClass());
+        return defValue;
+    }
+
+    public Paint getPaint(final List<Object> l, final int index, final Paint defValue) {
+        if (index >= l.size())
+            return defValue;
+        return getPaint(l.get(index), defValue);
+    }
+
+    public Paint getPaint(final Object o, final Paint defValue) {
+        if (o instanceof String)
+            try {
+                return Color.parse((String) o);
+            } catch (final IllegalArgumentException ex) {
+                L.w(ex);
+            }
+        return defValue;
+    }
+
+    public Image getImage(final Object o, final Image defValue) {
+        if (o instanceof StyleCall) {
+            final StyleCall c = (StyleCall) o;
+            if ("url".equals(c.name) && !c.objs.isEmpty()) {
+                final List<Object> l = c.objs.get(0);
+                if (!l.isEmpty()) {
+                    final Object url = l.get(0);
+                    if (url instanceof StyleStr) {
+                        final String s = ((StyleStr) url).value;
+                        final AtomicReference<Image> ir = new AtomicReference<>();
+                        {
+                            final SoftReference<Image> ref = Cache.images.computeIfAbsent(s, ignored -> {
+                                final Framework f = getFramework();
+                                if (f != null)
+                                    try {
+                                        final Image img = f.getImage(s);
+                                        ir.set(img);
+                                        return new SoftReference<>(img);
+                                    } catch (final Exception ex) {
+                                        L.e(ex);
+                                    }
+                                return null;
+                            });
+                            if (ir.get() != null)
+                                return ir.get();
+                            if (ref != null) {
+                                final Image r = ref.get();
+                                if (r != null)
+                                    return r;
+                            }
+                        }
+                        Cache.images.compute(s, (ignored, ref) -> {
+                            if (ref != null) {
+                                final Image img = ref.get();
+                                if (img != null) {
+                                    ir.set(img);
+                                    return ref;
+                                }
+                            }
+                            final Framework f = getFramework();
+                            if (f != null)
+                                try {
+                                    final Image img = f.getImage(s);
+                                    ir.set(img);
+                                    return new SoftReference<>(img);
+                                } catch (final Exception ex) {
+                                    L.e(ex);
+                                }
+                            return null;
+                        });
+                        if (ir.get() != null)
+                            return ir.get();
+                    }
+                }
+            }
+        }
+        return defValue;
+    }
+
+    public <T extends Enum<T>> T getEnum(final List<Object> l, final Class<T> e, final int index, final T defValue) {
+        if (index >= l.size())
+            return defValue;
+        return getEnum(l.get(index), e, defValue);
+    }
+
+    public <T extends Enum<T>> T getEnum(final Object obj, final Class<T> e, final T defValue) {
+        if (!(obj instanceof String))
+            return defValue;
+        try {
+            return MiniUtil.enumValueOfIgnoreCase(e, ((String) obj).replace('-', '_'));
+        } catch (final IllegalAccessException ignored) {
+            return defValue;
+        }
     }
 }

@@ -1,19 +1,20 @@
 package illa4257.i4Framework.base.components;
 
+import illa4257.i4Framework.base.graphics.Paint;
+import illa4257.i4Framework.base.math.Orientation;
+import illa4257.i4Framework.base.points.numbers.NumberPointConstant;
+import illa4257.i4Framework.base.styling.StyleProperty;
 import illa4257.i4Utils.MiniUtil;
-import illa4257.i4Utils.media.Color;
+import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
-import illa4257.i4Framework.base.points.PointAttach;
-import illa4257.i4Framework.base.points.PointSet;
 import illa4257.i4Utils.SyncVar;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TabPane extends Container {
-    public final PointSet tabHeight = new PointSet(new PointAttach(32, null));
-
     public final ConcurrentLinkedQueue<Tab> tabs = new ConcurrentLinkedQueue<>();
 
     public SyncVar<Tab> current = new SyncVar<>();
@@ -44,7 +45,11 @@ public class TabPane extends Container {
         setFocusable(true);
         addEventListener(MouseUpEvent.class, e -> {
             final Context ctx = lastContext;
-            if (e.component != this || e.y > tabHeight.calcInt() || e.x < 8 || ctx == null)
+
+            final List<Object> ss = Component.ss.get();
+            ss.clear();
+            getSet(evalVar("--tab-heighht"), ss, StyleProperty.numberFilter, 0);
+            if (e.component != this || e.y > calc(ss, 0, Orientation.VERTICAL, 0) || e.x < 8 || ctx == null)
                 return;
             final float xw = ctx.bounds("x").x + 16;
             float x = e.x - 8;
@@ -75,7 +80,11 @@ public class TabPane extends Container {
         if ((old = current.getAndSet(tab)) != tab) {
             tab.component.classes.add("tab-element");
             tab.component.setX(0);
-            tab.component.setStartY(tabHeight);
+
+            final List<Object> ss = Component.ss.get();
+            ss.clear();
+            getSet(evalVar("--tab-heighht"), ss, StyleProperty.numberFilter, 0);
+            tab.component.setStartY(new NumberPointConstant(calc(ss, 0, Orientation.VERTICAL, 0)));
             tab.component.setEndX(width);
             tab.component.setEndY(height);
             if (old != null) {
@@ -115,13 +124,33 @@ public class TabPane extends Container {
     public void paint(final Context context) {
         super.paint(context);
         lastContext = context;
-        float th = tabHeight.calcFloat();
-        final Color tabsBG = getColor("--tabs-background-color"),
-                    tabBG = getColor("--tab-background-color"),
-                    tabSelectedBG = getColor("--tab-selected-background-color"),
-                    color = getColor("color");
-        if (tabsBG.alpha > 0) {
-            context.setColor(tabsBG);
+        final List<Object> ss = Component.ss.get();
+
+        float th;
+        final Paint tabsBG, tabBG, tabSelectedBG, color;
+
+        ss.clear();
+        getSet(evalVar("--tab-heighht"), ss, StyleProperty.numberFilter, 0);
+        th = calc(ss, 0, Orientation.VERTICAL, 0);
+
+        ss.clear();
+        getSet(evalVar("--tabs-background-color"), ss, StyleProperty.paintFilter, 0);
+        tabsBG = getPaint(ss, 0, Color.TRANSPARENT);
+
+        ss.clear();
+        getSet(evalVar("--tab-background-color"), ss, StyleProperty.paintFilter, 0);
+        tabBG = getPaint(ss, 0, Color.TRANSPARENT);
+
+        ss.clear();
+        getSet(evalVar("--tab-selected-background-color"), ss, StyleProperty.paintFilter, 0);
+        tabSelectedBG = getPaint(ss, 0, Color.TRANSPARENT);
+
+        ss.clear();
+        getSet(evalVar("color"), ss, StyleProperty.paintFilter, 0);
+        color = getPaint(ss, 0, Color.TRANSPARENT);
+
+        if ((!(tabsBG instanceof Color)) || ((Color) tabsBG).alpha > 0) {
+            context.setPaint(tabsBG);
             context.drawRect(0, 0, width.calcFloat(), th);
         }
         th -= 2;
@@ -131,9 +160,9 @@ public class TabPane extends Container {
             final boolean isCloseable = t.isCloseable.get();
             final String title = t.title.get("Tab");
             final float tw = context.bounds(title).x + (isCloseable ? closeW + 24 : 16);
-            context.setColor(current.get() != t ? tabBG : tabSelectedBG);
+            context.setPaint(current.get() != t ? tabBG : tabSelectedBG);
             context.drawRect(x, 2, tw, th);
-            context.setColor(color);
+            context.setPaint(color);
             context.drawString(title, x + 6, 4);
             x += tw;
             if (isCloseable)

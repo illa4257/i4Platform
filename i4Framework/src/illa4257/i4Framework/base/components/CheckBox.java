@@ -7,10 +7,13 @@ import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.ChangeTextEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
+import illa4257.i4Framework.base.graphics.Paint;
 import illa4257.i4Framework.base.math.HorizontalAlign;
+import illa4257.i4Framework.base.styling.StyleProperty;
 import illa4257.i4Utils.math.Vector2;
-import illa4257.i4Utils.media.Color;
+import illa4257.i4Framework.base.graphics.Color;
 
+import java.util.List;
 import java.util.Objects;
 
 import static illa4257.i4Framework.base.math.HorizontalAlign.CENTER;
@@ -57,25 +60,43 @@ public class CheckBox extends Component {
     @Override
     public void paint(final Context ctx) {
         super.paint(ctx);
-        final float offset = 4 * dp.calcFloat(), cbh = height.calcFloat() - offset * 2;
         final Object te = text;
+        final float offset = 4 * dp.calcFloat(), cbh = height.calcFloat() - offset * 2;
+        final List<Object> ss = Component.ss.get();
+
         final boolean v = value;
-        final Color cbg = getColor(v ? "--check-color" : "--check-background-color"), c = getColor("color");
-        ctx.setColor(cbg);
-        ctx.drawRect(offset, offset, cbh, cbh);
-        if (te == null || c.alpha <= 0)
+
+        ss.clear();
+        getSet(evalVar(v ? "--check-color" : "--check-background-color"), ss, StyleProperty.paintFilter, 0);
+        final Paint cbg = getPaint(ss, 0, Color.TRANSPARENT);
+        if (cbg != null && (!(cbg instanceof Color) || ((Color) cbg).alpha > 0)) {
+            ctx.setPaint(cbg);
+            ctx.drawRect(offset, offset, cbh, cbh);
+        }
+
+        if (!v && te == null)
+            return;
+        ss.clear();
+        getSet(evalVar("color"), ss, StyleProperty.paintFilter, 0);
+        final Paint c = getPaint(ss, 0, Color.TRANSPARENT);
+        if (c == null || (c instanceof Color && ((Color) c).alpha <= 0))
             return;
         final String t = String.valueOf(te);
-        ctx.setColor(c);
+        ctx.setPaint(c);
         if (v) {
             ctx.drawLine(offset + cbh / 8, offset + cbh * .5f, offset + cbh / 3, offset + cbh * .8f);
             ctx.drawLine(offset + cbh / 3, offset + cbh * .8f, offset + cbh - cbh / 8, offset + cbh / 4);
         }
+        if (te == null)
+            return;
         final Object f = font;
         if (f != null)
             ctx.setFont(f);
         final Vector2 s = ctx.bounds(t);
-        final HorizontalAlign a = getEnumValue("text-align", HorizontalAlign.class, LEFT);
+
+        ss.clear();
+        getEnumSet(evalVar("text-align"), ss, HorizontalAlign.class, 0);
+        final HorizontalAlign a = getEnum(ss, HorizontalAlign.class, 0, LEFT);
         ctx.drawString(t, a == LEFT ? offset + cbh + offset :
                         a == CENTER ? (width.calcFloat() - s.x) / 2 :
                                 width.calcFloat() - s.x,

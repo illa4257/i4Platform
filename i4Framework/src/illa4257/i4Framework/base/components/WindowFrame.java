@@ -6,10 +6,9 @@ import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseMoveEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.math.Unit;
-import illa4257.i4Framework.base.points.PPointAdd;
-import illa4257.i4Framework.base.points.PPointSubtract;
+import illa4257.i4Framework.base.points.ops.PPointAdd;
+import illa4257.i4Framework.base.points.ops.PPointSubtract;
 import illa4257.i4Framework.base.styling.Cursor;
-import illa4257.i4Framework.base.styling.StyleSetting;
 
 import static illa4257.i4Framework.base.styling.Cursor.*;
 
@@ -20,11 +19,9 @@ public class WindowFrame extends Container {
     public boolean notHolding = true, floating = true, holding = false, ls = false, rs = false, ts = false, bs = false;
     public float mx, my, cx, cy, holdX1, holdY1, holdX2, holdY2, holdX3, holdY3;
 
-    public final StyleSetting cursor = new StyleSetting(Cursor.DEFAULT);
-
     public WindowFrame(final Component window) {
         this.window = window;
-        styles.put("cursor", cursor);
+        style.set("cursor", "default");
         add(window);
         add(titleBar);
         window.addEventListener(ChangeTextEvent.class, e -> {
@@ -96,8 +93,7 @@ public class WindowFrame extends Container {
                           rx ? E_RESIZE :
                           by ? S_RESIZE :
                             NWSE_RESIZE;
-            if (cursor.cursor() != r)
-                cursor.set(r);
+            style.set("cursor", r.toString());
         });
         addEventListener(MouseUpEvent.class, e -> holding = false);
 
