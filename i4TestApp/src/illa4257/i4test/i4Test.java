@@ -1,5 +1,6 @@
 package illa4257.i4test;
 
+import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.*;
@@ -9,17 +10,18 @@ import illa4257.i4Framework.base.components.Label;
 import illa4257.i4Framework.base.components.Panel;
 import illa4257.i4Framework.base.components.TextField;
 import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.base.curves.CubicBezierCurve;
+import illa4257.i4Framework.base.curves.Curve;
+import illa4257.i4Framework.base.curves.SineCurveOut;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
-import illa4257.i4Framework.base.points.PPointSubtract;
+import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.points.ops.PPointSubtract;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.styling.BaseTheme;
-import illa4257.i4Framework.base.styling.StyleSetting;
 import illa4257.i4Framework.base.utils.CSSParser;
-import illa4257.i4Framework.base.utils.Cache;
 import illa4257.i4Utils.logger.i4Logger;
-import illa4257.i4Utils.media.Image;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -44,29 +46,12 @@ public class i4Test {
         final Window w = fw.getWindow();
         w.setTitle("i4Test");
 
-        final int[] p = new int[128 * 128];
-        Arrays.fill(p, 0xFF00FFFF);
-
-        Image img = null;
-
-        try {
-            //img = new Image(128, p);
-            img = framework.getImage("assets:///test.png");
-
-            Cache.images.put("test-img", img);
-        } catch (final Exception ex) {
-            L.log(ex);
-        }
-
-        System.out.println(img);
-
         final Component c = new Component();
         c.setStartX(w.safeStartX);
         c.setStartY(w.safeStartY);
         c.setWidth(new NumberPointMultiplier(360, w.dp));
         c.setHeight(new NumberPointMultiplier(360, w.dp));
-        c.styles.put("background-color", new StyleSetting("0x0000FF"));
-        c.styles.put("background-image", new StyleSetting("test-img"));
+        c.style.set("background", "blue url('assets:///test.png')");
         w.add(c);
 
         final Label l = new Label("???");
@@ -90,7 +75,7 @@ public class i4Test {
         pc.setEndY(new PPointSubtract(w.safeEndY, d8));
         pc.setWidth(pcw);
         pc.setHeight(pch);
-        pc.styles.put("border-radius", new StyleSetting("16dp"));
+        pc.style.set("border-radius", "16dp");
 
         final ComboBox<String> cb = new ComboBox<>();
         cb.setX(16, DP);
@@ -117,13 +102,39 @@ public class i4Test {
                     framework.newFileChooser(w).start(() -> {});
                 })
                 .show());
-        b.setX(16, DP);
-        b.setY(64, DP);
-        b.setWidth(256, DP);
-        b.setHeight(32, DP);
+        b.style.set("left", "16dp");
+        b.style.set("right", "16dp");
+        b.style.set("top", "64dp");
         pc.add(b);
 
         w.add(pc);
+
+        final Component t = new Component() {
+            final Curve c = new CubicBezierCurve(0.37f, 0, 0.63f, 1f);
+
+            @Override
+            public void paint(Context context) {
+                super.paint(context);
+                final float w = width.calcFloat(), h = height.calcFloat();
+                float ox = 0, oy = h;
+                final int m = Math.round(w);
+                for (int i = 1; i < m; i++) {
+                    final float nx = i, ny = h - c.calc(nx / w) * h;
+                    context.setStrokeWidth(2);
+                    context.setPaint(Color.GREEN);
+                    context.drawLine(ox, oy, nx, ny);
+                    ox = nx;
+                    oy = ny;
+                }
+            }
+        };
+        t.style.set("width", "128dp");
+        t.style.set("height", "128dp");
+        t.style.set("right", "64dp");
+        t.style.set("bottom", "64dp");
+        //t.style.set("border-radius", "16dp");
+        t.style.set("background", "blue");
+        w.add(t);
 
         //w.onTick(() -> {});
 

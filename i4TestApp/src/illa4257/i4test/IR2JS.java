@@ -1,5 +1,6 @@
 package illa4257.i4test;
 
+import illa4257.i4Utils.bytecode.Descriptor;
 import illa4257.i4Utils.ir.*;
 import illa4257.i4Utils.lists.ArrIterator;
 import illa4257.i4Utils.ir.IRExc;
@@ -146,7 +147,7 @@ public class IR2JS {
     }
 
     public static W write(final W o, final IRField f) {
-        o.w(escapeStr(f.name)).w(":{type:").w(escapeStr(encType(f.type)))
+        o.w(escapeStr(f.name)).w(":{type:").w(escapeStr(encShortType(f.type)))
                 .w(",flags:").w(Integer.toString(IRAccess.toJava(f.access)));
         if (f.value != null)
             o.w(",value:").w(f.value instanceof String ? escapeStr((String) f.value) : of(f.value));
@@ -158,6 +159,7 @@ public class IR2JS {
         o.ln().w("name:\"" + cls.name + "\",");
         if (cls.superName != null)
             o.ln().w("super_cls:\"" + cls.superName + "\",");
+        o.ln().w("flags:" + IRAccess.toJava(cls.access) + ",");
         o.ln().w("fields:{").st(2);
         for (final IRField f : cls.fields)
             write(o.ln(), f).w(",");
@@ -220,6 +222,7 @@ public class IR2JS {
                 case GOTO:
                 case CATCH:
                 case LOOKUPSWITCH:
+                case TABLESWITCH:
                     hasJumps = true;
                     break;
                 default:
@@ -825,6 +828,24 @@ public class IR2JS {
             case LONG: b.append("long");break;
             case FLOAT: b.append("float");break;
             case DOUBLE: b.append("double");break;
+            case LITERAL: b.append(type.cls);break;
+            default: throw new RuntimeException("Unknown kind: " + type.kind);
+        }
+        return Str.getAndRecycle(b);
+    }
+
+    public static String encShortType(final IRType type) {
+        final StringBuilder b = new StringBuilder();
+        Str.repeat(b, "[", type.array);
+        switch (type.kind) {
+            case BOOLEAN: b.append('Z');break;
+            case BYTE: b.append('B');break;
+            case SHORT: b.append('S');break;
+            case CHAR: b.append('C');break;
+            case INT: b.append('I');break;
+            case LONG: b.append('J');break;
+            case FLOAT: b.append('F');break;
+            case DOUBLE: b.append('D');break;
             case LITERAL: b.append(type.cls);break;
             default: throw new RuntimeException("Unknown kind: " + type.kind);
         }

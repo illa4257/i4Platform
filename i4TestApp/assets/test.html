@@ -1,0 +1,38 @@
+<html>
+<body>
+<a id="gg">A</a>
+
+<style>
+    body {
+        background: black url('test.png');
+    }
+    
+    #gg {
+        display: block;
+        position: fixed;
+        background: blue;
+        width: 128px;
+        height: 128px;
+        left: 1024px;
+        top: 512px;
+        transition: 1s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+    }
+</style>
+
+<script>
+    window.i = 0;
+    const e = document.getElementById("gg");
+    setInterval(() => {
+        switch (++window.i) {
+            case 1:
+                e.style.rotate = "90deg";
+                break;
+            default:
+                window.i = 0;
+                e.style.rotate = "0deg";
+                break;
+        }
+    }, 1200);
+</script>
+</body>
+</html>

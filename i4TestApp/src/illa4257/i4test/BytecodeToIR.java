@@ -20,7 +20,7 @@ public class BytecodeToIR {
         L.registerHandler(new AnsiColoredPrintStreamLogHandler(System.out)).inheritGlobalIO();
 
         ClassFile cf = null;
-        try (final ZipInputStream zis = new ZipInputStream(Files.newInputStream(new File("/usr/lib/jvm/java-8-openjdk/jre/lib/rt.jar").toPath()))) {
+        try (final ZipInputStream zis = new ZipInputStream(Files.newInputStream(new File("rt.jar").toPath()))) {
             final String target = ClassLoader.class.getName().replaceAll("\\.", "/") + ".class";
             ZipEntry e;
             while ((e = zis.getNextEntry()) != null) {

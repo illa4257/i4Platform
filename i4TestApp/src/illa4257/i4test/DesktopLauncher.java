@@ -30,6 +30,7 @@ public class DesktopLauncher {
     public static void main(final String[] args) throws Exception {
         L.registerHandler(new AnsiColoredPrintStreamLogHandler(System.out));
         i4Test.init(new SwingFramework("illa4257.i4Test"));
+
         if (true) {
             i4Test.start();
             return;

@@ -13,34 +13,18 @@ function d2l(d) {
 }
 
 async function divByZero(class_loader, env, t) {
-    let c = await env.getClass(class_loader, "java/lang/ArithmeticException"),
+    let c = await env.getClass(class_loader, t, "java/lang/ArithmeticException"),
        ex = await env.alloc(c, t);
     await c["<init>__Ljava_lang_String_2V"](c, env, t, "/ by zero");
     throw ex;
-}
-
-async function addClass(class_loader, env, t, cls) {
-    class_loader.loaded[cls.name] = cls;
-    cls.class_loader = class_loader;
-    return cls;
-}
-
-async function regClass(class_loader, env, t, cls) {
-    if (cls.super_cls === undefined) return;
-    try {
-        cls.super_cls = await env.getClass(class_loader, t, cls.super_cls, false);
-    } catch (e) {
-        console.error("Add class " + cls.name);
-        throw e;
-    }
 }
 
 function instanceOf(instance,cls) {
     if (instance == null)
         return 0;
     instance = instance.cls;
-    while (instance != undefined) {
-        if (instance.name == cls)
+    while (instance !== undefined) {
+        if (instance.name === cls)
             return true;
         instance = instance.super_cls;
     }
@@ -66,7 +50,7 @@ async function Java_str(class_loader,env,t,str) {
 
 async function getClass(cls, env, t) {
     let result = await env.getField(cls, "class");
-    if (result == undefined) {
+    if (result === undefined) {
         const c = await env.getClass(cls.class_loader, t, "java/lang/Class"),
             r = await env.alloc(c, t);
         await c["<init>__Ljava/lang/ClassLoader_2V"](c,env,t,r,await env.getField(cls.class_loader, 'isSystem')?null:cls.class_loader);
@@ -79,39 +63,39 @@ async function getClass(cls, env, t) {
 
 class JavaUtilities {
     static async initEnv(class_loader, env) {
-        class_loader.loaded['V'] = await addClass(class_loader, env, null, {
+        class_loader.loaded['V'] = await env.addClass(class_loader, null, {
             name: 'void',
             isPrimitive: true
         });
-        class_loader.loaded['Z'] = await addClass(class_loader, env, null, {
+        class_loader.loaded['Z'] = await env.addClass(class_loader, null, {
             name: 'boolean',
             isPrimitive: true
         });
-        class_loader.loaded['B'] = await addClass(class_loader, env, null, {
+        class_loader.loaded['B'] = await env.addClass(class_loader, null, {
             name: 'byte',
             isPrimitive: true
         });
-        class_loader.loaded['S'] = await addClass(class_loader, env, null, {
+        class_loader.loaded['S'] = await env.addClass(class_loader, null, {
             name: 'short',
             isPrimitive: true
         });
-        class_loader.loaded['C'] = await addClass(class_loader, env, null, {
+        class_loader.loaded['C'] = await env.addClass(class_loader, null, {
             name: 'char',
             isPrimitive: true
         });
-        class_loader.loaded['I'] = await addClass(class_loader, env, null, {
+        class_loader.loaded['I'] = await env.addClass(class_loader, null, {
             name: 'int',
             isPrimitive: true
         });
-        class_loader.loaded['J'] = await addClass(class_loader, env, null, {
+        class_loader.loaded['J'] = await env.addClass(class_loader, null, {
             name: 'long',
             isPrimitive: true
         });
-        class_loader.loaded['F'] = await addClass(class_loader, env, null, {
+        class_loader.loaded['F'] = await env.addClass(class_loader, null, {
             name: 'float',
             isPrimitive: true
         });
-        class_loader.loaded['D'] = await addClass(class_loader, env, null, {
+        class_loader.loaded['D'] = await env.addClass(class_loader, null, {
             name: 'double',
             isPrimitive: true
         });
@@ -146,7 +130,9 @@ class StackTraceElement {
 }
 
 class AsyncJavaEnv {
-    constructor() {}
+    constructor() {
+        this.constantStringPool = {};
+    }
 
     async alloc(cls, t, m={}) {
         m.cls = cls;
@@ -176,28 +162,75 @@ class AsyncJavaEnv {
         if (c === undefined) {
             if (cls.startsWith('[')) {
                 let lvl = 1;
-                while (cls.charAt(lvl) == '[')
+                while (cls.charAt(lvl) === '[')
                     lvl++;
-                await addClass(class_loader, this, t, c={
+                await this.addClass(class_loader, t, c={
                     name: cls,
                     super_cls: "java/lang/Object",
                     fields: {},
                     staticFields: {},
                     consts: {}
                 });
-                await regClass(class_loader, this, t, c);
+                await this.regClass(class_loader, t, c);
             }
-            if (c === undefined)
-                throw new Error("No class " + cls);
+            if (c === undefined) {
+                console.error("No class", cls);
+                const exC = await this.getClass(class_loader, t, 'java/lang/ClassNotFoundException', init);
+                const ex = await this.alloc(exC, t);
+                await exC['<init>__Ljava/lang/String_2V'](exC, this, t, ex, await JavaUtilities.javaStr(class_loader, this, t, "Class \"" + cls + "\" not found"));
+                throw ex;
+            }
         }
-        if (!c.init && init) {
-            c.init = true;
-            if (c.fields != undefined)
-                await env.preInitCls(class_loader, this, t, c, c.fields, true);
-            if (c["<clinit>__V"] !== undefined)
-                await c["<clinit>__V"](c, this, t);
-        }
+        if (init)
+            if (!c.init) {
+                const p = Promise.withResolvers();
+                c.init = p.promise;
+                t.initClasses.push(c.name);
+                try {
+                    if (c.fields !== undefined)
+                        await env.preInitCls(class_loader, this, t, c, c.fields, true);
+                    if (cls === 'java/lang/Class$Atomic')
+                        console.log(c["<clinit>__V"] !== undefined);
+                    if (c["<clinit>__V"] !== undefined)
+                        await c["<clinit>__V"](c, this, t);
+                } catch (e) {
+                    p.reject(e);
+                    console.error("Failed to init", cls, e)
+                    throw e;
+                } finally {
+                    t.initClasses.splice(t.initClasses.indexOf(c.name), 1);
+                }
+                p.resolve(undefined);
+            } else if (t.initClasses.indexOf(c.name) === -1)
+                await c.init;
         return c;
+    }
+
+    async addClass(class_loader, t, cls) {
+        class_loader.loaded[cls.name] = cls;
+        cls.class_loader = class_loader;
+        return cls;
+    }
+
+    async regClass(class_loader, t, cls) {
+        if (cls.super_cls !== undefined)
+            try {
+                cls.super_cls = await this.getClass(class_loader, t, cls.super_cls, false);
+            } catch (e) {
+                console.error("Add class " + cls.super_cls + " for " + cls.name);
+                throw e;
+            }
+        if (!cls.fields)
+            cls.fields = {};
+        const staticFieldOrder = [], objectFieldOrder = [];
+        if (cls.super_cls) {
+            staticFieldOrder.push(...cls.super_cls.staticFieldOrder);
+            objectFieldOrder.push(...cls.super_cls.objectFieldOrder);
+        }
+        for (const [k, v] of Object.entries(cls.fields))
+            ((v.flags & 0x0008) === 0 ? objectFieldOrder : staticFieldOrder).push(k);
+        cls.staticFieldOrder = staticFieldOrder;
+        cls.objectFieldOrder = objectFieldOrder;
     }
 
     arrLen(arr) {
@@ -261,7 +294,7 @@ class AsyncJavaEnv {
         instance.lock_owner = instance.lock = null;
         l.resolve();
         if (timeout > 0) {
-            const timeout = setTimeout(() => w.resolve(), Number(timeout));
+            const timeout = setTimeout(() => w.resolve(undefined), Number(timeout));
             await w.promise;
             clearTimeout(timeout);
         } else
@@ -272,7 +305,9 @@ class AsyncJavaEnv {
     }
 
     initThread(thread) {
-        thread.stack = new Array();
+        thread.initClasses = [];
+        thread.stack = [];
+        console.log("new_thread", thread);
     }
 
     traceEnter(cls, thread, method) {
@@ -292,7 +327,7 @@ class AsyncJavaEnv {
     }
 
     async preInitCls(class_loader, env, t, instance, fields, isStatic) {
-        let c = isStatic ? (f => (f & 0x0008) != 0) : (f => (f & 0x0008) == 0);
+        let c = isStatic ? (f => (f & 0x0008) !== 0) : (f => (f & 0x0008) === 0);
         for (const [key, field] of Object.entries(fields))
             if (c(field.flags))
                 if (field.value != null)
@@ -314,7 +349,51 @@ class AsyncJavaEnv {
                         case 'J':
                             instance['_' + key] = 0n;
                             break;
+                        default:
+                            //console.warn("Uknown type", field.type);
+                            break;
                     }
+    }
+    
+    async internJSString(class_loader, t, str) {
+        let s = this.constantStringPool['_' + str];
+        if (s)
+            return s;
+        const s2 = await JavaUtilities.javaStr(class_loader, this, t, str);
+        s = this.constantStringPool['_' + str];
+        if (s)
+            return s;
+        this.constantStringPool['_' + str] = s2;
+        return s2;
+    }
+    
+    async getJavaString(str) {
+        return this.constantStringPool['_' + str];
+    }
+    
+    async internJavaString(instance) {
+        const str = '_' + await JavaUtilities.jsStr(this, instance);
+        if (this.constantStringPool[str])
+            return this.constantStringPool[str];
+        this.constantStringPool[str] = instance;
+        return instance;
+    }
+    
+    async objectGetVolatile(obj, index) {
+        return obj['_' + obj.cls.objectFieldOrder[index]];
+    }
+    
+    async objectCompareAndSwapObject(obj, index, expected, newValue) {
+        const n = '_' + obj.cls.objectFieldOrder[index];
+        if (obj[n] === expected) {
+            obj[n] = newValue;
+            return 1;
+        } else
+            return 0;
+    }
+    
+    async objectCompareAndSwapInt(obj, index, expected, newValue) {
+        return await this.objectCompareAndSwapObject(obj, index, expected, newValue);
     }
 }
 
@@ -342,7 +421,7 @@ async function Java_java_lang_Object_getClass(cls, env, thread, obj) {
 let counter = 1;
 async function Java_java_lang_Object_hashCode(cls, env, thread, instance) {
     const result = await env.getField(instance, 'identityHashCode');
-    if (result == undefined) {
+    if (result === undefined) {
         const c = (counter++) | 0;
         await env.setField(instance, "identityHashCode", c);
         return c;
@@ -350,12 +429,12 @@ async function Java_java_lang_Object_hashCode(cls, env, thread, instance) {
     return result;
 }
 
-function Java_sun_misc_Unsafe_arrayBaseOffset(cls, env, thread, inst, cls) { return 0; }
+function Java_sun_misc_Unsafe_arrayBaseOffset(cls, env, thread, inst, c) { return 0; }
 
 async function Java_sun_misc_Unsafe_arrayIndexScale(cls, env, thread, inst, c) {
     c = (await env.getField(c, "class")).name;
     let i = 0;
-    while (c.charAt(i) == '[')
+    while (c.charAt(i) === '[')
         i++;
     c = c.charAt(i);
     switch (c) {
@@ -378,6 +457,7 @@ async function Java_java_lang_Class_getPrimitiveClass(cls, env, thread, str) {
     let t = await JavaUtilities.jsStr(env, str);
     switch (t) {
         case 'short': break;
+        case 'char': break;
         case 'int': break;
         case 'long': break;
         case 'float': break;
@@ -427,6 +507,7 @@ async function Java_java_lang_System_initProperties(cls, env, thread, props) {
                 await JavaUtilities.javaStr(cls.class_loader, env, thread, v)
         );
     };
+    await put('file.encoding', 'UTF-8');
     await put('file.separator', '/');
     await put('path.separator', ':');
     return props;
@@ -436,7 +517,7 @@ function Java_java_lang_Thread_currentThread(cls, env, thread) { return thread; 
 
 async function Java_java_lang_Throwable_fillInStackTrace__ILjava_lang_Throwable_2(cls, env, thread, instance, dummy) {
     console.log(dummy);
-    if (dummy != 0)
+    if (dummy !== 0)
         throw new Error("Dummy isn't zero");
     const d = await env.traceDump(thread);
     d.err = new Error();
@@ -468,23 +549,82 @@ async function Java_java_lang_Object_wait__JV(cls, env, thread, instance, timeou
     await env.monitorWait(thread, instance, timeout);
 }
 
-async function Java_java_lang_Class_getDeclaredFields0(cls, env, thread, instance, publicOnly) {
+async function Java_java_lang_Class_getDeclaredFields0__Z_3Ljava_lang_reflect_Field_2(cls, env, thread, instance, publicOnly) {
     const c = await env.getClass(cls.class_loader, thread, "java/lang/reflect/Field"),
-            filter = publicOnly ? f => (f.flags & 0x0001) == 0 : f => false;
-    console.log(instance, c, publicOnly == false, filter);
+            filter = publicOnly ? f => (f.flags & 0x0001) === 0 : _f => false;
+    const l = [];
     for (const [key, f] of Object.entries((await env.getField(instance, 'class')).fields)) {
         const field = await env.alloc(c, thread);
         if (filter(field))
             continue;
-        console.log(key, f, field, f.type);
         c['<init>__Ljava/lang/Class_2Ljava/lang/String_2Ljava/lang/Class_2IILjava/lang/String_2_3BV'](c, env, thread,
-                field, instance, await JavaUtilities.javaStr(c.class_loader, env, thread, key),
+                field, instance, await env.internJavaString(await JavaUtilities.javaStr(c.class_loader, env, thread, key)),
                 await getClass(
-                        await env.getClass(c.class_loader, thread, f.type),
+                        await env.getClass(c.class_loader, thread, f.type, false),
                     env, thread),
                 f.flags, -1, null, null);
+        l.push(field);
     }
+    const r = await env.newArr(l.length);
+    for (const [i, v] of l.entries())
+        await env.arrSet(r, i, v);
+    return r;
+}
+
+async function Java_sun_misc_Unsafe_objectFieldOffset__Ljava_lang_reflect_Field_2J(cls, env, thread, instance, field) {
+    const n = await JavaUtilities.jsStr(env,
+        await field.cls['getName__Ljava/lang/String_2'](field.cls, env, thread, field)
+    );
+    const index = (await env.getField(await env.getField(field, "clazz"), "class")).objectFieldOrder.indexOf(n);
+    if (index === -1)
+        throw new Error("The field not found in the object field order!");
+    return index;
+}
+
+async function Java_sun_reflect_Reflection_getClassAccessFlags__Ljava_lang_Class_2I(cls, env, thread, target) {
+    return (await env.getField(target, "class")).flags;
+}
+
+async function Java_java_lang_Class_isPrimitive__Z(cls, env, thread, target) {
+    return (await env.getField(target, "class")).isPrimitive ? 1 : 0;
+}
+
+async function Java_java_lang_Class_isInterface__Z(cls, env, thread, target) {
+    return ((await env.getField(target, "class")).flags & 0x0200) !== 0 ? 1 : 0;
+}
+
+async function Java_java_lang_Class_forName0__Ljava_lang_String_2ZLjava_lang_ClassLoader_2Ljava_lang_Class_2Ljava_lang_Class_2(cls, env, thread, name, init, loader, caller) {
+    //console.log(await JavaUtilities.jsStr(env, name), init, loader, caller);
+    if (!loader)
+        loader = cls.class_loader;
+    const c = await env.getClass(loader, thread,
+        (await JavaUtilities.jsStr(env, name)).replaceAll('.', '/'), init);
+    if (c)
+        return await getClass(c, env, mainThread);
+    //console.log(c);
+    // class_loader.loaded['java/lang/ClassNotFoundException']
     throw new Error();
+}
+
+async function Java_java_lang_String_intern__Ljava_lang_String_2(cls, env, thread, instance) {
+    return await env.internJavaString(instance);
+}
+
+async function Java_sun_misc_Unsafe_compareAndSwapObject__Ljava_lang_Object_2JLjava_lang_Object_2Ljava_lang_Object_2Z(cls, env, thread, instance, obj, fieldIndex, expected, newValue) {
+    return await env.objectCompareAndSwapObject(obj, fieldIndex, expected, newValue);
+}
+
+async function Java_sun_misc_Unsafe_compareAndSwapInt__Ljava_lang_Object_2JIIZ(cls, env, thread, instance, obj, fieldIndex, expected, newValue) {
+    return await env.objectCompareAndSwapInt(obj, fieldIndex, expected, newValue);
+}
+
+async function Java_sun_misc_Unsafe_getIntVolatile__Ljava_lang_Object_2JI(cls, env, thread, instance, obj, offset) {
+    return await env.objectGetVolatile(obj, offset);
+}
+
+async function Java_java_lang_System_setIn0__Ljava_io_InputStream_2V(cls, env, thread, stream) {
+    const c = await env.getClass(cls.class_loader, thread, "java/lang/System");
+    await env.setField(c, "in", stream);
 }
 
 console.log("rt.js loaded!");
