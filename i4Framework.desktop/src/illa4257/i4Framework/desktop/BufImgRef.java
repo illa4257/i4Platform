@@ -1,7 +1,7 @@
 package illa4257.i4Framework.desktop;
 
-import illa4257.i4Utils.media.Image;
-import illa4257.i4Utils.media.ImagePixelable;
+import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.base.graphics.ImagePixelable;
 
 import java.awt.image.BufferedImage;
 

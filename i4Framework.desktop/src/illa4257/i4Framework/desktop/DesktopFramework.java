@@ -10,7 +10,7 @@ import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.desktop.awt.AWTFileChooser;
 import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Utils.math.Vector2;
-import illa4257.i4Utils.media.Image;
+import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Framework.desktop.cheerpj.CheerpJThemeDetector;
 import illa4257.i4Framework.desktop.win32.DwmAPI;
@@ -20,7 +20,6 @@ import illa4257.i4Utils.Arch;
 import illa4257.i4Utils.logger.i4Logger;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
@@ -50,8 +49,36 @@ public abstract class DesktopFramework extends Framework {
 
     private volatile boolean startThemeDetector = true;
 
+    private final File appDataDir, localAppDataDir, appDir, tmpDir, cacheDir;
+
     public DesktopFramework(final String appName) {
         this.appName = appName;
+
+        appDir = MiniUtil.getPath(DesktopFramework.class);
+
+        if (Arch.JVM.IS_WINDOWS) {
+            if (Arch.JVM.osVer.major >= 6) {
+                appDataDir = new File(System.getenv("APPDATA"), appName);
+                localAppDataDir = new File(System.getenv("LOCALAPPDATA"), appName);
+            } else {
+                final String home = System.getProperty("user.home");
+                appDataDir = new File(home, "Application Data/" + appName);
+                localAppDataDir = new File(home, "Local Settings/Application Data/" + appName);
+            }
+            tmpDir = null;
+            cacheDir = new File(System.getProperty("java.io.tmpdir"), appName);
+        } else if (Arch.JVM.IS_MACOS) {
+            appDataDir = null;
+            localAppDataDir = new File(System.getProperty("user.home"), "Library/Application Support/" + appName);
+            cacheDir = new File(System.getProperty("user.home"), "Library/Caches/" + appName);
+            tmpDir = new File(System.getProperty("java.io.tmpdir"), appName);
+        } else {
+            appDataDir = null;
+            localAppDataDir = new File(System.getProperty("user.home"), ".local/share/" + appName);
+            tmpDir = new File(System.getProperty("java.io.tmpdir"), appName);
+            cacheDir = new File(System.getProperty("user.home"), ".cache/" + appName);
+        }
+
         Framework.registerFramework(this);
     }
 
@@ -144,24 +171,11 @@ public abstract class DesktopFramework extends Framework {
         }
     }
 
-    @Override
-    public File getAppDataDir() {
-        return Arch.JVM.IS_WINDOWS ?
-                        Arch.JVM.osVer.major >= 6 ? new File(System.getenv("APPDATA"), appName) :
-                                new File(System.getProperty("user.home"), "Local Settings/Application Data/" + appName) :
-                new File(System.getProperty("user.home"), Arch.JVM.IS_MACOS ? "/Library/Application Support/" + appName : "/.local/share/" + appName);
-    }
-
-    @Override
-    public File getLocalAppDataDir() {
-        return Arch.JVM.IS_WINDOWS ?
-                Arch.JVM.osVer.major >= 6 ? new File(System.getenv("LOCALAPPDATA"), appName) :
-                        new File(System.getProperty("user.home"), "Local Settings/Application Data/" + appName) :
-                new File(System.getProperty("user.home"), Arch.JVM.IS_MACOS ? "/Library/Application Support/" + appName : "/.local/share/" + appName);
-    }
-
-    @Override
-    public File getAppDir() { return MiniUtil.getPath(DesktopFramework.class); }
+    @Override public File getAppDataDir() { return appDataDir; }
+    @Override public File getLocalAppDataDir() { return localAppDataDir; }
+    @Override public File getAppDir() { return appDir; }
+    @Override public File getTmpDir() { return tmpDir; }
+    @Override public File getCacheDir() { return cacheDir; }
 
     @Override
     public String getClipboardText() {
