@@ -18,7 +18,6 @@ import illa4257.i4Framework.base.styling.StyleSetting;
 public class AndroidView extends ViewGroup {
     public final Component component;
 
-    private volatile int offset = 0;
     private boolean isNotRoot;
 
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
@@ -56,8 +55,6 @@ public class AndroidView extends ViewGroup {
             setLayoutParams(lp);
         }
         if (isNotRoot) {
-            component.subscribe("border-width", this::updateLS);
-            component.subscribe("border-color", this::updateLS);
             updateLS(null);
             listeners = new EventListener[] {
                     component.addEventListener(RecalculateEvent.class, e -> updateLS(null)),
@@ -78,9 +75,7 @@ public class AndroidView extends ViewGroup {
     }
 
     public void updateLS(final StyleSetting ignored) {
-        final int bw = component.getColor("border-color").alpha > 0 ? Math.round(Math.max(component.calcStyleNumber("border-width", Orientation.HORIZONTAL, 0), 0)) : 0;
-        layout(component.startX.calcInt() - bw, component.startY.calcInt() - bw, component.endX.calcInt() + bw * 2, component.endY.calcInt() + bw * 2);
-        offset = bw;
+        layout(component.renderStartX.calcInt(), component.renderStartY.calcInt(), component.renderEndX.calcInt(), component.renderEndY.calcInt());
     }
 
     protected final AndroidGContext context;
@@ -95,9 +90,8 @@ public class AndroidView extends ViewGroup {
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
+    protected void onDraw(final Canvas canvas) {
         super.onDraw(canvas);
-        canvas.translate(offset, offset);
         context.canvas = canvas;
         context.paint.setTextSize(19f * component.dp.calcFloat() * getResources().getConfiguration().fontScale);
         component.paint(context);

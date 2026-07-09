@@ -1,8 +1,8 @@
 package illa4257.i4Framework.android;
 
 import android.graphics.Bitmap;
-import illa4257.i4Utils.media.Image;
-import illa4257.i4Utils.media.ImageBufferable;
+import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.base.graphics.ImageBufferable;
 
 import java.nio.ByteBuffer;
 

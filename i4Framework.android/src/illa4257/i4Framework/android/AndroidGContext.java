@@ -7,8 +7,10 @@ import android.graphics.Rect;
 import illa4257.i4Framework.base.Context;
 import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Utils.math.Vector2;
-import illa4257.i4Utils.media.Color;
-import illa4257.i4Utils.media.Image;
+import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.graphics.Image;
+
+import static illa4257.i4Framework.android.AndroidFramework.L;
 
 public class AndroidGContext implements Context {
     public final Paint paint = new Paint();
@@ -49,7 +51,15 @@ public class AndroidGContext implements Context {
         return new Vector2(bounds.width(), bounds.height() + paint.getFontMetrics().descent);
     }
 
-    @Override public void setColor(final Color color) { paint.setColor(color.toARGB()); }
+    @Override
+    public void setPaint(final illa4257.i4Framework.base.graphics.Paint paint) {
+        if (paint instanceof Color)
+            this.paint.setColor(((Color) paint).toARGB());
+        else {
+            L.e("Unsupported paint type", paint.getClass());
+            this.paint.setColor(Color.TRANSPARENT.toARGB());
+        }
+    }
     @Override public float getStrokeWidth() { return paint.getStrokeWidth(); }
     @Override public void setStrokeWidth(final float newWidth) { paint.setStrokeWidth(newWidth); }
 

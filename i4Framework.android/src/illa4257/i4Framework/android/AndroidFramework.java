@@ -16,8 +16,8 @@ import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.components.ChangePointEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyMapper;
 import illa4257.i4Framework.base.capabilities.Bluetooth;
-import illa4257.i4Utils.media.Color;
-import illa4257.i4Utils.media.Image;
+import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.web.i4URI;
@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
 public class AndroidFramework extends Framework {
+    public static final i4Logger L = new i4Logger("Android").registerHandler(i4Logger.INSTANCE);
     public static final float SCALE_FACTOR = 1.5f;
 
     static final ConcurrentLinkedQueue<Activity> activities = new ConcurrentLinkedQueue<>();
@@ -207,7 +208,7 @@ public class AndroidFramework extends Framework {
                     @Override
                     public void paint(illa4257.i4Framework.base.Context context) {
                         super.paint(context);
-                        context.setColor(Color.RED);
+                        context.setPaint(Color.RED);
                         context.drawRect(0, 0, 256, 256);
                     }
                 };
@@ -305,6 +306,11 @@ public class AndroidFramework extends Framework {
 
     /// TODO: Change it.
     @Override public File getAppDir() { return new File(context.getApplicationInfo().sourceDir).getParentFile(); }
+
+    @Override
+    public File getCacheDir() {
+        return context.getCacheDir();
+    }
 
     public static Activity getActivity(final Window window) {
         return ((AndroidWindow) window.frameworkWindow.get()).activity.get();

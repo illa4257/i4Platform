@@ -22,8 +22,8 @@ import illa4257.i4Framework.base.events.touchscreen.TouchDownEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchMoveEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
 import illa4257.i4Framework.base.points.Point;
-import illa4257.i4Framework.base.points.PointAttach;
 import illa4257.i4Framework.base.points.numbers.NumberPoint;
+import illa4257.i4Framework.base.points.numbers.NumberPointAdd;
 import illa4257.i4Framework.base.points.numbers.NumberPointConstant;
 import illa4257.i4Framework.base.res.Res;
 import illa4257.i4Framework.base.styling.BaseTheme;
@@ -113,8 +113,8 @@ public class AndroidWindow implements FrameworkWindow {
             return WindowInsets.CONSUMED;
         });
         root.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
-            window.endX.set(new PointAttach(root.getWidth(), null));
-            window.endY.set(new PointAttach(root.getHeight(), null));
+            window.endX.set(new NumberPointAdd(root.getWidth(), null));
+            window.endY.set(new NumberPointAdd(root.getHeight(), null));
             updateSafeZone(root.getRootWindowInsets());
             window.fire(new ChangePointEvent(window));
             window.repaint();
