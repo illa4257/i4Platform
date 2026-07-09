@@ -9,5 +9,5 @@ public abstract class WSHandler extends Task {
         this.protocol = protocol;
     }
 
-    public void open() {}
+    public void open() throws Exception {}
 }
