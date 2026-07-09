@@ -1,6 +1,9 @@
 package illa4257.i4Utils.nio.web.tasks;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public abstract class QTask extends Task {
+    private final AtomicBoolean c = new AtomicBoolean(false);
     public int interestOps = 0;
     public Task next = null;
 
@@ -11,6 +14,8 @@ public abstract class QTask extends Task {
     }
 
     protected void complete() {
+        if (c.getAndSet(true))
+            return;
         transport.attach(next);
         transport.interestOps(interestOps);
         //noinspection resource

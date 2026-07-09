@@ -361,8 +361,6 @@ public class AcceptTask extends Task implements Protocol {
                         if (len == 0)
                             contentType = 0;
                     }
-                    if (isCurrent())
-                        break;
                     if (b.hasRemaining()) {
                         b.compact();
                         if (buffer == null) {

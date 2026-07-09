@@ -1,5 +1,6 @@
 package illa4257.i4Utils.nio.web.transports;
 
+import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.nio.web.WebServer;
 import illa4257.i4Utils.nio.web.tasks.BuffLand;
 import illa4257.i4Utils.nio.web.tasks.Task;
@@ -146,9 +147,16 @@ public class SSLTransport extends RawTransport {
         if (l == -1)
             return -1;
         netIn.flip();
-        //if (l == 0)
-        //    return 0;
-        return engine.unwrap(netIn, buffer).bytesProduced();
+        int n = 0;
+        while (netIn.hasRemaining()) {
+            if (check())
+                break;
+            final SSLEngineResult res = engine.unwrap(netIn, buffer);
+            n += res.bytesProduced();
+            if (res.getStatus() == SSLEngineResult.Status.BUFFER_UNDERFLOW || res.getStatus() == SSLEngineResult.Status.BUFFER_OVERFLOW)
+                break;
+        }
+        return n;
     }
 
     @Override
