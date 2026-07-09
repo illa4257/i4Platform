@@ -18,6 +18,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static illa4257.i4Utils.ir.IRAccess.*;
+
 public class ClassFile {
     public static final int MAGIC = 0xCAFEBABE;
 
@@ -173,12 +175,15 @@ public class ClassFile {
             m.name = (String) cf.constantPool.get(nameIndex - 1);
             m.type = descriptor.type.toIRType();
             irAccess(accessFlags, m.access);
-            if ((accessFlags & 0x0020) != 0) m.access.add(IRAccess.SYNCHRONIZED);
-            if ((accessFlags & 0x0040) != 0) m.access.add(IRAccess.BRIDGE);
-            if ((accessFlags & 0x0080) != 0) m.access.add(IRAccess.VARARGS);
-            if ((accessFlags & 0x0100) != 0) m.access.add(IRAccess.NATIVE);
-            if ((accessFlags & 0x0400) != 0) m.access.add(IRAccess.ABSTRACT);
-            if ((accessFlags & 0x0800) != 0) m.access.add(IRAccess.STRICT);
+            if ((accessFlags & ACC_PRIVATE) != 0) m.access.add(IRAccess.PRIVATE);
+            if ((accessFlags & ACC_PROTECTED) != 0) m.access.add(IRAccess.PROTECTED);
+            if ((accessFlags & ACC_STATIC) != 0) m.access.add(IRAccess.STATIC);
+            if ((accessFlags & ACC_SYNCHRONIZED) != 0) m.access.add(IRAccess.SYNCHRONIZED);
+            if ((accessFlags & ACC_BRIDGE) != 0) m.access.add(IRAccess.BRIDGE);
+            if ((accessFlags & ACC_VARARGS) != 0) m.access.add(IRAccess.VARARGS);
+            if ((accessFlags & ACC_NATIVE) != 0) m.access.add(IRAccess.NATIVE);
+            if ((accessFlags & ACC_ABSTRACT) != 0) m.access.add(IRAccess.ABSTRACT);
+            if ((accessFlags & ACC_STRICT) != 0) m.access.add(IRAccess.STRICT);
             for (final Descriptor.Type t : descriptor.parameters)
                 m.argumentsTypes.add(t.toIRType());
             for (final Attr attr : attributes) {
@@ -1595,6 +1600,13 @@ public class ClassFile {
         IRClass cls = new IRClass();
         cls.name = (String) constantPool.get(((ClsTag) constantPool.get(thisIndex - 1)).nameIndex - 1);
         cls.superName = superIndex != 0 ? (String) constantPool.get(((ClsTag) constantPool.get(superIndex - 1)).nameIndex - 1) : null;
+        irAccess(accessFlags, cls.access);
+        if ((accessFlags & ACC_SUPER) != 0) cls.access.add(IRAccess.SUPER);
+        if ((accessFlags & ACC_INTERFACE) != 0) cls.access.add(IRAccess.INTERFACE);
+        if ((accessFlags & ACC_ABSTRACT) != 0) cls.access.add(IRAccess.ABSTRACT);
+        if ((accessFlags & ACC_ANNOTATION) != 0) cls.access.add(IRAccess.ANNOTATION);
+        if ((accessFlags & ACC_ENUM) != 0) cls.access.add(IRAccess.ENUM);
+        if ((accessFlags & ACC_MODULE) != 0) cls.access.add(IRAccess.MODULE);
         for (final Field f : fields) {
             final IRField field = new IRField();
             field.name = (String) constantPool.get(f.nameIndex - 1);
@@ -1602,9 +1614,12 @@ public class ClassFile {
             field.type = d.type.toIRType();
             final short accessFlags = f.accessFlags;
             irAccess(accessFlags, field.access);
-            if ((accessFlags & 0x0040) != 0) field.access.add(IRAccess.VOLATILE);
-            if ((accessFlags & 0x0080) != 0) field.access.add(IRAccess.TRANSIENT);
-            if ((accessFlags & 0x4000) != 0) field.access.add(IRAccess.ENUM);
+            if ((accessFlags & ACC_PRIVATE) != 0) field.access.add(IRAccess.PRIVATE);
+            if ((accessFlags & ACC_PROTECTED) != 0) field.access.add(IRAccess.PROTECTED);
+            if ((accessFlags & ACC_STATIC) != 0) field.access.add(IRAccess.STATIC);
+            if ((accessFlags & ACC_VOLATILE) != 0) field.access.add(IRAccess.VOLATILE);
+            if ((accessFlags & ACC_TRANSIENT) != 0) field.access.add(IRAccess.TRANSIENT);
+            if ((accessFlags & ACC_ENUM) != 0) field.access.add(IRAccess.ENUM);
             cls.fields.add(field);
             if (f.value instanceof IntTag)
                 field.value = ((IntTag) f.value).n;
@@ -1630,11 +1645,8 @@ public class ClassFile {
     }
 
     public static void irAccess(final short mask, final ArrayList<IRAccess> access) {
-        if ((mask & 0x0001) != 0) access.add(IRAccess.PUBLIC);
-        if ((mask & 0x0002) != 0) access.add(IRAccess.PRIVATE);
-        if ((mask & 0x0004) != 0) access.add(IRAccess.PROTECTED);
-        if ((mask & 0x0008) != 0) access.add(IRAccess.STATIC);
-        if ((mask & 0x0010) != 0) access.add(IRAccess.FINAL);
-        if ((mask & 0x1000) != 0) access.add(IRAccess.SYNTHETIC);
+        if ((mask & ACC_PUBLIC) != 0) access.add(IRAccess.PUBLIC);
+        if ((mask & ACC_FINAL) != 0) access.add(IRAccess.FINAL);
+        if ((mask & ACC_SYNTHETIC) != 0) access.add(IRAccess.SYNTHETIC);
     }
 }
