@@ -7,25 +7,31 @@
 .combobox-options > container > *,
 .context-menu > *,
 .list > Button {
-    border-width: 0;
+    outline-width: 0;
     border-radius: 0;
 }
 
 ScrollPane,
 Window {
-    background-color: #131319;
+    background: #131319;
 }
 
 WindowFrame {
-    background-color: #334;
+    background: #334;
 }
 
 Panel {
-    background-color: #17171d;
+    background: #17171d;
 }
 
 .secondary-color {
     color: #757575;
+}
+
+Button,
+TextField,
+ComboBox {
+    height: 32dp;
 }
 
 Button {
@@ -37,14 +43,13 @@ Button,
 TextArea,
 TextField,
 ComboBox {
-    background-color: #191920;
-    border-width: 1dp;
+    background: #191920;
+    outline: 1dp solid #446;
     border-radius: 8dp;
-    border-color: #446;
 }
 
 Button:enabled:hover {
-    background-color: #223;
+    background: #223;
 }
 
 TextArea,
@@ -69,18 +74,19 @@ ComboBox:focus {
 }
 
 TabPane {
+    --tab-heighht: 32dp;
     --tabs-background-color: #212128;
     --tab-background-color: #292939;
     --tab-selected-background-color: #30304a;
 }
 
 ScrollBar {
-    background-color: #30303B;
+    background: #30303B;
     thumb-color: #404049;
 }
 
 ProgressBar {
-    background-color: #224;
+    background: #224;
     color: #55B;
     border-radius: 4dp;
 }
