@@ -1,7 +1,7 @@
 package illa4257.i4Framework.base.events.mouse;
 
 import illa4257.i4Framework.base.components.Component;
-import illa4257.i4Framework.base.math.Orientation;
+import illa4257.i4Framework.base.styling.Orientation;
 
 public class MouseScrollEvent extends MouseEvent {
     public final Orientation orientation;
