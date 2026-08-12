@@ -164,8 +164,11 @@ public class IR2JS {
         for (final IRField f : cls.fields)
             write(o.ln(), f).w(",");
         o.st(1).ln().w("},");
+        o.ln().w("methods:{").st(2);
         for (final IRMethod m : cls.methods) {
-            o.ln().w(methodName(m) + ":async function(");
+            o.ln().w(methodName(m)).w(":{").st(3);
+            o.ln().w("flags:" + IRAccess.toJava(m.access) + ",");
+            o.ln().w("code:async function(");
             int i = 0;
             o.w("sc,env,t");
             if (!m.access.contains(IRAccess.STATIC)) {
@@ -174,7 +177,7 @@ public class IR2JS {
             }
             for (final IRType ignored : m.argumentsTypes)
                 o.w(",a" + i++);
-            o.w("){try{await env.traceEnter(sc,t,").w(escapeStr(m.name)).w(");").st(2);
+            o.w("){try{await env.traceEnter(sc,t,").w(escapeStr(m.name)).w(");").st(4);
             if (m.access.contains(IRAccess.NATIVE)) {
                 o.ln();
                 if (m.type.kind != IRType.Kind.VOID)
@@ -193,14 +196,15 @@ public class IR2JS {
                 o.w(");");
             } else
                 try {
-                    write(new SW(o, 2), m.instructions);
+                    write(new SW(o, 4), m.instructions);
                 } catch (final RuntimeException e) {
                     System.err.println("#" + m.name);
                     m.print();
                     throw e;
                 }
-            o.st(1).ln().w("}finally{await env.traceExit(t);}},");
+            o.st(3).ln().w("}finally{await env.traceExit(t);}}").st(2).ln().w("},");
         }
+        o.st(1).ln().w("},");
         o.st(0).ln().w("}");
     }
 

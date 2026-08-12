@@ -148,6 +148,12 @@ class AsyncJavaEnv {
         await env.preInitCls(cls.class_loader, this, t, m, cls.fields, false);
         return m;
     }
+    
+    async clone(thread, instance) {
+        const c = await this.alloc(instance.cls, thread);
+        
+        throw new Error();
+    }
 
     getField(inst, name) {
         return inst['_' + name];
@@ -222,6 +228,10 @@ class AsyncJavaEnv {
             }
         if (!cls.fields)
             cls.fields = {};
+        if (!cls.methods)
+            cls.methods = {};
+        for (const [key, method] of Object.entries(cls.methods))
+            cls[key] = method.code;
         const staticFieldOrder = [], objectFieldOrder = [];
         if (cls.super_cls) {
             staticFieldOrder.push(...cls.super_cls.staticFieldOrder);
@@ -234,19 +244,21 @@ class AsyncJavaEnv {
     }
 
     arrLen(arr) {
-        return arr.length;
+        return arr.arr.length;
     }
 
     arrGet(arr, index) {
-        return arr[index];
+        return arr.arr[index];
     }
 
     arrSet(arr, index, val) {
-        arr[index] = val;
+        arr.arr[index] = val;
     }
 
-    newArr(len) {
-        return new Array(len);
+    async newArr(len) {
+        const arr = await this.alloc(await this.getClass(class_loader, null, "[Ljava/lang/Object", false), null);
+        arr.arr = new Array(len);
+        return arr;
     }
 
     async callNative(cls, env, t, methodName, encArgs, ...args) {
@@ -429,6 +441,10 @@ async function Java_java_lang_Object_hashCode(cls, env, thread, instance) {
     return result;
 }
 
+async function Java_java_lang_Object_clone__Ljava_lang_Object_2(cls, env, thread, instance) {
+    return await env.clone(thread, instance);
+}
+
 function Java_sun_misc_Unsafe_arrayBaseOffset(cls, env, thread, inst, c) { return 0; }
 
 async function Java_sun_misc_Unsafe_arrayIndexScale(cls, env, thread, inst, c) {
@@ -549,28 +565,6 @@ async function Java_java_lang_Object_wait__JV(cls, env, thread, instance, timeou
     await env.monitorWait(thread, instance, timeout);
 }
 
-async function Java_java_lang_Class_getDeclaredFields0__Z_3Ljava_lang_reflect_Field_2(cls, env, thread, instance, publicOnly) {
-    const c = await env.getClass(cls.class_loader, thread, "java/lang/reflect/Field"),
-            filter = publicOnly ? f => (f.flags & 0x0001) === 0 : _f => false;
-    const l = [];
-    for (const [key, f] of Object.entries((await env.getField(instance, 'class')).fields)) {
-        const field = await env.alloc(c, thread);
-        if (filter(field))
-            continue;
-        c['<init>__Ljava/lang/Class_2Ljava/lang/String_2Ljava/lang/Class_2IILjava/lang/String_2_3BV'](c, env, thread,
-                field, instance, await env.internJavaString(await JavaUtilities.javaStr(c.class_loader, env, thread, key)),
-                await getClass(
-                        await env.getClass(c.class_loader, thread, f.type, false),
-                    env, thread),
-                f.flags, -1, null, null);
-        l.push(field);
-    }
-    const r = await env.newArr(l.length);
-    for (const [i, v] of l.entries())
-        await env.arrSet(r, i, v);
-    return r;
-}
-
 async function Java_sun_misc_Unsafe_objectFieldOffset__Ljava_lang_reflect_Field_2J(cls, env, thread, instance, field) {
     const n = await JavaUtilities.jsStr(env,
         await field.cls['getName__Ljava/lang/String_2'](field.cls, env, thread, field)
@@ -625,6 +619,44 @@ async function Java_sun_misc_Unsafe_getIntVolatile__Ljava_lang_Object_2JI(cls, e
 async function Java_java_lang_System_setIn0__Ljava_io_InputStream_2V(cls, env, thread, stream) {
     const c = await env.getClass(cls.class_loader, thread, "java/lang/System");
     await env.setField(c, "in", stream);
+}
+
+async function Java_java_lang_Class_getDeclaredFields0__Z_3Ljava_lang_reflect_Field_2(cls, env, thread, instance, publicOnly) {
+    const c = await env.getClass(cls.class_loader, thread, "java/lang/reflect/Field"),
+        filter = publicOnly ? f => (f.flags & 0x0001) === 0 : _f => false;
+    const l = [];
+    for (const [key, f] of Object.entries((await env.getField(instance, 'class')).fields)) {
+        const field = await env.alloc(c, thread);
+        if (filter(field))
+            continue;
+        c['<init>__Ljava/lang/Class_2Ljava/lang/String_2Ljava/lang/Class_2IILjava/lang/String_2_3BV'](c, env, thread,
+            field, instance, await env.internJavaString(await JavaUtilities.javaStr(c.class_loader, env, thread, key)),
+            await getClass(
+                await env.getClass(c.class_loader, thread, f.type, false),
+                env, thread),
+            f.flags, -1, null, null);
+        l.push(field);
+    }
+    const r = await env.newArr(l.length);
+    for (const [i, v] of l.entries())
+        await env.arrSet(r, i, v);
+    return r;
+}
+
+async function Java_java_lang_Class_getDeclaredConstructors0__Z_3Ljava_lang_reflect_Constructor_2(cls, env, thread, instance, publicOnly) {
+    const l = [], filter = publicOnly ? f => (f.flags & 0x0001) === 0 : _f => false,
+        rc = await env.getClass(cls.class_loader, thread, "java/lang/reflect/Constructor");
+    for (const [key, f] of Object.entries((await env.getField(instance, 'class')).methods)) {
+        if (!key.startsWith("<init>") || filter(f.flags))
+            continue;
+        const constr = await env.alloc(rc, thread);
+        await rc['<init>__Ljava/lang/Class_2_3Ljava/lang/Class_2_3Ljava/lang/Class_2IILjava/lang/String_2_3B_3BV'](rc, env, thread, constr, instance, await env.newArr(0), await env.newArr(0), f.flags, null, null);
+        l.push(constr);
+    }
+    const r = await env.newArr(l.length);
+    for (const [i, v] of l.entries())
+        await env.arrSet(r, i, v);
+    return r;
 }
 
 console.log("rt.js loaded!");

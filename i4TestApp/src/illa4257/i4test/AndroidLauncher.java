@@ -12,6 +12,10 @@ public class AndroidLauncher extends AndroidActivity {
         i4Test.L.registerHandler(new AndroidLogger());
         i4Test.init(new AndroidFramework(getBaseContext()));
 
-        i4Test.start();
+        try {
+            i4Test.start();
+        } catch (final Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }

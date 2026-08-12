@@ -1,6 +1,6 @@
 package illa4257.i4test;
 
-import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.graphics.Context;
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.components.*;
@@ -12,7 +12,6 @@ import illa4257.i4Framework.base.components.TextField;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.curves.CubicBezierCurve;
 import illa4257.i4Framework.base.curves.Curve;
-import illa4257.i4Framework.base.curves.SineCurveOut;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
 import illa4257.i4Framework.base.graphics.Color;
@@ -27,7 +26,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 
-import static illa4257.i4Framework.base.math.Unit.DP;
+import static illa4257.i4Framework.base.styling.Unit.DP;
 
 public class i4Test {
     public static final i4Logger L = new i4Logger("i4Test");
@@ -41,7 +40,7 @@ public class i4Test {
         onThemeChange(framework.getTheme(), framework.getBaseTheme());
     }
 
-    public static void start() {
+    public static void start() throws Exception {
         final FrameworkWindow fw = framework.newWindow(null);
         final Window w = fw.getWindow();
         w.setTitle("i4Test");
@@ -128,9 +127,10 @@ public class i4Test {
                 }
             }
         };
+        t.classes.add("debug");
         t.style.set("width", "128dp");
-        t.style.set("height", "128dp");
         t.style.set("right", "64dp");
+        t.style.set("height", "128dp");
         t.style.set("bottom", "64dp");
         //t.style.set("border-radius", "16dp");
         t.style.set("background", "blue");
