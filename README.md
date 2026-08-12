@@ -7,29 +7,25 @@ and the programming language.
 
 ## Overview
 
-- **i4Utils**: Universal classes like SyncVar, MutableCharArray and etc.
+- **i4Utils**: Universal classes like IOs, MutableCharArray etc. (Requires `android` stub files)
 - **i4Framework**: UI Framework (requires `i4Utils`).
   - **i4Framework.desktop**: Some desktop universal utilities (Requires `jna-plaform`).
     - **i4Framework.swing**: Swing support for `i4Framework`.
+    - **i4Framework.awt**: AWT support for `i4Framework`.
   - **i4Framework.android**: Android support for `i4Framework`.
 - **i4LCommon**: Classes for the programming language. (WIP)
 - **i4LParser**: Parser for the programming language (requires `i4LCommon`).
 
 ## Usage
-### i4Utils
-```Java
-final SyncVar<String> v = new SyncVar("Hello, world!");
-System.out.println(v.get()); // Hello, world!
-v.set("test");
-System.out.println(v.get()); // test
-```
+
+Check i4TestApp folder for the full example.
 
 ### i4Framework + i4Framework.swing
 ```Java
 import illa4257.i4Framework.base.*;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
-import illa4257.i4Framework.base.points.PPointSubtract;
+import illa4257.i4Framework.base.points.ops.PPointSubtract;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.utils.CSSParser;
 import illa4257.i4Framework.swing.SwingFramework;
@@ -51,7 +47,7 @@ public class Test {
         final Window window = new Window();
         final FrameworkWindow frameworkWindow = framework.newWindow(window);
 
-        // Add styles
+        // Parse .css
         try (final InputStream is = framework.openResource("assets:///illa4257/i4Framework/light.css")) {
             if (is != null)
                 // Parse and apply the CSS stylesheet to the window
