@@ -171,6 +171,13 @@ public class IOs {
         return (charset != null ? charset : Charset.defaultCharset()).encode(CharBuffer.wrap(charArray)).array();
     }
 
+    public static char readChar(final Reader reader) throws IOException {
+        final int r = reader.read();
+        if (r == -1)
+            throw new EOFException("End of stream reached while trying to read a byte.");
+        return (char) r;
+    }
+
     /**
      * Tries to read a byte, if it reaches the end, it throws IOException.
      * @param is InputStream
@@ -231,6 +238,12 @@ public class IOs {
     public static byte[] readByteArray(final InputStream stream, final int length) throws IOException {
         final byte[] array = new byte[length];
         readByteArray(stream, array);
+        return array;
+    }
+
+    public static byte[] readByteArray(final ByteBuffer buffer, final int length) throws IOException {
+        final byte[] array = new byte[length];
+        buffer.get(array);
         return array;
     }
 
@@ -432,6 +445,13 @@ public class IOs {
         stream.write(number);
     }
 
+    public static void writeBEInt(final ByteBuffer buf, final int number) {
+        buf.put((byte) ((number >> 24) & 0xFF));
+        buf.put((byte) ((number >> 16) & 0xFF));
+        buf.put((byte) ((number >> 8) & 0xFF));
+        buf.put((byte) (number & 0xFF));
+    }
+
     public static void writeBEInt(final byte[] buff, final int number, final int offset) {
         buff[offset] = (byte) ((number >> 24) & 0xFF);
         buff[offset + 1] = (byte) ((number >> 16) & 0xFF);
@@ -496,5 +516,17 @@ public class IOs {
         buff[offset + 5] = (byte) ((number >> 16) & 0xFF);
         buff[offset + 6] = (byte) ((number >> 8) & 0xFF);
         buff[offset + 7] = (byte) (number & 0xFF);
+    }
+
+    public static void writeBEDouble(final ByteBuffer buf, final double number) {
+        final long bits = Double.doubleToRawLongBits(number);
+        buf.put((byte) (bits >>> 56));
+        buf.put((byte) (bits >>> 48));
+        buf.put((byte) (bits >>> 40));
+        buf.put((byte) (bits >>> 32));
+        buf.put((byte) (bits >>> 24));
+        buf.put((byte) (bits >>> 16));
+        buf.put((byte) (bits >>> 8));
+        buf.put((byte) bits);
     }
 }
