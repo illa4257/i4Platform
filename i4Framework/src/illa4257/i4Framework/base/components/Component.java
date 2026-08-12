@@ -1,7 +1,6 @@
 package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.*;
-import illa4257.i4Framework.base.curves.Curve;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.components.*;
 import illa4257.i4Framework.base.events.IEvent;
@@ -14,29 +13,27 @@ import illa4257.i4Framework.base.events.mouse.MouseLeaveEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchDownEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
-import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.base.graphics.Context;
 import illa4257.i4Framework.base.graphics.Paint;
+import illa4257.i4Framework.base.graphics.Sprite;
+import illa4257.i4Framework.base.points.layout.StylePoint;
 import illa4257.i4Framework.base.points.numbers.NumberPointAdd;
 import illa4257.i4Framework.base.points.ops.PPointAdd;
 import illa4257.i4Framework.base.points.ops.PPointSubtract;
 import illa4257.i4Framework.base.styling.*;
 import illa4257.i4Framework.base.graphics.Color;
-import illa4257.i4Framework.base.math.Orientation;
-import illa4257.i4Framework.base.math.Unit;
+import illa4257.i4Framework.base.styling.Orientation;
+import illa4257.i4Framework.base.styling.Unit;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.numbers.NumberPointConstant;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.points.*;
-import illa4257.i4Framework.base.utils.Cache;
 import illa4257.i4Utils.Destructor;
-import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Utils.SyncVar;
 import illa4257.i4Utils.lists.IntSet;
 import illa4257.i4Utils.lists.SwappableTmpQueue;
 import illa4257.i4Utils.logger.i4Logger;
 
-import java.io.IOException;
-import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -44,7 +41,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 import static illa4257.i4Framework.base.Framework.L;
 
@@ -76,7 +72,7 @@ public class Component extends Destructor {
     public final Style style = new Style();
     public final Stylesheet stylesheet = new Stylesheet();
     private final ArrayList<Map.Entry<StyleSelector, Style>> cache = new ArrayList<>();
-    private final ConcurrentHashMap<String, List<List<Object>>> cachedEvals = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, List<List<List<Object>>>> cachedEvals = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ConcurrentHashMap<ArrKeys, ConcurrentLinkedQueue<Consumer<StyleProperty>>>>
             subscribers = new ConcurrentHashMap<>();
 
@@ -113,7 +109,8 @@ public class Component extends Destructor {
     public final Point
             width = new PPointSubtract(endX, startX), height = new PPointSubtract(endY, startY),
 
-            offsetSX = getPoint(outlineWidthProperties, Orientation.HORIZONTAL, 0, 0, 0),
+            offsetSX = StylePoint.lambda(this, outlineWidthProperties, StyleProperty.pxFilter, pi ->
+                    pi.nextLayer().nextSet().point(Orientation.HORIZONTAL, NumberPointConstant.ZERO)),
             offsetSY = offsetSX,
             offsetEX = offsetSX,
             offsetEY = offsetSX,
@@ -366,60 +363,6 @@ public class Component extends Destructor {
         }
     }
 
-    public List<List<Object>> resolveVar(final String varName, final ArrayList<String> inProcess) {
-        if (varName == null)
-            return Collections.emptyList();
-        return cachedEvals.computeIfAbsent(varName, ignored -> {
-            final StyleProperty property = getProperty(varName);
-            if (property == null)
-                return Collections.emptyList();
-            if (inProcess.contains(varName))
-                return Collections.emptyList();
-            inProcess.add(varName);
-            final List<List<Object>> ll = new ArrayList<>();
-            for (final List<Object> l : property.objs) {
-                final ArrayList<Object> n = new ArrayList<>();
-                for (final Object o : l)
-                    if (StyleProperty.varFilter.test(o))
-                        for (final List<Object> nl : resolveVar(StyleProperty.getVarName(o), inProcess))
-                            n.addAll(nl);
-                    else
-                        n.add(o);
-                ll.add(n);
-            }
-            return ll;
-        });
-    }
-
-    public List<List<Object>> evalVar(final StyleProperty property) {
-        if (property == null)
-            return null;
-        return cachedEvals.computeIfAbsent(property.name, ignored -> {
-            final ArrayList<String> inProcess = new ArrayList<>();
-            inProcess.add(property.name);
-            final List<List<Object>> ll = new ArrayList<>();
-            for (final List<Object> l : property.objs) {
-                final ArrayList<Object> n = new ArrayList<>();
-                for (final Object o : l)
-                    if (StyleProperty.varFilter.test(o))
-                        for (final List<Object> nl : resolveVar(StyleProperty.getVarName(o), inProcess))
-                            n.addAll(nl);
-                    else
-                        n.add(o);
-                ll.add(n);
-            }
-            return ll;
-        });
-    }
-
-    public List<List<Object>> evalVar(final String name) {
-        return evalVar(getProperty(name));
-    }
-
-    public List<List<Object>> evalVar(final List<String> names) {
-        return evalVar(getProperty(names));
-    }
-
     private final ArrayList<EventListener<? extends IEvent>> focusListeners = new ArrayList<>();
 
     public void setFocusable(final boolean newValue) {
@@ -484,47 +427,41 @@ public class Component extends Destructor {
         }
     }
 
-    private Point glp(final StyleProperty property, final Orientation orientation) {
-        final List<Object> ss = Component.ss.get();
-
-        ss.clear();
-        getLayoutSet(evalVar(property), ss, 0);
-
-        final float r = calc(ss, 0, orientation, Float.NaN);
-        if (Float.isNaN(r))
-            return null;
-        return new NumberPointConstant(r);
-    }
-
     private void layoutLeft(final StyleProperty property) {
-        propL = glp(property, Orientation.HORIZONTAL);
+        propL = getPI().select(property, StyleProperty.pxFilter).nextLayer().nextSet()
+                .point(Orientation.HORIZONTAL, null);
         layoutH();
     }
 
     private void layoutTop(final StyleProperty property) {
-        propT = glp(property, Orientation.VERTICAL);
+        propT = getPI().select(property, StyleProperty.pxFilter).nextLayer().nextSet()
+                .point(Orientation.VERTICAL, null);
         layoutV();
     }
 
     private void layoutRight(final StyleProperty property) {
-        final Point r = glp(property, Orientation.HORIZONTAL);
+        final Point r = getPI().select(property, StyleProperty.pxFilter).nextLayer().nextSet()
+                .point(Orientation.HORIZONTAL, null);
         propR = r != null ? new PPointSubtract(new ParentPoint(this, Orientation.HORIZONTAL), r) : null;
         layoutH();
     }
 
     private void layoutBottom(final StyleProperty property) {
-        final Point b = glp(property, Orientation.VERTICAL);
+        final Point b = getPI().select(property, StyleProperty.pxFilter).nextLayer().nextSet()
+                .point(Orientation.VERTICAL, null);
         propB = b != null ? new PPointSubtract(new ParentPoint(this, Orientation.VERTICAL), b) : null;
         layoutV();
     }
 
     private void layoutWidth(final StyleProperty property) {
-        propW = glp(property, Orientation.HORIZONTAL);
+        propW = getPI().select(property, StyleProperty.pxFilter).nextLayer().nextSet()
+                .point(Orientation.HORIZONTAL, null);
         layoutH();
     }
 
     private void layoutHeight(final StyleProperty property) {
-        propH = glp(property, Orientation.VERTICAL);
+        propH = getPI().select(property, StyleProperty.pxFilter).nextLayer().nextSet()
+                .point(Orientation.VERTICAL, null);
         layoutV();
     }
 
@@ -535,7 +472,7 @@ public class Component extends Destructor {
             ex.set(propR);
         } else {
             final Point l = propL, r = propR;
-            if (l == null) {
+            if (l == null && r != null) {
                 ex.set(r);
                 sx.set(new PPointSubtract(endX, w));
             } else {
@@ -920,284 +857,93 @@ public class Component extends Destructor {
             fire(new ChangePointEvent(this, isSystem));
     }
 
-    public void animate(final Curve curve) {
-
-    }
-
     private static final List<String>
             outlineColorProperties = Arrays.asList("outline-color", "outline"),
             outlineWidthProperties = Arrays.asList("outline-width", "outline"),
             backgroundColorProperties = Arrays.asList("background-color", "background"),
-            backgroundImageProperties = Arrays.asList("background-image", "background");
-    public static final ThreadLocal<ArrayList<Object>> ss = ThreadLocal.withInitial(ArrayList::new);
+            backgroundSpriteProperties = Arrays.asList("background-sprite", "background-image", "background");
+
+    public static final ThreadLocal<PropIter>
+            propIter = PropIter.INSTANCE,
+            propIter2 = PropIter.INSTANCE2;
+
+    public PropIter getPI() { return propIter.get().setComponent(this); }
+    public PropIter getPI2() { return propIter2.get().setComponent(this); }
+
     public void paint(final Context context) {
-        final List<Object> ss = Component.ss.get();
+        final PropIter ss = getPI();
         final float
                 w = width.calcFloat(), h = height.calcFloat(),
-                borderRadius, outlineWidth;
-        final Paint borderColor;
+                brwtl, brwtr, brwbr, brwbl,
+                brhtl, brhtr, brhbr, brhbl,
+                outlineWidth;
+        final Paint outlineColor;
 
         context.translate(offsetSX.calcFloat(), offsetSY.calcFloat());
 
-        ss.clear();
-        getSet(evalVar("border-radius"), ss, StyleProperty.numberFilter, 0);
-        borderRadius = calc(ss, 0, Orientation.HORIZONTAL, 0);
-        ss.clear();
-        getSet(evalVar(outlineWidthProperties), ss, StyleProperty.numberFilter, 0);
-        outlineWidth = calc(ss, 0, Orientation.HORIZONTAL, 0);
-        ss.clear();
-        getSet(evalVar(outlineColorProperties), ss, StyleProperty.paintFilter, 0);
-        borderColor = getPaint(ss, 0, Color.TRANSPARENT);
+        ss.select("border-radius", StyleProperty.pxFilter).nextLayer().nextSet();
+        brwtl = ss.f(Orientation.HORIZONTAL, 0);
+        brwtr = ss.f(Orientation.HORIZONTAL, 0);
+        brwbr = ss.f(Orientation.HORIZONTAL, 0);
+        brwbl = ss.f(Orientation.HORIZONTAL, 0);
+        ss.nextSet();
+        brhtl = ss.f(Orientation.VERTICAL, 0);
+        brhtr = ss.f(Orientation.VERTICAL, 0);
+        brhbr = ss.f(Orientation.VERTICAL, 0);
+        brhbl = ss.f(Orientation.VERTICAL, 0);
 
-        if (outlineWidth >= 0.5f && borderColor != null && (!(borderColor instanceof Color) || ((Color) borderColor).alpha > 0)) {
-            context.setPaint(borderColor);
+        ss.select(outlineWidthProperties, StyleProperty.pxFilter).nextLayer().nextSet();
+        outlineWidth = ss.f(Orientation.HORIZONTAL, 0);
+        ss.select(outlineColorProperties, StyleProperty.paintFilter).nextLayer().nextSet();
+        outlineColor = ss.paint(Color.TRANSPARENT);
 
-            if (borderRadius >= 0.5f) {
+        boolean hasRoundedBorders = (brwtl > 0 && brhtl > 0) ||
+                (brwtr > 0 && brhtr > 0) ||
+                (brwbr > 0 && brhbr > 0) ||
+                (brwbl > 0 && brhbl > 0);
+        if (outlineWidth >= 0.5f && outlineColor != null && (!(outlineColor instanceof Color) || ((Color) outlineColor).alpha > 0)) {
+            context.setPaint(outlineColor);
+
+            if (hasRoundedBorders) {
                 final float offset = outlineWidth / 2;
                 context.setStrokeWidth(outlineWidth);
-                context.draw(context.newRoundShape(-offset, -offset, w + outlineWidth, h + outlineWidth, borderRadius + outlineWidth));
+                context.draw(context.newRoundShape(-offset, -offset, w + outlineWidth, h + outlineWidth,
+                        brwtl + outlineWidth, brhtl + outlineWidth,
+                        brwtr + outlineWidth, brhtr + outlineWidth,
+                        brwbr + outlineWidth, brhbr + outlineWidth,
+                        brwbl + outlineWidth, brhbl + outlineWidth
+                ));
                 context.setStrokeWidth(1);
             } else {
-                context.drawRect(-outlineWidth, -outlineWidth, w + outlineWidth * 2, outlineWidth);
-                context.drawRect(-outlineWidth, h, w + outlineWidth * 2, outlineWidth);
-                context.drawRect(-outlineWidth, 0, outlineWidth, h);
-                context.drawRect(w, 0, outlineWidth, h);
+                context.fillRect(-outlineWidth, -outlineWidth, w + outlineWidth * 2, outlineWidth);
+                context.fillRect(-outlineWidth, h, w + outlineWidth * 2, outlineWidth);
+                context.fillRect(-outlineWidth, 0, outlineWidth, h);
+                context.fillRect(w, 0, outlineWidth, h);
             }
         }
 
-        if (borderRadius >= 0.5f)
-            context.setClip(context.newRoundShape(0, 0, w, h, borderRadius));
+        if (hasRoundedBorders)
+            context.setClip(context.newRoundShape(0, 0, w, h, brwtl, brhtl, brwtr, brhtr, brwbr, brhbr, brwbl, brhbl));
 
-        List<List<Object>> vars = evalVar(backgroundColorProperties);
-        if (vars != null && !vars.isEmpty())
-            for (final List<Object> set : vars) {
-                ss.clear();
-                StyleProperty.filter(set, ss, StyleProperty.paintFilter);
-                if (!ss.isEmpty()) {
-                    final Paint bg = getPaint(ss, 0, Color.TRANSPARENT);
-                    if ((!(bg instanceof Color) || ((Color) bg).alpha > 0)) {
-                        context.setPaint(bg);
-                        context.drawRect(0, 0, w, h);
-                    }
-                    break;
-                }
-            }
-
-        vars = evalVar(backgroundImageProperties);
-        if (vars != null && !vars.isEmpty())
-            for (final List<Object> set : vars) {
-                ss.clear();
-                StyleProperty.filter(set, ss, StyleProperty.imageFilter);
-                if (!ss.isEmpty())
-                    for (final Object image : ss) {
-                        final Image img = getImage(image, null);
-                        if (img != null)
-                            context.drawImage(Cache.scale(img, w, h), 0, 0);
-                    }
-            }
-
-        //final Image img = getImage("background-image");
-        //if (img != null)
-        //    context.drawImage(Cache.scale(img, w, h), 0, 0);
-    }
-
-    public Point getPoint(final String name, final Orientation orientation, final int set, final int index, final float defValue) {
-        return getPoint(new String[] { name }, orientation, set, index, defValue);
-    }
-
-    public Point getPoint(final List<String> names, final Orientation orientation, final int set, final int index, final float defValue) {
-        final String[] l = names.toArray(new String[0]);
-        Arrays.sort(l);
-        return getPoint(l, orientation, set, index, defValue);
-    }
-
-    public Point getPoint(final String[] names, final Orientation orientation, final int set, final int index, final float defValue) {
-        return new Point() {
-            private volatile float v;
-
-            {
-                onChange(getProperty(names));
-            }
-
-            public void onChange(final StyleProperty property) {
-                final List<List<Object>> r = evalVar(property);
-                final List<Object> ss = Component.ss.get();
-                ss.clear();
-                getSet(r, ss, StyleProperty.numberFilter, set);
-                v = calc(ss, index, orientation, defValue);
-                reset();
-            }
-
-            @Override
-            public float calcFloat() {
-                return v;
-            }
-
-            @Override
-            public void onConstruct() {
-                Component.this.subscribe(names, this::onChange);
-                super.onConstruct();
-            }
-
-            @Override
-            public void onDestruct() {
-                Component.this.unsubscribe(this::onChange);
-                super.onDestruct();
-            }
-        };
-    }
-
-    public static void getSet(final List<List<Object>> l, final List<Object> o, final Predicate<Object> filter, final int index) {
-        if (l == null || index >= l.size())
-            return;
-        StyleProperty.filter(l.get(index), o, filter);
-    }
-
-    public static void getLayoutSet(final List<List<Object>> l, final List<Object> o, final int index) {
-        if (l == null || index >= l.size())
-            return;
-        StyleProperty.filter(l.get(index), o, obj -> {
-            if (obj instanceof String && ((String) obj).equalsIgnoreCase("auto"))
-                return true;
-            return StyleProperty.numberFilter.test(obj);
-        });
-    }
-
-    public static <T extends Enum<T>> void getEnumSet(final List<List<Object>> l, final List<Object> o, final Class<T> e, final int index) {
-        if (l == null || index >= l.size())
-            return;
-        StyleProperty.filterEnum(l.get(index), o, e);
-    }
-
-    public static Object get(final List<Object> l, final int index) {
-        if (index >= l.size())
-            return null;
-        return l.get(index);
-    }
-
-    public float calc(final List<Object> l, final int index, final Orientation orientation, final float defValue) {
-        if (index >= l.size())
-            return defValue;
-        return calc(l.get(index), orientation, defValue);
-    }
-
-    public float calc(final Object o, final Orientation orientation, final float defValue) {
-        if (o instanceof StyleCall) {
-            final StyleCall c = (StyleCall) o;
-            if ("calc".equals(c.name)) {
-                L.w("calc function isn't implemented!");
-            } else
-                L.w("Unknown function", c.name);
-        } else if (o instanceof String) {
-            final String s = (String) o;
-            if (s.endsWith("deg"))
-                return Float.parseFloat(s.substring(0, s.length() - 3));
-            if (s.endsWith("%")) {
-                final Container c = getParent();
-                final float v = Float.parseFloat(s.substring(0, s.length() - 1));
-                return c != null ?
-                        v * (orientation == Orientation.HORIZONTAL ? width.calcFloat() : height.calcFloat()) : v;
-            }
-            if (s.endsWith("px"))
-                return Float.parseFloat(s.substring(0, s.length() - 2));
-            if (s.endsWith("dp"))
-                return Float.parseFloat(s.substring(0, s.length() - 2)) * dp.calcFloat();
-            if (s.endsWith("sp"))
-                return Float.parseFloat(s.substring(0, s.length() - 2)) * sp.calcFloat();
-            return Float.parseFloat(s);
-        } else if (o != null)
-            L.w("Unknown number type", o.getClass());
-        return defValue;
-    }
-
-    public Paint getPaint(final List<Object> l, final int index, final Paint defValue) {
-        if (index >= l.size())
-            return defValue;
-        return getPaint(l.get(index), defValue);
-    }
-
-    public Paint getPaint(final Object o, final Paint defValue) {
-        if (o instanceof String)
-            try {
-                return Color.parse((String) o);
-            } catch (final IllegalArgumentException ex) {
-                L.w(ex);
-            }
-        return defValue;
-    }
-
-    public Image getImage(final Object o, final Image defValue) {
-        if (o instanceof StyleCall) {
-            final StyleCall c = (StyleCall) o;
-            if ("url".equals(c.name) && !c.objs.isEmpty()) {
-                final List<Object> l = c.objs.get(0);
-                if (!l.isEmpty()) {
-                    final Object url = l.get(0);
-                    if (url instanceof StyleStr) {
-                        final String s = ((StyleStr) url).value;
-                        final AtomicReference<Image> ir = new AtomicReference<>();
-                        {
-                            final SoftReference<Image> ref = Cache.images.computeIfAbsent(s, ignored -> {
-                                final Framework f = getFramework();
-                                if (f != null)
-                                    try {
-                                        final Image img = f.getImage(s);
-                                        ir.set(img);
-                                        return new SoftReference<>(img);
-                                    } catch (final Exception ex) {
-                                        L.e(ex);
-                                    }
-                                return null;
-                            });
-                            if (ir.get() != null)
-                                return ir.get();
-                            if (ref != null) {
-                                final Image r = ref.get();
-                                if (r != null)
-                                    return r;
-                            }
-                        }
-                        Cache.images.compute(s, (ignored, ref) -> {
-                            if (ref != null) {
-                                final Image img = ref.get();
-                                if (img != null) {
-                                    ir.set(img);
-                                    return ref;
-                                }
-                            }
-                            final Framework f = getFramework();
-                            if (f != null)
-                                try {
-                                    final Image img = f.getImage(s);
-                                    ir.set(img);
-                                    return new SoftReference<>(img);
-                                } catch (final Exception ex) {
-                                    L.e(ex);
-                                }
-                            return null;
-                        });
-                        if (ir.get() != null)
-                            return ir.get();
-                    }
-                }
+        ss.select(backgroundColorProperties, StyleProperty.paintFilter);
+        while (ss.hasNextLayer()) {
+            ss.nextLayer().nextSet();
+            while (ss.hasNext()) {
+                final Paint c = ss.paint(Color.TRANSPARENT);
+                context.setPaint(c);
+                context.fillRect(0, 0, w, h);
             }
         }
-        return defValue;
-    }
 
-    public <T extends Enum<T>> T getEnum(final List<Object> l, final Class<T> e, final int index, final T defValue) {
-        if (index >= l.size())
-            return defValue;
-        return getEnum(l.get(index), e, defValue);
-    }
-
-    public <T extends Enum<T>> T getEnum(final Object obj, final Class<T> e, final T defValue) {
-        if (!(obj instanceof String))
-            return defValue;
-        try {
-            return MiniUtil.enumValueOfIgnoreCase(e, ((String) obj).replace('-', '_'));
-        } catch (final IllegalAccessException ignored) {
-            return defValue;
+        ss.select(backgroundSpriteProperties, StyleProperty.spriteFilter);
+        while (ss.hasNextLayer()) {
+            ss.nextLayer().nextSet();
+            while (ss.hasNext()) {
+                final Sprite img = ss.sprite(null);
+                if (img == null)
+                    continue;
+                context.drawSprite(img, 0, 0, w, h);
+            }
         }
     }
 }

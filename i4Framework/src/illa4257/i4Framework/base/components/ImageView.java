@@ -1,6 +1,6 @@
 package illa4257.i4Framework.base.components;
 
-import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.graphics.Context;
 import illa4257.i4Framework.base.graphics.Image;
 
 public class ImageView extends Component {
@@ -18,6 +18,6 @@ public class ImageView extends Component {
         final float w = width.calcFloat(), h = height.calcFloat(),
                 s = Math.min(w / img.width, h / img.height),
                 sw = s * img.width, sh = s * img.height;
-        ctx.drawImage(img, (w - sw) / 2, (h - sh) / 2, sw, sh);
+        ctx.drawSprite(img, (w - sw) / 2, (h - sh) / 2, sw, sh);
     }
 }

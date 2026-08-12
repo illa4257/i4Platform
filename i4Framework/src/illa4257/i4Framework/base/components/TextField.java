@@ -7,16 +7,16 @@ import illa4257.i4Framework.base.events.keyboard.KeyPressEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyUpEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
 import illa4257.i4Framework.base.graphics.Color;
-import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.graphics.Context;
 import illa4257.i4Framework.base.events.mouse.MouseButton;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseMoveEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.graphics.Paint;
+import illa4257.i4Framework.base.styling.PropIter;
 import illa4257.i4Framework.base.styling.StyleProperty;
 import illa4257.i4Utils.lists.MutableCharArray;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -379,13 +379,12 @@ public class TextField extends Component {
     public void paint(final Context context) {
         super.paint(context);
         lastContext = context;
-        final List<Object> ss = Component.ss.get();
+        final PropIter ss = getPI();
 
         if (!isFocused() && text.isEmpty()) {
             final Object h = hint;
-            ss.clear();
-            getSet(evalVar("--hint-color"), ss, StyleProperty.paintFilter, 0);
-            final Paint hintColor = getPaint(ss, 0, Color.TRANSPARENT);
+            ss.select("--hint-color", StyleProperty.paintFilter).nextLayer().nextSet();
+            final Paint hintColor = ss.paint(Color.TRANSPARENT);
             if (h != null && hintColor != null && (!(hintColor instanceof Color) || ((Color) hintColor).alpha > 0)) {
                 context.setPaint(hintColor);
                 context.drawString(h.toString(), 8, (height.calcFloat() - context.bounds(new char[] { 'H' }).y) / 2);
@@ -393,9 +392,8 @@ public class TextField extends Component {
             return;
         }
 
-        ss.clear();
-        getSet(evalVar("color"), ss, StyleProperty.paintFilter, 0);
-        final Paint textColor = getPaint(ss, 0, Color.TRANSPARENT);
+        ss.select("color", StyleProperty.paintFilter).nextLayer().nextSet();
+        final Paint textColor = ss.paint(Color.TRANSPARENT);
         if (textColor == null || (textColor instanceof Color && ((Color) textColor).alpha <= 0))
             return;
         context.setPaint(textColor);
@@ -443,13 +441,12 @@ public class TextField extends Component {
 
         if (si == -1 || si == startIndex) {
             if (isF && startIndex <= i)
-                context.drawRect(selectEndX, y, 2, th);
+                context.fillRect(selectEndX, y, 2, th);
             return;
         }
 
-        ss.clear();
-        getSet(evalVar("--selection-color"), ss, StyleProperty.paintFilter, 0);
-        final Paint sc = getPaint(ss, 0, Color.TRANSPARENT);
+        ss.select("--selection-color", StyleProperty.paintFilter).nextLayer().nextSet();
+        final Paint sc = ss.paint(Color.TRANSPARENT);
         if (sc != null && (!(sc instanceof Color) || ((Color) sc).alpha > 0)) {
             context.setPaint(sc);
             if (selectBeginX == -1)
@@ -461,9 +458,9 @@ public class TextField extends Component {
                 selectBeginX = selectEndX;
                 selectEndX = t;
             }
-            context.drawRect(selectBeginX, y, selectEndX - selectBeginX, th);
+            context.fillRect(selectBeginX, y, selectEndX - selectBeginX, th);
         }
         context.setPaint(textColor);
-        context.drawRect(si > startIndex ? selectBeginX : selectEndX, y, 2, th);
+        context.fillRect(si > startIndex ? selectBeginX : selectEndX, y, 2, th);
     }
 }

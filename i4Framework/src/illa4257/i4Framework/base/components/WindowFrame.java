@@ -5,7 +5,7 @@ import illa4257.i4Framework.base.events.components.ChangeZ;
 import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseMoveEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
-import illa4257.i4Framework.base.math.Unit;
+import illa4257.i4Framework.base.styling.Unit;
 import illa4257.i4Framework.base.points.ops.PPointAdd;
 import illa4257.i4Framework.base.points.ops.PPointSubtract;
 import illa4257.i4Framework.base.styling.Cursor;

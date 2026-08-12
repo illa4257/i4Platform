@@ -6,12 +6,11 @@ import illa4257.i4Framework.base.events.SingleEvent;
 import illa4257.i4Framework.base.events.components.RecalculateEvent;
 import illa4257.i4Framework.base.events.components.StyleUpdateEvent;
 import illa4257.i4Framework.base.events.mouse.MouseScrollEvent;
-import illa4257.i4Framework.base.math.Orientation;
+import illa4257.i4Framework.base.styling.Orientation;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.numbers.NumberPoint;
+import illa4257.i4Framework.base.styling.PropIter;
 import illa4257.i4Framework.base.styling.StyleProperty;
-
-import java.util.List;
 
 public class ScrollPane extends Container {
     private Container c = null;
@@ -42,11 +41,10 @@ public class ScrollPane extends Container {
         addEventListener(ReCalcBars.class, e -> {
             if (c == null)
                 return;
-            final List<Object> ss = Component.ss.get();
+            final PropIter ss = getPI();
 
-            ss.clear();
-            getSet(evalVar("--scrollbar-width"), ss, StyleProperty.numberFilter, 0);
-            final int scrollBarWidth = Math.round(calc(ss, 0, Orientation.HORIZONTAL, 0));
+            ss.select("--scrollbar-width", StyleProperty.pxFilter).nextLayer().nextSet();
+            final int scrollBarWidth = Math.round(ss.f(Orientation.HORIZONTAL, 0));
             if (scrollBarWidth <= 0)
                 return;
             final int cw = c.width.calcInt(), ch = c.height.calcInt();

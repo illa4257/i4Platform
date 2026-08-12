@@ -7,7 +7,7 @@ import illa4257.i4Framework.base.FileChooser;
 import illa4257.i4Framework.base.components.*;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.VisibleEvent;
-import illa4257.i4Framework.base.math.Unit;
+import illa4257.i4Framework.base.styling.Unit;
 import illa4257.i4Framework.base.points.ops.PPointAdd;
 import illa4257.i4Framework.base.points.ops.PPointSubtract;
 import illa4257.i4Framework.base.points.Point;

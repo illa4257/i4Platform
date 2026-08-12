@@ -6,13 +6,13 @@ import illa4257.i4Framework.base.events.mouse.MouseDownEvent;
 import illa4257.i4Framework.base.events.mouse.MouseMoveEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.graphics.Color;
-import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.graphics.Context;
 import illa4257.i4Framework.base.graphics.Paint;
-import illa4257.i4Framework.base.math.Orientation;
+import illa4257.i4Framework.base.styling.Orientation;
 import illa4257.i4Framework.base.events.mouse.MouseScrollEvent;
+import illa4257.i4Framework.base.styling.PropIter;
 import illa4257.i4Framework.base.styling.StyleProperty;
 
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -102,11 +102,10 @@ public class ScrollBar extends Component {
     @Override
     public void paint(final Context ctx) {
         super.paint(ctx);
-        final List<Object> ss = Component.ss.get();
+        final PropIter ss = getPI();
 
-        ss.clear();
-        getSet(evalVar("thumb-color"), ss, StyleProperty.paintFilter, 0);
-        Paint thumbColor = getPaint(ss, 0, Color.TRANSPARENT);
+        ss.select("thumb-color", StyleProperty.paintFilter).nextLayer().nextSet();
+        Paint thumbColor = ss.paint(Color.TRANSPARENT);
         if (thumbColor == null || (thumbColor instanceof Color && ((Color) thumbColor).alpha <= 0))
             return;
         if (u.getAndSet(false)) {
@@ -122,8 +121,8 @@ public class ScrollBar extends Component {
         }
         ctx.setPaint(thumbColor);
         if (orientation == Orientation.VERTICAL)
-            ctx.drawRect(0, thumbOffset, width.calcFloat(), thumbLength);
+            ctx.fillRect(0, thumbOffset, width.calcFloat(), thumbLength);
         else
-            ctx.drawRect(thumbOffset, 0, thumbLength, height.calcFloat());
+            ctx.fillRect(thumbOffset, 0, thumbLength, height.calcFloat());
     }
 }

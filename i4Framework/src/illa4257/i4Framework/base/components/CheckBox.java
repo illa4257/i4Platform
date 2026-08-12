@@ -1,6 +1,6 @@
 package illa4257.i4Framework.base.components;
 
-import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.graphics.Context;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.IMoveableInputEvent;
 import illa4257.i4Framework.base.events.components.ActionEvent;
@@ -8,16 +8,16 @@ import illa4257.i4Framework.base.events.components.ChangeTextEvent;
 import illa4257.i4Framework.base.events.mouse.MouseUpEvent;
 import illa4257.i4Framework.base.events.touchscreen.TouchUpEvent;
 import illa4257.i4Framework.base.graphics.Paint;
-import illa4257.i4Framework.base.math.HorizontalAlign;
+import illa4257.i4Framework.base.styling.HorizontalAlign;
+import illa4257.i4Framework.base.styling.PropIter;
 import illa4257.i4Framework.base.styling.StyleProperty;
 import illa4257.i4Utils.math.Vector2;
 import illa4257.i4Framework.base.graphics.Color;
 
-import java.util.List;
 import java.util.Objects;
 
-import static illa4257.i4Framework.base.math.HorizontalAlign.CENTER;
-import static illa4257.i4Framework.base.math.HorizontalAlign.LEFT;
+import static illa4257.i4Framework.base.styling.HorizontalAlign.CENTER;
+import static illa4257.i4Framework.base.styling.HorizontalAlign.LEFT;
 
 public class CheckBox extends Component {
     private final Object textLocker = new Object();
@@ -62,23 +62,21 @@ public class CheckBox extends Component {
         super.paint(ctx);
         final Object te = text;
         final float offset = 4 * dp.calcFloat(), cbh = height.calcFloat() - offset * 2;
-        final List<Object> ss = Component.ss.get();
+        final PropIter ss = getPI();
 
         final boolean v = value;
 
-        ss.clear();
-        getSet(evalVar(v ? "--check-color" : "--check-background-color"), ss, StyleProperty.paintFilter, 0);
-        final Paint cbg = getPaint(ss, 0, Color.TRANSPARENT);
+        ss.select(v ? "--check-color" : "--check-background-color", StyleProperty.paintFilter).nextLayer().nextSet();
+        final Paint cbg = ss.paint(Color.TRANSPARENT);
         if (cbg != null && (!(cbg instanceof Color) || ((Color) cbg).alpha > 0)) {
             ctx.setPaint(cbg);
-            ctx.drawRect(offset, offset, cbh, cbh);
+            ctx.fillRect(offset, offset, cbh, cbh);
         }
 
         if (!v && te == null)
             return;
-        ss.clear();
-        getSet(evalVar("color"), ss, StyleProperty.paintFilter, 0);
-        final Paint c = getPaint(ss, 0, Color.TRANSPARENT);
+        ss.select("color", StyleProperty.paintFilter).nextLayer().nextSet();
+        final Paint c = ss.paint(Color.TRANSPARENT);
         if (c == null || (c instanceof Color && ((Color) c).alpha <= 0))
             return;
         final String t = String.valueOf(te);
@@ -94,9 +92,8 @@ public class CheckBox extends Component {
             ctx.setFont(f);
         final Vector2 s = ctx.bounds(t);
 
-        ss.clear();
-        getEnumSet(evalVar("text-align"), ss, HorizontalAlign.class, 0);
-        final HorizontalAlign a = getEnum(ss, HorizontalAlign.class, 0, LEFT);
+        ss.select("text-align", HorizontalAlign.class).nextLayer().nextSet();
+        final HorizontalAlign a = ss.e(HorizontalAlign.class, LEFT);
         ctx.drawString(t, a == LEFT ? offset + cbh + offset :
                         a == CENTER ? (width.calcFloat() - s.x) / 2 :
                                 width.calcFloat() - s.x,

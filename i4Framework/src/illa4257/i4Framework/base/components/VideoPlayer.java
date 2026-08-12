@@ -1,7 +1,7 @@
 package illa4257.i4Framework.base.components;
 
 import illa4257.i4Framework.base.graphics.Color;
-import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.graphics.Context;
 import illa4257.i4Framework.base.graphics.IFrameGrabber;
 import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Utils.logger.i4Logger;
@@ -58,9 +58,9 @@ public class VideoPlayer extends Component {
             }
             if (lastFrame == null) {
                 ctx.setPaint(Color.BLACK);
-                ctx.drawRect(0, 0, width.calcFloat(), height.calcFloat());
+                ctx.fillRect(0, 0, width.calcFloat(), height.calcFloat());
             } else
-                ctx.drawImage(lastFrame, 0, 0, width.calcFloat(), height.calcFloat());
+                ctx.drawSprite(lastFrame, 0, 0, width.calcFloat(), height.calcFloat());
         }
     }
 }

@@ -1,6 +1,6 @@
 package illa4257.i4Framework.base.components;
 
-import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.graphics.Context;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.ChangeParentEvent;
 import illa4257.i4Framework.base.events.components.FocusEvent;
@@ -9,6 +9,7 @@ import illa4257.i4Framework.base.events.touchscreen.TouchDownEvent;
 import illa4257.i4Framework.base.graphics.Paint;
 import illa4257.i4Framework.base.points.ops.PPointAdd;
 import illa4257.i4Framework.base.points.ops.PPointSubtract;
+import illa4257.i4Framework.base.styling.PropIter;
 import illa4257.i4Framework.base.styling.StyleProperty;
 import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Framework.base.graphics.Color;
@@ -16,10 +17,9 @@ import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.points.ops.PPointMin;
 
-import java.util.List;
 import java.util.function.Function;
 
-import static illa4257.i4Framework.base.math.Unit.DP;
+import static illa4257.i4Framework.base.styling.Unit.DP;
 
 public class ComboBox<T> extends TextField {
     private final ScrollPane optionsPane = new ScrollPane();
@@ -138,11 +138,10 @@ public class ComboBox<T> extends TextField {
     public void paint(final Context context) {
         super.paint(context);
         ctx = context;
-        final List<Object> ss = Component.ss.get();
+        final PropIter ss = getPI();
 
-        ss.clear();
-        getSet(evalVar("color"), ss, StyleProperty.paintFilter, 0);
-        Paint c = getPaint(ss, 0, Color.TRANSPARENT);
+        ss.select("color", StyleProperty.paintFilter).nextLayer().nextSet();
+        Paint c = ss.paint(Color.TRANSPARENT);
         if (c == null || (c instanceof Color && ((Color) c).alpha <= 0))
             return;
         final boolean a = optionsPane.getParent() != null;

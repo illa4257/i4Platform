@@ -1,6 +1,6 @@
 package illa4257.i4Framework.base.components;
 
-import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.graphics.Context;
 import illa4257.i4Framework.base.events.components.*;
 import illa4257.i4Utils.MiniUtil;
 
