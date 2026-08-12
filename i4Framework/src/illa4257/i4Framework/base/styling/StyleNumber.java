@@ -2,8 +2,6 @@ package illa4257.i4Framework.base.styling;
 
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Container;
-import illa4257.i4Framework.base.math.Orientation;
-import illa4257.i4Framework.base.math.Unit;
 import illa4257.i4Framework.base.points.ParentPoint;
 import illa4257.i4Framework.base.points.Point;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
@@ -12,6 +10,7 @@ import illa4257.i4Framework.base.points.numbers.NumberPoint;
 import java.util.Arrays;
 import java.util.List;
 
+@Deprecated
 public class StyleNumber {
     public final float number;
     public final Unit unit;

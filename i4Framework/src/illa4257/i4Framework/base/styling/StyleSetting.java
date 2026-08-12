@@ -1,6 +1,5 @@
 package illa4257.i4Framework.base.styling;
 
-import illa4257.i4Framework.base.utils.Cache;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Utils.MiniUtil;
@@ -13,6 +12,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 @SuppressWarnings("unchecked")
+@Deprecated
 public class StyleSetting {
     public final ConcurrentHashMap<Class<?>, Object> values = new ConcurrentHashMap<>();
 

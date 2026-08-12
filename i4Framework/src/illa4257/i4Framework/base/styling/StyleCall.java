@@ -1,10 +1,11 @@
 package illa4257.i4Framework.base.styling;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class StyleCall {
     public final String name;
-    public final ArrayList<ArrayList<Object>> objs = new ArrayList<>();
+    public final List<List<List<Object>>> objs = new ArrayList<>();
 
     public StyleCall(final String s) {
         this.name = s;

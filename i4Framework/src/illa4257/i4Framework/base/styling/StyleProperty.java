@@ -1,6 +1,7 @@
 package illa4257.i4Framework.base.styling;
 
 import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.graphics.Paint;
 import illa4257.i4Utils.MiniUtil;
 
 import java.util.ArrayList;
@@ -9,15 +10,20 @@ import java.util.Objects;
 import java.util.Stack;
 import java.util.function.Predicate;
 
+import static illa4257.i4Framework.base.Framework.L;
+
 public class StyleProperty {
     public final String name;
-    public final ArrayList<ArrayList<Object>> objs = new ArrayList<>();
+    public final List<List<List<Object>>> objs = new ArrayList<>();
 
     public StyleProperty(final String name) {
         this.name = Objects.requireNonNull(name).toLowerCase();
     }
 
-    public static final int TOP = 0, RIGHT = 1, BOTTOM = 2, LEFT = 3;
+    public static final int
+            TOP = 0, RIGHT = 1, BOTTOM = 2, LEFT = 3,
+            TOP_LEFT = 0, TOP_RIGHT = 1, BOTTOM_RIGHT = 2, BOTTOM_LEFT = 3
+    ;
 
     public static String hex2str(final String s) {
         final int c = Integer.parseInt(s, 16);
@@ -25,206 +31,244 @@ public class StyleProperty {
     }
 
     public static StyleProperty parse(final String name, final String value) {
-        final StyleProperty v = new StyleProperty(name);
-        final Stack<ArrayList<ArrayList<Object>>> stack = new Stack<>();
-        final Stack<ArrayList<Object>> stackSet = new Stack<>();
-        ArrayList<ArrayList<Object>> gs = v.objs;
-        ArrayList<Object> set = new ArrayList<>();
-        final StringBuilder b = new StringBuilder(), s = new StringBuilder();
-        byte m = 0;
-        boolean special = false;
-        m:
+        final StyleProperty property = new StyleProperty(name);
+        final StringBuilder text = new StringBuilder(), special = new StringBuilder(6);
+        final Stack<List<List<List<Object>>>> stack = new Stack<>();
+        final Stack<Boolean> calcs = new Stack<>();
+        List<List<List<Object>>> layers = property.objs; // ,
+        List<List<Object>> sets = new ArrayList<>(); // /
+        List<Object> values = new ArrayList<>(); // ' '
+        byte state = 0;
+        boolean escape = false, isCalc = false;
         for (final char ch : value.toCharArray())
-            switch (m) {
+            switch (state) {
                 case 0:
                     switch (ch) {
+                        case '\t':
                         case ' ':
-                            if (b.length() == 0)
-                                continue;
-                            set.add(b.toString());
-                            b.setLength(0);
-                            continue;
-                        case ',':
-                            if (b.length() > 0) {
-                                set.add(b.toString());
-                                b.setLength(0);
-                            }
-                            if (!set.isEmpty())
-                                gs.add(set);
-                            set = new ArrayList<>();
-                            continue;
+                            if (text.length() == 0)
+                                break;
+                            values.add(text.toString());
+                            text.setLength(0);
+                            break;
                         case '(':
-                            final StyleCall c = new StyleCall(b.toString().toLowerCase());
-                            b.setLength(0);
-                            set.add(c);
-                            stack.push(gs);
-                            stackSet.push(set);
-                            set = new ArrayList<>();
-                            gs = c.objs;
-                            continue;
+                            final StyleCall call = new StyleCall(text.toString().toLowerCase());
+                            text.setLength(0);
+                            values.add(call);
+                            sets.add(values);
+                            layers.add(sets);
+
+                            stack.push(layers);
+                            calcs.push(isCalc);
+                            isCalc = call.name.equals("calc");
+                            layers = call.objs;
+                            sets = new ArrayList<>();
+                            values = new ArrayList<>();
+                            break;
                         case ')':
-                            if (b.length() > 0) {
-                                set.add(b.toString());
-                                b.setLength(0);
+                            if (text.length() > 0) {
+                                values.add(text.toString());
+                                text.setLength(0);
                             }
-                            if (!set.isEmpty())
-                                gs.add(set);
-                            gs = stack.pop();
-                            set = stackSet.pop();
-                            if (gs == null) {
-                                gs = v.objs;
-                                set = new ArrayList<>();
-                                break m;
+                            if (!values.isEmpty())
+                                sets.add(values);
+                            if (!sets.isEmpty())
+                                layers.add(sets);
+                            if (stack.isEmpty()) {
+                                layers = property.objs;
+                                isCalc = false;
+                                sets = layers.remove(layers.size() - 1);
+                                values = sets.remove(sets.size() - 1);
+                                break;
                             }
-                            continue;
-                        case '\'':
-                            if (b.length() > 0) {
-                                set.add(b.toString());
-                                b.setLength(0);
+                            layers = stack.pop();
+                            isCalc = calcs.pop();
+                            sets = layers.remove(layers.size() - 1);
+                            values = sets.remove(sets.size() - 1);
+                            break;
+                        case ',':
+                            if (text.length() > 0) {
+                                values.add(text.toString());
+                                text.setLength(0);
                             }
-                            m = 2;
-                            continue;
-                        case '"':
-                            if (b.length() > 0) {
-                                set.add(b.toString());
-                                b.setLength(0);
+                            if (!values.isEmpty()) {
+                                sets.add(values);
+                                values = new ArrayList<>();
                             }
-                            m = 3;
-                            continue;
+                            if (!sets.isEmpty()) {
+                                layers.add(sets);
+                                sets = new ArrayList<>();
+                            }
+                            break;
                         case '\\':
-                            m = 1;
-                            continue;
+                            state = 1;
+                            break;
+                        case '\'':
+                            if (text.length() > 0) {
+                                values.add(text.toString());
+                                text.setLength(0);
+                            }
+                            state = 2;
+                            break;
+                        case '"':
+                            if (text.length() > 0) {
+                                values.add(text.toString());
+                                text.setLength(0);
+                            }
+                            state = 3;
+                            break;
+                        case '/':
+                            if (text.length() > 0) {
+                                values.add(text.toString());
+                                text.setLength(0);
+                            }
+                            if (isCalc) {
+                                values.add(ch);
+                                break;
+                            }
+                            if (!values.isEmpty()) {
+                                sets.add(values);
+                                values = new ArrayList<>();
+                            }
+                            break;
                         case '+':
                         case '-':
                         case '*':
-                        case '/':
-                            if (b.length() > 0) {
-                                set.add(b.toString());
-                                b.setLength(0);
+                            if (isCalc) {
+                                if (text.length() > 0) {
+                                    values.add(text.toString());
+                                    text.setLength(0);
+                                }
+                                values.add(ch);
+                                break;
                             }
-                            set.add(Character.toString(ch));
-                            continue;
                         default:
-                            b.append(ch);
-                            continue;
+                            text.append(ch);
+                            break;
                     }
+                    break;
                 case 1:
-                    b.append(ch);
-                    continue;
+                    text.append(ch);
+                    state = 0;
+                    break;
                 case 2:
                     switch (ch) {
                         case '\\':
-                            if (special) {
-                                if (s.length() == 0) {
-                                    special = false;
-                                    b.append('\\');
-                                    continue;
-                                } else {
-                                    b.append(hex2str(s.toString()));
-                                    s.setLength(0);
-                                }
-                                continue;
+                            if (!escape) {
+                                escape = true;
+                                break;
                             }
-                            special = true;
-                            continue;
+                            if (special.length() == 0) {
+                                escape = false;
+                                text.append('\\');
+                                break;
+                            }
+                            text.append(hex2str(special.toString()));
+                            special.setLength(0);
+                            break;
                         case '\'':
-                            if (special) {
-                                special = false;
-                                if (s.length() == 0) {
-                                    b.append('\'');
-                                    continue;
-                                } else {
-                                    b.append(hex2str(s.toString()));
-                                    s.setLength(0);
+                            if (escape) {
+                                escape = false;
+                                if (special.length() == 0) {
+                                    text.append('\'');
+                                    break;
                                 }
+                                text.append(hex2str(special.toString()));
+                                special.setLength(0);
                             }
-                            set.add(new StyleStr(b.toString()));
-                            b.setLength(0);
-                            m = 0;
-                            continue;
+                            values.add(new StyleStr(text.toString()));
+                            text.setLength(0);
+                            state = 0;
+                            break;
                         default:
-                            if (special) {
+                            if (escape) {
+                                escape = false;
                                 if (
                                         (ch >= '0' && ch <= '9') ||
                                         (ch >= 'a' && ch <= 'f') ||
                                         (ch >= 'A' && ch <= 'F')
                                 ) {
-                                    s.append(ch);
-                                    if (s.length() == 6) {
-                                        b.append(hex2str(s.toString()));
-                                        s.setLength(0);
-                                        special = false;
-                                    }
-                                    continue;
-                                } else if (s.length() > 0) {
-                                    b.append(hex2str(s.toString()));
-                                    s.setLength(0);
-                                    special = false;
+                                    if (special.append(ch).length() != 6)
+                                        break;
+                                    text.append(hex2str(special.toString()));
+                                    special.setLength(0);
+                                    break;
+                                }
+                                if (special.length() > 0) {
+                                    text.append(hex2str(special.toString()));
+                                    special.setLength(0);
                                 }
                             }
-                            b.append(ch);
-                            continue;
+                            text.append(ch);
+                            break;
                     }
+                    break;
                 case 3:
                     switch (ch) {
                         case '\\':
-                            if (special) {
-                                if (s.length() == 0) {
-                                    special = false;
-                                    b.append('\\');
-                                    continue;
-                                } else {
-                                    b.append(hex2str(s.toString()));
-                                    s.setLength(0);
-                                }
-                                continue;
+                            if (!escape) {
+                                escape = true;
+                                break;
                             }
-                            special = true;
-                            continue;
-                        case '"':
-                            if (special) {
-                                special = false;
-                                if (s.length() == 0) {
-                                    b.append('"');
-                                    continue;
-                                } else {
-                                    b.append(hex2str(s.toString()));
-                                    s.setLength(0);
-                                }
+                            if (special.length() == 0) {
+                                escape = false;
+                                text.append('\\');
+                                break;
                             }
-                            set.add(new StyleStr(b.toString()));
-                            b.setLength(0);
-                            m = 0;
-                            continue;
+                            text.append(hex2str(special.toString()));
+                            special.setLength(0);
+                            break;
+                        case '\"':
+                            if (escape) {
+                                escape = false;
+                                if (special.length() == 0) {
+                                    text.append('\"');
+                                    break;
+                                }
+                                text.append(hex2str(special.toString()));
+                                special.setLength(0);
+                            }
+                            values.add(new StyleStr(text.toString()));
+                            text.setLength(0);
+                            state = 0;
+                            break;
                         default:
-                            if (special) {
+                            if (escape) {
+                                escape = false;
                                 if (
                                         (ch >= '0' && ch <= '9') ||
                                         (ch >= 'a' && ch <= 'f') ||
                                         (ch >= 'A' && ch <= 'F')
                                 ) {
-                                    s.append(ch);
-                                    if (s.length() == 6) {
-                                        b.append(hex2str(s.toString()));
-                                        s.setLength(0);
-                                        special = false;
-                                    }
-                                    continue;
-                                } else if (s.length() > 0) {
-                                    b.append(hex2str(s.toString()));
-                                    s.setLength(0);
-                                    special = false;
+                                    if (special.append(ch).length() != 6)
+                                        break;
+                                    text.append(hex2str(special.toString()));
+                                    special.setLength(0);
+                                    break;
+                                }
+                                if (special.length() > 0) {
+                                    text.append(hex2str(special.toString()));
+                                    special.setLength(0);
                                 }
                             }
-                            b.append(ch);
-                            continue;
+                            text.append(ch);
+                            break;
                     }
+                    break;
             }
-        if (b.length() > 0)
-            set.add(b.toString());
-        if (!set.isEmpty())
-            gs.add(set);
-        return v;
+        if (special.length() > 0)
+            text.append(hex2str(special.toString()));
+        if (text.length() > 0) {
+            if (state == 2 || state == 3)
+                values.add(new StyleStr(text.toString()));
+            else
+                values.add(text.toString());
+        }
+        if (!values.isEmpty())
+            sets.add(values);
+        if (!sets.isEmpty())
+            layers.add(sets);
+        return property;
     }
 
     private static final ThreadLocal<ArrayList<Object>> tr = ThreadLocal.withInitial(ArrayList::new);
@@ -241,9 +285,27 @@ public class StyleProperty {
             return "calc".equals(c.name);
         } else if (obj instanceof String) {
             String n = ((String) obj).toLowerCase();
-            if (n.endsWith("deg"))
-                n = n.substring(0, n.length() - 3);
-            else if (n.endsWith("px") || n.endsWith("dp") || n.endsWith("sp"))
+            if (n.isEmpty())
+                return false;
+            boolean fd = false;
+            for (final char ch : n.toCharArray())
+                if (!Character.isDigit(ch))
+                    if (ch != '.' || fd)
+                        return false;
+                    else
+                        fd = true;
+            return true;
+        }
+        return obj instanceof Float || obj instanceof Integer;
+    }, pxFilter = obj -> {
+        if (obj instanceof StyleCall) {
+            final StyleCall c = (StyleCall) obj;
+            return "calc".equals(c.name);
+        } else if (obj instanceof String) {
+            String n = ((String) obj).toLowerCase();
+            if (n.equals("auto"))
+                return true;
+            if (n.endsWith("px") || n.endsWith("dp") || n.endsWith("sp"))
                 n = n.substring(0, n.length() - 2);
             else if (n.endsWith("%"))
                 n = n.substring(0, n.length() - 1);
@@ -259,7 +321,29 @@ public class StyleProperty {
             return true;
         }
         return obj instanceof Float || obj instanceof Integer;
+    }, rotationFilter = obj -> {
+        if (obj instanceof StyleCall) {
+            final StyleCall c = (StyleCall) obj;
+            return "calc".equals(c.name);
+        } else if (obj instanceof String) {
+            String n = ((String) obj).toLowerCase();
+            if (n.endsWith("deg"))
+                n = n.substring(0, n.length() - 3);
+            if (n.isEmpty())
+                return false;
+            boolean fd = false;
+            for (final char ch : n.toCharArray())
+                if (!Character.isDigit(ch))
+                    if (ch != '.' || fd)
+                        return false;
+                    else
+                        fd = true;
+            return true;
+        }
+        return obj instanceof Float || obj instanceof Integer;
     }, paintFilter = obj -> {
+        if (obj instanceof Paint)
+            return true;
         if (obj instanceof String) {
             final String s = (String) obj;
             try {
@@ -270,7 +354,7 @@ public class StyleProperty {
             return co != null;
         }
         return false;
-    }, imageFilter = obj -> {
+    }, spriteFilter = obj -> {
         if (obj instanceof StyleCall) {
             final StyleCall c = (StyleCall) obj;
             return "url".equals(c.name);
@@ -278,16 +362,31 @@ public class StyleProperty {
         return false;
     };
 
+    public static <T extends Enum<T>> Predicate<Object> enumFilter(final Class<T> e) {
+        return o -> {
+            if (e.isInstance(o))
+                return true;
+            if (o instanceof String)
+                try {
+                    MiniUtil.enumValueOfIgnoreCase(e, ((String) o).replace('-', '_'));
+                    return true;
+                } catch (final IllegalAccessException ignored) {
+                    return false;
+                }
+            return false;
+        };
+    }
+
     public static String getVarName(final Object o) {
         if (!(o instanceof StyleCall))
             return null;
         final StyleCall c = (StyleCall) o;
-        if (!"var".equals(c.name) || c.objs.isEmpty() || c.objs.get(0).isEmpty())
+        if (!"var".equals(c.name) || c.objs.isEmpty() || c.objs.get(0).isEmpty() || c.objs.get(0).get(0).isEmpty())
             return null;
-        final Object n = c.objs.get(0).get(0);
-        if (!(n instanceof String) || !((String) n).startsWith("--"))
-            return null;
-        return (String) n;
+        final Object n = c.objs.get(0).get(0).get(0);
+        if (n instanceof String)
+            return ((String) n).startsWith("--") ? (String) n : null;
+        return null;
     }
 
     public static void filter(final List<Object> l, final List<Object> o, final Predicate<Object> filter) {
@@ -363,5 +462,17 @@ public class StyleProperty {
     @Override
     public String toString() {
         return name + " = " + objs;
+    }
+
+    public static Paint toPaint(final Object o, final Paint defValue) {
+        if (o instanceof Paint)
+            return (Paint) o;
+        if (o instanceof String)
+            try {
+                return Color.parse((String) o);
+            } catch (final IllegalArgumentException ex) {
+                L.w(ex);
+            }
+        return defValue;
     }
 }

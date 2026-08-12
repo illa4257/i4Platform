@@ -2,10 +2,7 @@ package illa4257.i4Framework.base.styling;
 
 import illa4257.i4Framework.base.graphics.Color;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
@@ -26,6 +23,21 @@ public class Style {
     public void set(final String key, final Color value) {
         final String k = Objects.requireNonNull(key).toLowerCase();
         final StyleProperty np = StyleProperty.parse(k, value.toHexRGBA());
+        properties.offer(np);
+        properties.removeIf(p -> p.name.equals(k) && p != np);
+        for (final Consumer<StyleProperty> l : subscribers)
+            l.accept(np);
+    }
+
+    public void set(final String key, final Object value) {
+        final String k = Objects.requireNonNull(key).toLowerCase();
+        final StyleProperty np = new StyleProperty(k);
+        final List<List<Object>> ll = new ArrayList<>();
+        final List<Object> list = new ArrayList<>();
+        list.add(value);
+        ll.add(list);
+        np.objs.add(ll);
+
         properties.offer(np);
         properties.removeIf(p -> p.name.equals(k) && p != np);
         for (final Consumer<StyleProperty> l : subscribers)

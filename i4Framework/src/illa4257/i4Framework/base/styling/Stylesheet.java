@@ -14,4 +14,16 @@ public class Stylesheet {
     public void add(final StyleSelector selector, final Style style) {
         stylesheet.offer(new AbstractMap.SimpleImmutableEntry<>(selector, style));
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder b = new StringBuilder();
+        for (final Map.Entry<StyleSelector, Style> e : stylesheet) {
+            b.append(e.getKey()).append(" {\r\n");
+            for (final StyleProperty p : e.getValue().properties)
+                b.append("\t").append(p.name).append(": ").append(p.objs).append(";\r\n");
+            b.append("}\r\n");
+        }
+        return b.toString();
+    }
 }

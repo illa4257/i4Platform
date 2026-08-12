@@ -10,11 +10,40 @@ public class StyleSelector {
     public final SyncVar<String> id = new SyncVar<>(), tag = new SyncVar<>();
     public final ConcurrentLinkedQueue<String> classes = new ConcurrentLinkedQueue<>(),
             pseudoClasses = new ConcurrentLinkedQueue<>();
-    public volatile StyleSelector parent = null;
+    public volatile StyleSelector parent;
+
+    public StyleSelector() {
+        parent = null;
+    }
+
+    public StyleSelector(final StyleSelector parent) {
+        this.parent = parent;
+    }
+
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    @Override
+    public StyleSelector clone() {
+        final StyleSelector n = new StyleSelector(), p = parent;
+        n.id.set(id.get());
+        n.tag.set(tag.get());
+        n.classes.addAll(classes);
+        n.pseudoClasses.addAll(pseudoClasses);
+        n.parent = p != null ? p.clone() : null;
+        return n;
+    }
 
     public boolean isIdEmpty() {
         final String id = this.id.get();
         return id == null || id.isEmpty();
+    }
+
+    public boolean isTagEmpty() {
+        final String tag = this.tag.get();
+        return tag == null || tag.isEmpty();
+    }
+
+    public boolean isEmpty() {
+        return isIdEmpty() && isTagEmpty() && classes.isEmpty() && pseudoClasses.isEmpty();
     }
 
     public boolean check(final Component component) {
@@ -26,7 +55,7 @@ public class StyleSelector {
             if (!component.classes.contains(cls))
                 return false;
         final String tag = this.tag.get();
-        if (tag != null && !tag.isEmpty() && !tag.equalsIgnoreCase(component.tag.get()))
+        if (tag != null && !tag.isEmpty() && !tag.equals("*") && !tag.equalsIgnoreCase(component.tag.get()))
             return false;
         final StyleSelector parent = this.parent;
         if (parent != null) {
@@ -49,6 +78,13 @@ public class StyleSelector {
     public StyleSelector addPseudoClass(final String pseudoClass) {
         pseudoClasses.add(pseudoClass);
         return this;
+    }
+
+    public StyleSelector getFirstParent() {
+        StyleSelector c = this;
+        while (c.parent != null)
+            c = c.parent;
+        return c;
     }
 
     @Override
