@@ -1,6 +1,7 @@
 package illa4257.i4Framework.base.utils;
 
 import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.base.graphics.Sprite;
 
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
@@ -9,9 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Cache {
-    //public static final ConcurrentHashMap<String, Image> images = new ConcurrentHashMap<>();
-
-    public static final ConcurrentHashMap<String, SoftReference<Image>> images = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, SoftReference<Sprite>> sprites = new ConcurrentHashMap<>();
 
     private static final ConcurrentHashMap<Integer, WeakReference<Image>> scaled = new ConcurrentHashMap<>();
 

@@ -4,181 +4,370 @@ import illa4257.i4Framework.base.styling.Style;
 import illa4257.i4Framework.base.styling.StyleSelector;
 import illa4257.i4Framework.base.styling.Stylesheet;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.rmi.UnexpectedException;
 import java.util.ArrayList;
+import java.util.Stack;
 
 public class CSSParser {
-    private static int r(final Reader reader) throws IOException {
-        int ch = reader.read();
-        if (ch == '/' && reader.markSupported()) {
-            reader.mark(1);
-            ch = reader.read();
-            if (ch == '*') {
-                m:
-                while (true) {
-                    ch = reader.read();
-                    if (ch == -1)
-                        throw new IOException("End of reader");
-                    while (ch == '*') {
-                        ch = reader.read();
-                        if (ch == '/')
-                            break m;
-                        if (ch == -1)
-                            throw new IOException("End of reader");
-                    }
-                }
-                return r(reader);
-            }
-            reader.reset();
+    public final Stylesheet stylesheet;
+    public final Reader reader;
+
+    public static final byte
+            STATE_PROPERTY_NAME = 0,
+            STATE_PROPERTY_NAME_END = 1,
+            STATE_PROPERTY_VALUE = 2,
+            STATE_SELECTOR = 3,
+            STATE_ID = 4,
+            STATE_CLASS = 5,
+            STATE_PSEUDO_CLASS = 6,
+            STATE_SINGLE_QUOTE = 126,
+            STATE_DOUBLE_QUOTE = 127;
+
+    public final StringBuilder builder = new StringBuilder();
+    public final Style root = new Style();
+    public ArrayList<StyleSelector> selectors = new ArrayList<>(), snapshot = new ArrayList<>();
+    public String propertyName = null;
+    public StyleSelector selector = null;
+    public Style style = null;
+    public boolean special = false, comment = false, nextSelector = false;
+    public byte state = STATE_PROPERTY_NAME, altState;
+    public final Stack<Nest> stack = new Stack<>();
+
+    public class Nest {
+        public final ArrayList<StyleSelector> selectors;
+        public final Style style;
+
+        public Nest() {
+            //this.selector = CSSParser.this.selector;
+            this.style = CSSParser.this.style;
+            this.selectors = new ArrayList<>(CSSParser.this.selectors);
+            CSSParser.this.selectors.clear();
         }
-        return ch;
+
+        public void apply() {
+            CSSParser.this.selector = null;
+            CSSParser.this.style = style;
+            CSSParser.this.selectors.clear();
+            CSSParser.this.selectors.addAll(this.selectors);
+        }
     }
 
-    private static char re(final Reader reader) throws IOException {
-        int ch = r(reader);
-        if (ch == -1)
-            throw new IOException("End of reader");
-        return (char) ch;
+    public CSSParser(final Stylesheet stylesheet, final Reader reader) {
+        this.stylesheet = stylesheet;
+        this.reader = reader.markSupported() ? reader : new BufferedReader(reader);
+        final StyleSelector sel = new StyleSelector();
+        sel.tag.set("*");
+        stylesheet.add(sel, root);
     }
 
-    /**
-     * Parses CSS from reader and puts all results into provided stylesheet.
-     *
-     * @param stylesheet All parsed results will be stored here, it will not delete parsed results if it fails.<br>
-     *                   And it will not delete old style.
-     * @param reader If your reader is not supporting marks, but you need to skip comments, use {@link java.io.BufferedReader}.
-     * @throws IOException If reading is fails, or reached end of reader.
-     * @throws UnexpectedException If unexpected characters are encountered during parsing.
-     */
-    public static void parse(final Stylesheet stylesheet,
-                             final Reader reader) throws IOException {
-        final ArrayList<StyleSelector> selectors = new ArrayList<>();
-        StyleSelector parent = null;
+    public static void parse(final Stylesheet stylesheet, final Reader reader) throws IOException {
+        new CSSParser(stylesheet, reader).parse();
+    }
+
+    public void parse() throws IOException {
         int ch;
-        m:
-        while (true) {
-            ch = r(reader);
-            if (ch == -1)
-                break;
-            if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
+        while ((ch = reader.read()) != -1) {
+            if (comment) {
+                if (ch == '/' && special) {
+                    comment = special = false;
+                    continue;
+                }
+                if (ch == '*') {
+                    special = true;
+                    continue;
+                }
+                special = false;
                 continue;
-            if (ch == '{')
-                throw new UnexpectedException("Unknown character " + (char) ch + " / " + ch);
-            final StyleSelector selector = new StyleSelector();
-            selector.parent = parent;
-            parent = null;
-            if (ch == '*') {
-                do {
-                    ch = re(reader);
-                } while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n');
             }
-            if (ch != '#' && ch != '.' && ch != ':' && ch != '>' && ch != ',' && ch != '{') {
-                final StringBuilder tag = new StringBuilder();
-                while (true) {
-                    tag.append((char) ch);
-                    ch = re(reader);
-                    if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' ||
-                            ch == '#' || ch == '.' || ch == ':' || ch == '>' || ch == ',' || ch == '{') {
-                        selector.tag.set(tag.toString());
-                        while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
-                            ch = re(reader);
+            if (state != STATE_SINGLE_QUOTE && state != STATE_DOUBLE_QUOTE) {
+                if (ch == '*' && special) {
+                    comment = true;
+                    special = false;
+                    continue;
+                }
+                if (ch == '/') {
+                    if (!special) {
+                        special = true;
+                        continue;
+                    }
+                } else if (special) {
+                    special = false;
+                    handle('/');
+                }
+            }
+            handle((char) ch);
+        }
+    }
+
+    public void handle(final char ch) {
+        switch (state) {
+            case STATE_PROPERTY_NAME:
+                switch (ch) {
+                    case ' ':
+                    case '\t':
+                    case '\r':
+                    case '\n':
+                        if (builder.length() > 0) {
+                            builder.append(' ');
+                            state = STATE_PROPERTY_NAME_END;
+                        }
+                        break;
+                    case ':':
+                        if (builder.length() == 0) {
+                            state = STATE_PSEUDO_CLASS;
+                            break;
+                        }
+                        propertyName = builder.toString();
+                        builder.setLength(0);
+                        state = STATE_PROPERTY_VALUE;
+                        break;
+                    case '.':
+                    case ',':
+                    case '>':
+                    {
+                        stack.push(new Nest());
+                        state = STATE_SELECTOR;
+                        selector = new StyleSelector();
+                        final char[] v = builder.toString().toCharArray();
+                        builder.setLength(0);
+                        for (final char c : v)
+                            handle(c);
+                        handle(ch);
                         break;
                     }
+                    case '{': {
+                        stack.push(new Nest());
+                        state = STATE_SELECTOR;
+                        selector = new StyleSelector();
+                        final char[] v = builder.toString().toCharArray();
+                        builder.setLength(0);
+                        for (final char c : v)
+                            handle(c);
+                        handle('{');
+                        break;
+                    }
+                    case '}':
+                        builder.setLength(0);
+                        final Nest nest = stack.pop();
+                        nest.apply();
+                        break;
+                    default:
+                        builder.append(ch);
+                        break;
                 }
-            }
-            while (true) {
-                if (ch == '#') {
-                    final StringBuilder id = new StringBuilder();
-                    while (true) {
-                        ch = re(reader);
-                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == '>' || ch == ',' || ch == '.' || ch == '#' || ch == ':') {
-                            while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
-                                ch = re(reader);
+                break;
+            case STATE_PROPERTY_NAME_END:
+                switch (ch) {
+                    case ' ':
+                    case '\t':
+                    case '\r':
+                    case '\n':
+                        break;
+                    case '>': {
+                        stack.push(new Nest());
+                        state = STATE_SELECTOR;
+                        selector = new StyleSelector();
+                        final char[] v = builder.toString().toCharArray();
+                        builder.setLength(0);
+                        for (final char c : v)
+                            handle(c);
+                        handle('>');
+                        break;
+                    }
+                    case '{': {
+                        stack.push(new Nest());
+                        state = STATE_SELECTOR;
+                        selector = new StyleSelector();
+                        final char[] v = builder.toString().toCharArray();
+                        builder.setLength(0);
+                        for (final char c : v)
+                            handle(c);
+                        handle('{');
+                        break;
+                    }
+                    default:
+                        throw new RuntimeException("Unknown char in name end " + ch + " | " + builder);
+                }
+                break;
+            case STATE_PROPERTY_VALUE:
+                switch (ch) {
+                    case ';':
+                        final Style s = style != null ? style : root;
+                        s.set(propertyName, builder.toString());
+                        builder.setLength(0);
+                        state = STATE_PROPERTY_NAME;
+                        break;
+                    case '{':
+                        stack.push(new Nest());
+                        state = STATE_SELECTOR;
+                        selector = new StyleSelector();
+                        final char[] v = builder.toString().toCharArray();
+                        builder.setLength(0);
+                        for (final char c : propertyName.toCharArray())
+                            handle(c);
+                        handle(':');
+                        for (final char c : v)
+                            handle(c);
+                        handle('{');
+                        break;
+                    case '\'':
+                        altState = state;
+                        state = STATE_SINGLE_QUOTE;
+                        builder.append('\'');
+                        break;
+                    case '"':
+                        altState = state;
+                        state = STATE_DOUBLE_QUOTE;
+                        builder.append('"');
+                        break;
+                    default:
+                        builder.append(ch);
+                        break;
+                }
+                break;
+            case STATE_SINGLE_QUOTE:
+                switch (ch) {
+                    case '\'':
+                        builder.append('\'');
+                        if (special) {
+                            special = false;
                             break;
                         }
-                        id.append((char) ch);
-                    }
-                    selector.setID(id.toString());
-                    continue;
-                }
-                if (ch == '.') {
-                    final StringBuilder cls = new StringBuilder();
-                    while (true) {
-                        ch = re(reader);
-                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == '>' || ch == ',' || ch == '.' || ch == '#' || ch == ':') {
-                            while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
-                                ch = re(reader);
+                        state = altState;
+                        break;
+                    case '\\':
+                        if (!special) {
+                            special = true;
+                            builder.append('\\');
                             break;
                         }
-                        cls.append((char) ch);
-                    }
-                    selector.addClass(cls.toString());
-                    continue;
+                        break;
+                    default:
+                        special = false;
+                        builder.append(ch);
+                        break;
                 }
-                if (ch == ':') {
-                    final StringBuilder cls = new StringBuilder();
-                    while (true) {
-                        ch = re(reader);
-                        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '{' || ch == ',' || ch == '.' || ch == '#' || ch == ':') {
-                            while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
-                                ch = re(reader);
+                break;
+            case STATE_DOUBLE_QUOTE:
+                switch (ch) {
+                    case '"':
+                        builder.append('"');
+                        if (special) {
+                            special = false;
                             break;
                         }
-                        cls.append((char) ch);
-                    }
-                    selector.addPseudoClass(cls.toString());
-                    continue;
-                }
-                if (ch == '>') {
-                    parent = selector;
-                    continue m;
-                }
-                if (ch == ',') {
-                    selectors.add(selector);
-                    break;
-                }
-                if (ch == '{') {
-                    selectors.add(selector);
-                    final Style style = new Style();
-                    while (true) {
-                        do {
-                            ch = re(reader);
-                        } while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == ';');
-                        if (ch == '}')
+                        state = altState;
+                        break;
+                    case '\\':
+                        if (!special) {
+                            special = true;
+                            builder.append('\\');
                             break;
-                        final StringBuilder name = new StringBuilder();
-                        name.append((char) ch);
-                        while (true) {
-                            ch = re(reader);
-                            if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == ';' || ch == ':')
-                                break;
-                            name.append((char) ch);
                         }
-                        while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
-                            ch = re(reader);
-                        if (ch != ':')
-                            continue;
-                        do
-                            ch = re(reader);
-                        while (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n');
-                        final StringBuilder value = new StringBuilder();
-                        while (ch != ';') {
-                            value.append((char) ch);
-                            ch = re(reader);
-                        }
-                        if (name.length() == 0 || value.length() == 0)
-                            continue;
-                        style.set(name.toString(), value.toString());
-                    }
-                    for (final StyleSelector s : selectors)
-                        stylesheet.add(s, style);
-                    selectors.clear();
-                    break;
+                        break;
+                    default:
+                        special = false;
+                        builder.append(ch);
+                        break;
                 }
-                throw new UnexpectedException("Unknown character " + (char) ch + " / " + ch);
-            }
+                break;
+            case STATE_SELECTOR:
+            case STATE_ID:
+            case STATE_CLASS:
+            case STATE_PSEUDO_CLASS:
+                switch (ch) {
+                    case ' ':
+                    case '\t':
+                    case '\r':
+                    case '\n':
+                        if (selector.isEmpty())
+                            break;
+                        nextSelector = true;
+                        break;
+                    case '>':
+                        setSelector();
+                        if (!selector.isEmpty())
+                            selector = new StyleSelector(selector);
+                        nextSelector = false;
+                        state = STATE_SELECTOR;
+                        break;
+                    case ',':
+                        setSelector();
+                        selectors.add(selector);
+                        selector = new StyleSelector();
+                        nextSelector = false;
+                        state = STATE_SELECTOR;
+                        break;
+                    case '#':
+                        setSelector();
+                        state = STATE_ID;
+                        break;
+                    case '.':
+                        setSelector();
+                        state = STATE_CLASS;
+                        break;
+                    case ':':
+                        setSelector();
+                        state = STATE_PSEUDO_CLASS;
+                        break;
+                    case '{':
+                        setSelector();
+                        if (!selector.isEmpty())
+                            selectors.add(selector);
+                        if (selectors.isEmpty())
+                            style = stack.peek().style;
+                        else {
+                            style = new Style();
+                            final Nest n = stack.peek();
+                            if (!n.selectors.isEmpty()) {
+                                final ArrayList<StyleSelector> cur = selectors;
+                                selectors = snapshot;
+                                snapshot = cur;
+                                for (final StyleSelector sel : snapshot)
+                                    for (final StyleSelector parent : n.selectors) {
+                                        final StyleSelector ns = sel.clone();
+                                        ns.getFirstParent().parent = parent;
+                                        selectors.add(ns);
+                                        stylesheet.add(ns, style);
+                                    }
+                                snapshot.clear();
+                            } else
+                                for (final StyleSelector sel : selectors)
+                                    stylesheet.add(sel, style);
+                        }
+
+                        selector = null;
+                        state = STATE_PROPERTY_NAME;
+                        break;
+                    default:
+                        builder.append(ch);
+                        break;
+                }
+                break;
+            default:
+                throw new RuntimeException("Unknown state " + state);
         }
+    }
+
+    private void setSelector() {
+        switch (state) {
+            case STATE_SELECTOR:
+                selector.tag.set(builder.toString().trim());
+                break;
+            case STATE_ID:
+                selector.id.set(builder.toString().trim());
+                break;
+            case STATE_CLASS:
+                selector.classes.offer(builder.toString().trim());
+                break;
+            case STATE_PSEUDO_CLASS:
+                selector.pseudoClasses.offer(builder.toString().trim());
+                break;
+            default:
+                throw new RuntimeException("Unknown state " + state);
+        }
+        builder.setLength(0);
     }
 }
