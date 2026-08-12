@@ -9,6 +9,7 @@ import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.Event;
 import illa4257.i4Framework.base.events.components.ActionEvent;
 import illa4257.i4Framework.base.events.components.VisibleEvent;
+import illa4257.i4Framework.base.graphics.Sprite;
 import illa4257.i4Framework.base.points.ops.PPointAdd;
 import illa4257.i4Framework.base.points.ops.PPointSubtract;
 import illa4257.i4Framework.base.points.Point;
@@ -16,21 +17,21 @@ import illa4257.i4Framework.base.points.PointSet;
 import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.styling.*;
 import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.base.utils.SVGParser;
+import illa4257.i4Utils.io.IOs;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.res.ResourceManager;
 import illa4257.i4Utils.res.ResourceProvider;
 import illa4257.i4Utils.web.i4URI;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import static illa4257.i4Framework.base.math.Unit.DP;
+import static illa4257.i4Framework.base.styling.Unit.DP;
 
 public abstract class Framework implements ResourceProvider {
     public static final i4Logger L = new i4Logger("i4Framework")
@@ -143,15 +144,26 @@ public abstract class Framework implements ResourceProvider {
                         uri.fullPath.substring(1) : uri.fullPath) : null;
     }
 
-    public Image getImage(final InputStream inputStream) throws IOException {
-        throw new UnsupportedOperationException("Unsupported image format.");
+    public Sprite getSprite(InputStream inputStream) throws IOException {
+        final BufferedReader r = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+        r.mark(4);
+        if (
+                IOs.readChar(r) == '<' &&
+                IOs.readChar(r) == 's' &&
+                IOs.readChar(r) == 'v' &&
+                IOs.readChar(r) == 'g'
+        ) {
+            r.reset();
+            return SVGParser.parse(r);
+        }
+        throw new UnsupportedOperationException("Unsupported sprite format.");
     }
 
-    public Image getImage(final i4URI uri) throws IOException { return getImage(openResource(uri)); }
-    public Image getImage(final String uri) throws IOException { return getImage(openResource(uri)); }
+    public Sprite getSprite(final i4URI uri) throws IOException { return getSprite(openResource(uri)); }
+    public Sprite getSprite(final String uri) throws IOException { return getSprite(openResource(uri)); }
 
     public void writeImage(final Image image, final String format, final OutputStream outputStream) throws IOException {
-        throw new UnsupportedOperationException("Unsupported image format.");
+        throw new UnsupportedOperationException("Unsupported sprite format.");
     }
 
     public File getAppDataDir() { return null; }
