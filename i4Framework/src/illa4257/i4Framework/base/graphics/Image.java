@@ -9,7 +9,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Image implements Closeable {
+public class Image implements Closeable, Sprite {
     public final int width, height;
     private final Object locker = new Object();
     public volatile int[] pixels = null;
@@ -109,6 +109,16 @@ public class Image implements Closeable {
     }
 
     @Override
+    public float getWidth() {
+        return width;
+    }
+
+    @Override
+    public float getHeight() {
+        return height;
+    }
+
+    @Override
     public void close() {
         synchronized (locker) {
             if (byteBuffer != null) {
@@ -138,7 +148,7 @@ public class Image implements Closeable {
 
     public Image crop(final int x, final int y, final int width, final int height) {
         if (x < 0 || y < 0 || x + width > this.width || y + height > this.height)
-            throw new IllegalArgumentException("Crop area is outside of image bounds");
+            throw new IllegalArgumentException("Crop area is outside of sprite bounds");
         final int[] src = directIntArray(), r = new int[width * height];
         for (int row = 0; row < height; row++)
             System.arraycopy(src, (y + row) * this.width + x, r, row * width, width);
