@@ -11,13 +11,12 @@ import java.util.*;
 import java.util.function.Function;
 
 public class MiniUtil {
-    @SuppressWarnings("unchecked")
     public static <T extends Enum<T>> T enumValueOfIgnoreCase(final Class<T> enumClass, final String name) throws IllegalAccessException {
         if (name == null)
             throw new NullPointerException("Name is null");
-        for (final Field f : enumClass.getFields())
-            if (Modifier.isStatic(f.getModifiers()) && Modifier.isPublic(f.getModifiers()) && name.equalsIgnoreCase(f.getName()) && f.getType() == enumClass)
-                return (T) f.get(null);
+        for (final T constant : enumClass.getEnumConstants())
+            if (constant.name().equalsIgnoreCase(name))
+                return constant;
         throw new IllegalArgumentException("No enum constant " + enumClass.getCanonicalName() + "." + name);
     }
 
