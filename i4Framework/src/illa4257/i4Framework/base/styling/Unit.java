@@ -1,4 +1,4 @@
-package illa4257.i4Framework.base.math;
+package illa4257.i4Framework.base.styling;
 
 public enum Unit {
     PX,
