@@ -1,7 +1,7 @@
 package illa4257.i4Framework.lwjgl3;
 
 import illa4257.i4Framework.base.graphics.Color;
-import illa4257.i4Framework.base.Context;
+import illa4257.i4Framework.base.graphics.Context;
 import illa4257.i4Framework.base.graphics.IPath;
 import illa4257.i4Framework.base.math.Vector2D;
 import illa4257.i4Framework.base.graphics.Image;
@@ -92,7 +92,7 @@ public class LWJGL3Context implements Context {
     }
 
     @Override
-    public void drawRect(final float x, final float y, final float w, final float h) {
+    public void fillRect(final float x, final float y, final float w, final float h) {
         GL11.glRectf(x, y, x + w, y + h);
     }
 

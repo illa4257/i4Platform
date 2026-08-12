@@ -1,28 +1,44 @@
-package illa4257.i4Framework.swing;
+package illa4257.i4Framework.desktop.awt;
 
+import illa4257.i4Framework.base.graphics.*;
+import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Framework.base.graphics.Paint;
+import illa4257.i4Framework.base.utils.Cache;
 import illa4257.i4Framework.desktop.DesktopFramework;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.math.Vector2;
-import illa4257.i4Framework.base.graphics.Color;
-import illa4257.i4Framework.base.Context;
-import illa4257.i4Framework.desktop.BufImgRef;
-import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.base.graphics.Context;
 
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.RoundRectangle2D;
 import java.io.InputStream;
 
-import static illa4257.i4Framework.swing.SwingFramework.L;
+public class AWTContext implements Context {
+    public static final i4Logger L = new i4Logger("AWT");
 
-public class SwingContext implements Context {
     public final Graphics2D graphics;
     public final Shape clip;
 
-    public SwingContext(final Graphics2D g) {
+    public AWTContext(final Graphics2D g) {
         graphics = g;
         clip = g.getClip();
-        g.setRenderingHints(SwingFramework.current);
+    }
+
+    @Override
+    public Object cloneTransform() {
+        return graphics.getTransform();
+    }
+
+    @Override
+    public void setTransform(final Object transform) {
+        graphics.setTransform((AffineTransform) transform);
+    }
+
+    @Override
+    public void transform(final Object transform) {
+        graphics.transform((AffineTransform) transform);
     }
 
     @Override
@@ -87,11 +103,15 @@ public class SwingContext implements Context {
     }
 
     private static Shape unify(final Object shape) {
-        if (shape instanceof SwingPath)
-            return ((SwingPath) shape).path;
+        if (shape instanceof AWTPath)
+            return ((AWTPath) shape).path;
         else if (shape instanceof Shape)
             return (Shape) shape;
-        else
+        else if (shape instanceof PathRecorder) {
+            final AWTPath p = new AWTPath();
+            ((PathRecorder) shape).applyTo(p);
+            return p.path;
+        } else
             i4Logger.INSTANCE.e("Unknown shape class:", shape.getClass());
         return null;
     }
@@ -104,8 +124,8 @@ public class SwingContext implements Context {
     }
 
     @Override
-    public SwingPath newPath() {
-        return new SwingPath();
+    public AWTPath newPath() {
+        return new AWTPath();
     }
 
     @Override
@@ -114,12 +134,34 @@ public class SwingContext implements Context {
     }
 
     @Override
+    public Object newRoundShape(final float x, final float y, final float width, final float height,
+                                final float topLeftArcWidth, final float topLeftArcHeight,
+                                final float topRightArcWidth, final float topRightArcHeight,
+                                final float bottomRightArcWidth, final float bottomRightArcHeight,
+                                final float bottomLeftArcWidth, final float bottomLeftArcHeight) {
+        return new BetterRoundRect2DFloat(
+                x, y, width, height,
+                topLeftArcWidth, topLeftArcHeight,
+                topRightArcWidth, topRightArcHeight,
+                bottomRightArcWidth, bottomRightArcHeight,
+                bottomLeftArcWidth, bottomLeftArcHeight
+        );
+    }
+
+    @Override
     public void draw(final Object path) {
         graphics.draw(unify(path));
     }
 
+    @Override
+    public void fill(final Object path) {
+        graphics.fill(unify(path));
+    }
+
     @Override public void translate(float x, float y) { graphics.translate(x, y); }
     @Override public void scale(float x, float y) { graphics.scale(x, y); }
+    @Override public void rotate(final float deg) { graphics.rotate(deg); }
+    @Override public void skew(final float x, final float y) { graphics.shear(x, y); }
 
     @Override
     public void drawLine(float x1, float y1, float x2, float y2) {
@@ -128,6 +170,11 @@ public class SwingContext implements Context {
 
     @Override
     public void drawRect(final float x, final float y, final float w, final float h) {
+        graphics.drawRect((int) x, (int) y, (int) w, (int) h);
+    }
+
+    @Override
+    public void fillRect(final float x, final float y, final float w, final float h) {
         graphics.fillRect((int) x, (int) y, (int) w, (int) h);
     }
 
@@ -144,16 +191,26 @@ public class SwingContext implements Context {
     }
 
     @Override
-    public void drawImage(Image image, float x, float y) {
-        graphics.drawImage(((BufImgRef) image.imageMap.computeIfAbsent(BufImgRef.class,
-                        ignored -> BufImgRef.compute(image))).image,
-                Math.round(x), Math.round(y), null);
+    public void drawSprite(final Sprite sprite, float x, float y) {
+        if (sprite instanceof Image) {
+            final Image img = (Image) sprite;
+            graphics.drawImage(((BufImgRef) img.imageMap.computeIfAbsent(BufImgRef.class,
+                            ignored -> BufImgRef.compute(img))).image,
+                    Math.round(x), Math.round(y), null);
+            return;
+        }
+        Context.super.drawSprite(sprite, x, y);
     }
 
     @Override
-    public void drawImage(Image image, float x, float y, float width, float height) {
-        graphics.drawImage(((BufImgRef) image.imageMap.computeIfAbsent(BufImgRef.class,
-                ignored -> BufImgRef.compute(image))).image,
-                Math.round(x), Math.round(y), Math.round(width), Math.round(height), null);
+    public void drawSprite(final Sprite sprite, final float x, final float y, final float width, final float height) {
+        if (sprite instanceof Image) {
+            final Image img = Cache.scale((Image) sprite, width, height);
+            graphics.drawImage(((BufImgRef) img.imageMap.computeIfAbsent(BufImgRef.class,
+                            ignored -> BufImgRef.compute(img))).image,
+                    Math.round(x), Math.round(y), null);
+            return;
+        }
+        Context.super.drawSprite(sprite, x, y, width, height);
     }
 }

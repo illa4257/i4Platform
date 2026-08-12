@@ -7,7 +7,9 @@ import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
 import illa4257.i4Framework.base.FileChooser;
 import illa4257.i4Framework.base.components.Window;
+import illa4257.i4Framework.base.graphics.Sprite;
 import illa4257.i4Framework.desktop.awt.AWTFileChooser;
+import illa4257.i4Framework.desktop.awt.BufImgRef;
 import illa4257.i4Utils.MiniUtil;
 import illa4257.i4Utils.math.Vector2;
 import illa4257.i4Framework.base.graphics.Image;
@@ -25,10 +27,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.function.BiConsumer;
 
 public abstract class DesktopFramework extends Framework {
@@ -152,14 +151,21 @@ public abstract class DesktopFramework extends Framework {
     @Override public void onSystemThemeChange(final String theme, final BaseTheme baseTheme) { super.onSystemThemeChange(theme, baseTheme); }
 
     @Override
-    public Image getImage(final InputStream inputStream) throws IOException {
+    public Sprite getSprite(InputStream inputStream) throws IOException {
+        if (!inputStream.markSupported())
+            inputStream = new BufferedInputStream(inputStream);
+        inputStream.mark(65536);
         try {
             final BufferedImage i = ImageIO.read(inputStream);
-            return new Image(i.getWidth(), i.getHeight(), BufImgRef.class, new BufImgRef(i));
+            if (i != null)
+                return new Image(i.getWidth(), i.getHeight(), BufImgRef.class, new BufImgRef(i));
         } catch (final Throwable ex) {
-            i4Logger.INSTANCE.e(ex);
-            return super.getImage(inputStream);
+            if (ex instanceof IOException)
+                throw (IOException) ex;
+            throw new IOException(ex);
         }
+        inputStream.reset();
+        return super.getSprite(inputStream);
     }
 
     @Override

@@ -1,24 +1,24 @@
-package illa4257.i4Framework.swing;
+package illa4257.i4Framework.desktop.awt;
 
 import illa4257.i4Framework.base.graphics.IPath;
 
 import java.awt.geom.Path2D;
 
-public class SwingPath implements IPath {
-    public final Path2D path = new Path2D.Float();
+public class AWTPath implements IPath {
+    public final Path2D.Float path = new Path2D.Float();
     private float x, y;
 
     @Override public float x() { return x; }
     @Override public float y() { return y; }
 
     @Override
-    public void begin(final float x, final float y) {
+    public void moveTo(final float x, final float y) {
         path.moveTo(this.x = x, this.y = y);
     }
 
     @Override
     public void lineTo(final float x, final float y) {
-        path.lineTo(Math.round(this.x = x), Math.round(this.y = y));
+        path.lineTo(this.x = x, this.y = y);
     }
 
     @Override

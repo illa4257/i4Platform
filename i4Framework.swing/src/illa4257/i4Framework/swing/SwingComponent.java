@@ -5,13 +5,15 @@ import illa4257.i4Framework.base.events.components.FocusEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyDownEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyPressEvent;
 import illa4257.i4Framework.base.events.keyboard.KeyUpEvent;
-import illa4257.i4Framework.base.math.Orientation;
+import illa4257.i4Framework.base.styling.Orientation;
 import illa4257.i4Framework.base.styling.Cursor;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Container;
 import illa4257.i4Framework.base.events.mouse.*;
+import illa4257.i4Framework.base.styling.PropIter;
 import illa4257.i4Framework.base.styling.StyleProperty;
+import illa4257.i4Framework.desktop.awt.AWTContext;
 import illa4257.i4Utils.logger.i4Logger;
 
 import javax.swing.*;
@@ -19,7 +21,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-import java.util.List;
 
 import static java.awt.Cursor.*;
 
@@ -190,11 +191,10 @@ public class SwingComponent extends JComponent implements ISwingComponent {
     }
 
     private void onCursorChange(final StyleProperty property) {
-        final List<Object> ss = Component.ss.get();
+        final PropIter ss = component.getPI();
 
-        ss.clear();
-        Component.getEnumSet(component.evalVar(property), ss, Cursor.class, 0);
-        final Cursor c = component.getEnum(ss, Cursor.class, 0, Cursor.DEFAULT);
+        ss.select(property, Cursor.class).nextLayer().nextSet();
+        final Cursor c = ss.e(Cursor.class, Cursor.DEFAULT);
         final int cursor =
                 c == Cursor.TEXT ? TEXT_CURSOR :
                 c == Cursor.POINTER ? HAND_CURSOR :
@@ -233,7 +233,8 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         if (f instanceof SwingWindow)
             g.setFont(((SwingWindow) f).font);
         try {
-            component.paint(new SwingContext(g));
+            g.setRenderingHints(SwingFramework.current);
+            component.paint(new AWTContext(g));
         } catch (final Exception ex) {
             i4Logger.INSTANCE.e(ex);
         }

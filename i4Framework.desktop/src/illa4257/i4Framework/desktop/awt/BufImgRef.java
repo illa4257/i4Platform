@@ -1,4 +1,4 @@
-package illa4257.i4Framework.desktop;
+package illa4257.i4Framework.desktop.awt;
 
 import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Framework.base.graphics.ImagePixelable;
