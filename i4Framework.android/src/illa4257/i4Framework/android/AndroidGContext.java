@@ -1,18 +1,15 @@
 package illa4257.i4Framework.android;
 
-import android.graphics.Canvas;
+import android.graphics.*;
 import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.Rect;
-import illa4257.i4Framework.base.Context;
-import illa4257.i4Framework.base.graphics.IPath;
-import illa4257.i4Utils.math.Vector2;
+import illa4257.i4Framework.base.graphics.*;
 import illa4257.i4Framework.base.graphics.Color;
-import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Utils.math.Vector2;
 
 import static illa4257.i4Framework.android.AndroidFramework.L;
 
 public class AndroidGContext implements Context {
+    private final Matrix matrix = new Matrix();
     public final Paint paint = new Paint();
     public Canvas canvas;
 
@@ -30,6 +27,23 @@ public class AndroidGContext implements Context {
     }
 
     private final char[] buff = new char[1];
+
+    @Override
+    public Object cloneTransform() {
+        return new Matrix(matrix);
+    }
+
+    @Override
+    public void setTransform(final Object transform) {
+        matrix.set((Matrix) transform);
+        canvas.setMatrix(matrix);
+    }
+
+    @Override
+    public void transform(final Object transform) {
+        matrix.preConcat((Matrix) transform);
+        canvas.setMatrix(matrix);
+    }
 
     @Override
     public float charWidth(char ch) {
@@ -68,8 +82,27 @@ public class AndroidGContext implements Context {
         canvas.clipPath(getPath(path));
     }
 
-    @Override public void translate(final float x, final float y) { canvas.translate(x, y); }
-    @Override public void scale(final float x, final float y) { canvas.scale(x, y); }
+    @Override
+    public void translate(final float x, final float y) {
+        matrix.postTranslate(x, y);
+        canvas.translate(x, y);
+    }
+
+    @Override
+    public void scale(final float x, final float y) {
+        matrix.postScale(x, y);
+        canvas.scale(x, y);
+    }
+
+    @Override
+    public void rotate(final float deg) {
+        canvas.rotate(deg);
+    }
+
+    @Override
+    public void skew(final float x, final float y) {
+        canvas.skew(x, y);
+    }
 
     @Override
     public IPath newPath() {
@@ -84,7 +117,30 @@ public class AndroidGContext implements Context {
     }
 
     @Override
+    public Object newRoundShape(float x, float y, float w, float h, float topLeftArcWidth, float topLeftArcHeight, float topRightArcWidth, float topRightArcHeight, float bottomLeftArcWidth, float bottomLeftArcHeight, float bottomRightArcWidth, float bottomRightArcHeight) {
+        final Path p = new Path();
+        p.addRoundRect(
+                x - paint.getStrokeWidth() / 2, y - paint.getStrokeWidth() / 2, w, h,
+                new float[] {
+                        topLeftArcWidth, topLeftArcHeight,
+                        topRightArcWidth, topRightArcHeight,
+                        bottomRightArcWidth, bottomRightArcHeight,
+                        bottomLeftArcWidth, bottomLeftArcHeight
+                },
+                Path.Direction.CW
+        );
+        return null;
+    }
+
+    @Override
     public void draw(final Object path) {
+        paint.setStyle(Paint.Style.STROKE);
+        canvas.drawPath(getPath(path), paint);
+        paint.setStyle(Paint.Style.FILL);
+    }
+
+    @Override
+    public void fill(final Object path) {
         canvas.drawPath(getPath(path), paint);
     }
 
@@ -95,6 +151,13 @@ public class AndroidGContext implements Context {
 
     @Override
     public void drawRect(float x, float y, float w, float h) {
+        paint.setStyle(Paint.Style.STROKE);
+        canvas.drawRect(x, y, x + w, y + h, paint);
+        paint.setStyle(Paint.Style.FILL);
+    }
+
+    @Override
+    public void fillRect(float x, float y, float w, float h) {
         canvas.drawRect(x, y, x + w, y + h, paint);
     }
 
@@ -109,16 +172,26 @@ public class AndroidGContext implements Context {
     }
 
     @Override
-    public void drawImage(Image image, float x, float y) {
-        canvas.drawBitmap(((AndroidImage) image.imageMap.computeIfAbsent(AndroidImage.class, ignored -> AndroidImage.compute(image))).bitmap,
-                Math.round(x), Math.round(y),
-                paint);
+    public void drawSprite(final Sprite sprite, float x, float y) {
+        if (sprite instanceof Image) {
+            final Image image = (Image) sprite;
+            canvas.drawBitmap(((AndroidImage) image.imageMap.computeIfAbsent(AndroidImage.class, ignored -> AndroidImage.compute(image))).bitmap,
+                    Math.round(x), Math.round(y),
+                    paint);
+            return;
+        }
+        Context.super.drawSprite(sprite, x, y);
     }
 
     @Override
-    public void drawImage(Image image, float x, float y, float width, float height) {
-        canvas.drawBitmap(((AndroidImage) image.imageMap.computeIfAbsent(AndroidImage.class, ignored -> AndroidImage.compute(image))).bitmap, null,
-                new Rect(Math.round(x), Math.round(y), Math.round(x + width), Math.round(y + height)),
-                paint);
+    public void drawSprite(final Sprite sprite, float x, float y, float width, float height) {
+        if (sprite instanceof Image) {
+            final Image image = (Image) sprite;
+            canvas.drawBitmap(((AndroidImage) image.imageMap.computeIfAbsent(AndroidImage.class, ignored -> AndroidImage.compute(image))).bitmap, null,
+                    new Rect(Math.round(x), Math.round(y), Math.round(x + width), Math.round(y + height)),
+                    paint);
+            return;
+        }
+        Context.super.drawSprite(sprite, x, y, width, height);
     }
 }

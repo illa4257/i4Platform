@@ -18,7 +18,7 @@ public class AndroidPath implements IPath {
     }
 
     @Override
-    public void begin(float x, float y) {
+    public void moveTo(float x, float y) {
         path.moveTo(this.x = x, this.y = y);
     }
 

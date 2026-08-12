@@ -18,10 +18,12 @@ import illa4257.i4Framework.base.events.keyboard.KeyMapper;
 import illa4257.i4Framework.base.capabilities.Bluetooth;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.graphics.Image;
+import illa4257.i4Framework.base.graphics.Sprite;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Utils.logger.i4Logger;
 import illa4257.i4Utils.web.i4URI;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -206,10 +208,10 @@ public class AndroidFramework extends Framework {
                 windows.offer(aw);
                 component = new Component() {
                     @Override
-                    public void paint(illa4257.i4Framework.base.Context context) {
+                    public void paint(illa4257.i4Framework.base.graphics.Context context) {
                         super.paint(context);
                         context.setPaint(Color.RED);
-                        context.drawRect(0, 0, 256, 256);
+                        context.fillRect(0, 0, 256, 256);
                     }
                 };
 
@@ -287,13 +289,15 @@ public class AndroidFramework extends Framework {
     }
 
     @Override
-    public Image getImage(final InputStream inputStream) throws IOException {
-        try {
-            final Bitmap b = BitmapFactory.decodeStream(inputStream);
+    public Sprite getSprite(InputStream inputStream) throws IOException {
+        if (!inputStream.markSupported())
+            inputStream = new BufferedInputStream(inputStream);
+        inputStream.mark(65536);
+        final Bitmap b = BitmapFactory.decodeStream(inputStream);
+        if (b != null)
             return new Image(b.getWidth(), b.getHeight(), AndroidImage.class, new AndroidImage(b));
-        } catch (final Exception ignored) {
-            return super.getImage(inputStream);
-        }
+        inputStream.reset();
+        return super.getSprite(inputStream);
     }
 
     @Override public File getAppDataDir() { return context.getFilesDir(); }
