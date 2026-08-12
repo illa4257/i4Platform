@@ -1,6 +1,9 @@
 package illa4257.i4Utils.nio.web.tasks;
 
 import illa4257.i4Utils.io.IOs;
+import illa4257.i4Utils.nio.net.tasks.BuffLand;
+import illa4257.i4Utils.nio.net.tasks.QTask;
+import illa4257.i4Utils.nio.net.tasks.Task;
 import illa4257.i4Utils.nio.web.WSHandler;
 import illa4257.i4Utils.nio.web.WSProtocol;
 
@@ -11,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class WSTask extends Task implements WSProtocol {
+public class WSTask extends WebTask implements WSProtocol {
     private static final ThreadLocal<byte[]> mask = ThreadLocal.withInitial(() -> new byte[4]);
 
     public ByteBuffer buffer = null;

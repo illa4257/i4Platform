@@ -1,9 +1,8 @@
-package illa4257.i4Utils.nio.web.transports;
+package illa4257.i4Utils.nio.net.transports;
 
-import illa4257.i4Utils.logger.i4Logger;
-import illa4257.i4Utils.nio.web.WebServer;
-import illa4257.i4Utils.nio.web.tasks.BuffLand;
-import illa4257.i4Utils.nio.web.tasks.Task;
+import illa4257.i4Utils.nio.net.NetServer;
+import illa4257.i4Utils.nio.net.tasks.BuffLand;
+import illa4257.i4Utils.nio.net.tasks.Task;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -35,7 +34,7 @@ public class SSLTransport extends RawTransport {
         netOut = getWorker().land.bl1();
     }
 
-    public WebServer.WebServerWorker getWorker() {
+    public NetServer.NetServerWorker getWorker() {
         return ((Task) key.attachment()).worker;
     }
 
@@ -88,8 +87,8 @@ public class SSLTransport extends RawTransport {
                     s = r.getHandshakeStatus();
                     break;
                 case NEED_TASK:
-                    final WebServer.WebServerWorker worker = ((Task) key.attachment()).worker;
-                    final WebServer server = worker.getServer();
+                    final NetServer.NetServerWorker worker = ((Task) key.attachment()).worker;
+                    final NetServer server = worker.getServer();
                     key.interestOps(0);
                     server.runTask(() -> {
                         engine.getDelegatedTask().run();

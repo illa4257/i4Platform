@@ -1,9 +1,10 @@
 package illa4257.i4Utils.nio.web.tasks;
 
-import illa4257.i4Utils.nio.web.Protocol;
+import illa4257.i4Utils.nio.net.tasks.BuffLand;
+import illa4257.i4Utils.nio.web.WebProtocol;
 import illa4257.i4Utils.nio.web.WSHandler;
 import illa4257.i4Utils.nio.web.WebHandler;
-import illa4257.i4Utils.nio.web.transports.SSLTransport;
+import illa4257.i4Utils.nio.net.transports.SSLTransport;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
@@ -18,7 +19,7 @@ import java.util.Base64;
 
 import static illa4257.i4Utils.nio.web.WebServer.L;
 
-public class AcceptTask extends Task implements Protocol {
+public class WebAcceptTask extends WebTask implements WebProtocol {
     private static final ThreadLocal<MessageDigest> SHA1 = ThreadLocal.withInitial(() -> {
         try {
             return MessageDigest.getInstance("SHA-1");

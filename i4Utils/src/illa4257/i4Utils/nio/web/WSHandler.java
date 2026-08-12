@@ -1,6 +1,6 @@
 package illa4257.i4Utils.nio.web;
 
-import illa4257.i4Utils.nio.web.tasks.Task;
+import illa4257.i4Utils.nio.net.tasks.Task;
 
 public abstract class WSHandler extends Task {
     public WSProtocol protocol;

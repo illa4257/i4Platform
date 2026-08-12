@@ -3,7 +3,7 @@ package illa4257.i4Utils.nio.web;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public interface Protocol {
+public interface WebProtocol {
     Object attachment();
     void attach(final Object attachment);
 

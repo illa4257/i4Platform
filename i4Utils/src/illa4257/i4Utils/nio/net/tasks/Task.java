@@ -1,8 +1,8 @@
-package illa4257.i4Utils.nio.web.tasks;
+package illa4257.i4Utils.nio.net.tasks;
 
-import illa4257.i4Utils.nio.web.WebServer;
-import illa4257.i4Utils.nio.web.transports.RawTransport;
-import illa4257.i4Utils.nio.web.transports.Transport;
+import illa4257.i4Utils.nio.net.NetServer;
+import illa4257.i4Utils.nio.net.transports.RawTransport;
+import illa4257.i4Utils.nio.net.transports.Transport;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -11,8 +11,8 @@ import java.nio.channels.SelectionKey;
 import static illa4257.i4Utils.nio.web.WebServer.L;
 
 public abstract class Task {
-    public WebServer server = null;
-    public WebServer.WebServerWorker worker = null;
+    public NetServer server = null;
+    public NetServer.NetServerWorker worker = null;
     public Transport transport = null;
 
     public Task setBase(final Task task) {
@@ -22,7 +22,7 @@ public abstract class Task {
         return this;
     }
 
-    public Task setBase(final WebServer.WebServerWorker worker, final SelectionKey key) {
+    public Task setBase(final NetServer.NetServerWorker worker, final SelectionKey key) {
         this.server = worker.getServer();
         this.worker = worker;
         this.transport = new RawTransport(key);
@@ -71,7 +71,6 @@ public abstract class Task {
     }
 
     public boolean copyReply(final ByteBuffer buffer, final long amount) throws IOException {
-        System.out.println("Copy " + amount);
         if (amount == 0)
             return false;
         buffer.compact();
