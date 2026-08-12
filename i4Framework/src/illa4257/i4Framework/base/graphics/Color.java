@@ -1,7 +1,7 @@
 package illa4257.i4Framework.base.graphics;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class Color implements Paint {
@@ -9,32 +9,6 @@ public class Color implements Paint {
     public static Color repeat3(final float value) { return new Color(value, value, value); }
     public static Color repeat4(final int value) { return new Color(value, value, value, value); }
     public static Color repeat4(final float value) { return new Color(value, value, value, value); }
-
-    @SuppressWarnings("unused")
-    public static final Color
-                WHITE = repeat3(1f),
-                LIGHT_GRAY = repeat3(.7529412f),
-                GRAY = repeat3(.5f),
-                DARK_GRAY = repeat3(.2509804f),
-                BLACK = repeat3(0f),
-
-                TRANSPARENT = repeat4(0f),
-
-                RED = new Color(1f, 0, 0),
-                GREEN = new Color(0, 1f, 0),
-                BLUE = new Color(0, 0, 1f),
-
-                YELLOW = new Color(1f, 1f, 0),
-                CYAN = new Color(0, 1f, 1f),
-                MAGENTA = new Color(1f, 0, 1f),
-
-                PURPLE = new Color(.5f, 0, .5f),
-
-                ORANGE = new Color(1f, .647f, 0),
-                PINK = new Color(1f, .6862745f, .6862745f),
-
-                NAVY_BLUE = new Color(0, 0, .5f),
-                DEEP_SKY_BLUE = new Color(0x00BFFFFF);
 
     public final float red, green, blue, alpha;
 
@@ -75,19 +49,43 @@ public class Color implements Paint {
         this.alpha = color.getAlpha() / 255f;
     }
 
-    @SuppressWarnings("SpellCheckingInspection")
-    public static Color getConstant(String name) {
-        name = Objects.requireNonNull(name).replace("-", "_").toUpperCase();
-        switch (name) {
-            case "NAVYBLUE": return NAVY_BLUE;
-            case "DEEPSKYBLUE": return DEEP_SKY_BLUE;
-        }
-        try {
-            final Field f = Color.class.getDeclaredField(name);
-            if (Modifier.isPublic(f.getModifiers()) && Modifier.isStatic(f.getModifiers()))
-                return (Color) f.get(null);
-        } catch (final Exception ignored) {}
-        return null;
+    private static final Map<String, Color> REGISTRY = new HashMap<>();
+
+    private static Color reg(final String name, final Color color) {
+        REGISTRY.put(name, color);
+        if (name.contains("_"))
+            REGISTRY.put(name.replace("_", ""), color);
+        return color;
+    }
+
+    @SuppressWarnings("unused")
+    public static final Color
+            WHITE = reg("WHITE", repeat3(1f)),
+            LIGHT_GRAY = reg("LIGHT_GRAY", repeat3(.7529412f)),
+            GRAY = reg("GRAY", repeat3(.5f)),
+            DARK_GRAY = reg("DARK_GRAY", repeat3(.2509804f)),
+            BLACK = reg("BLACK", repeat3(0f)),
+
+            TRANSPARENT = reg("TRANSPARENT", repeat4(0f)),
+
+            RED = reg("RED", new Color(1f, 0, 0)),
+            GREEN = reg("GREEN", new Color(0, 1f, 0)),
+            BLUE = reg("BLUE", new Color(0, 0, 1f)),
+
+            YELLOW = reg("YELLOW", new Color(1f, 1f, 0)),
+            CYAN = reg("CYAN", new Color(0, 1f, 1f)),
+            MAGENTA = reg("MAGENTA", new Color(1f, 0, 1f)),
+
+            PURPLE = reg("PURPLE", new Color(.5f, 0, .5f)),
+
+            ORANGE = reg("ORANGE", new Color(1f, .647f, 0)),
+            PINK = reg("PINK", new Color(1f, .6862745f, .6862745f)),
+
+            NAVY_BLUE = reg("NAVY_BLUE", new Color(0, 0, .5f)),
+            DEEP_SKY_BLUE = reg("DEEP_SKY_BLUE", new Color(0x00BFFFFF));
+
+    public static Color getConstant(final String name) {
+        return REGISTRY.get(Objects.requireNonNull(name).replace("-", "_").toUpperCase());
     }
 
     public static Color parse(final String s) {
