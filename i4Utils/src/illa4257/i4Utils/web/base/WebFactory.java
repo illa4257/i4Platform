@@ -35,7 +35,7 @@ import java.util.zip.InflaterInputStream;
 import static illa4257.i4Utils.logger.Level.WARN;
 
 public class WebFactory implements IWebClientFactory {
-    public static final ConcurrentHashMap<String, FunctionEx<InputStream, IOException, InputStream>> DECOMPRESSORS = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, FunctionEx<InputStream, InputStream, IOException>> DECOMPRESSORS = new ConcurrentHashMap<>();
     public static volatile String DECOMPRESSORS_VALUE;
     public static final Charset CHARSET = StandardCharsets.US_ASCII;
     private static final ThreadLocal<MessageDigest> SHA1 = ThreadLocal.withInitial(() -> {
@@ -395,9 +395,9 @@ public class WebFactory implements IWebClientFactory {
 
         final String contentEncoding = WebRequest.getHeader(r.clientHeaders, "content-encoding");
         if (contentEncoding != null) {
-            final FunctionEx<InputStream, IOException, InputStream> decompressor = DECOMPRESSORS.get(contentEncoding);
+            final FunctionEx<InputStream, InputStream, IOException> decompressor = DECOMPRESSORS.get(contentEncoding);
             if (decompressor != null)
-                r.inputStream = decompressor.accept(r.inputStream);
+                r.inputStream = decompressor.apply(r.inputStream);
             else
                 i4Logger.INSTANCE.w("Unknown content encoding method:", contentEncoding);
         }
@@ -616,9 +616,9 @@ public class WebFactory implements IWebClientFactory {
 
                 final String contentEncoding = WebRequest.getHeader(r.serverHeaders, "content-encoding");
                 if (contentEncoding != null && !contentEncoding.isEmpty()) {
-                    final FunctionEx<InputStream, IOException, InputStream> decompressor = DECOMPRESSORS.get(contentEncoding);
+                    final FunctionEx<InputStream, InputStream, IOException> decompressor = DECOMPRESSORS.get(contentEncoding);
                     if (decompressor != null)
-                        r.inputStream = decompressor.accept(r.inputStream);
+                        r.inputStream = decompressor.apply(r.inputStream);
                     else
                         i4Logger.INSTANCE.log(WARN, "Unknown content encoding method: " + contentEncoding);
                 }
