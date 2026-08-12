@@ -24,14 +24,14 @@ public class AutoWidth extends Point {
 
     @Override
     public void onConstruct() {
-        container.width.subscribe(this::reset);
+        container.width.subscribe(reset);
         container.addEventListener(AddComponentEvent.class, this::onChangeAmount);
         super.onConstruct();
     }
 
     @Override
     public void onDestruct() {
-        container.width.unsubscribe(this::reset);
+        container.width.unsubscribe(reset);
         container.removeEventListener(this::onChangeAmount);
         super.onDestruct();
     }

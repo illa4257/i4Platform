@@ -19,10 +19,10 @@ public class PPointMultiplier extends Point {
             if (old == newValue)
                 return;
             if (old != null)
-                old.unsubscribe(this::reset);
+                old.unsubscribe(reset);
             point1 = newValue;
             if (isConstructed() && newValue != null)
-                newValue.subscribe(this::reset);
+                newValue.subscribe(reset);
         }
         reset();
     }
@@ -35,10 +35,10 @@ public class PPointMultiplier extends Point {
             if (old == newValue)
                 return;
             if (old != null)
-                old.unsubscribe(this::reset);
+                old.unsubscribe(reset);
             point2 = newValue;
             if (isConstructed() && newValue != null)
-                newValue.subscribe(this::reset);
+                newValue.subscribe(reset);
         }
         reset();
     }
@@ -54,10 +54,10 @@ public class PPointMultiplier extends Point {
         synchronized (locker) {
             final Point p1 = point1;
             if (p1 != null)
-                p1.subscribe(this::reset);
+                p1.subscribe(reset);
             final Point p2 = point2;
             if (p2 != null)
-                p2.subscribe(this::reset);
+                p2.subscribe(reset);
         }
         super.onConstruct();
     }
@@ -67,10 +67,10 @@ public class PPointMultiplier extends Point {
         synchronized (locker) {
             final Point p1 = point1;
             if (p1 != null)
-                p1.unsubscribe(this::reset);
+                p1.unsubscribe(reset);
             final Point p2 = point2;
             if (p2 != null)
-                p2.unsubscribe(this::reset);
+                p2.unsubscribe(reset);
         }
         super.onDestruct();
     }

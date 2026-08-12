@@ -2,14 +2,28 @@ package illa4257.i4Framework.base.points;
 
 import illa4257.i4Utils.Destructor;
 
+import java.util.Stack;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import static illa4257.i4Framework.base.Framework.L;
+
 public abstract class Point extends Destructor {
+    private static final ThreadLocal<Stack<Runnable>> reseting = ThreadLocal.withInitial(Stack::new);
     private final ConcurrentLinkedQueue<Runnable> subscribed = new ConcurrentLinkedQueue<>();
 
+    public final Runnable reset = this::reset;
+
     public void reset() {
-        for (final Runnable s : subscribed)
+        final Stack<Runnable> stack = reseting.get();
+        for (final Runnable s : subscribed) {
+            if (stack.contains(s)) {
+                L.d("There's a loop " + s + " in " + stack, Thread.currentThread().getStackTrace());
+                continue;
+            }
+            stack.push(s);
             s.run();
+            stack.pop();
+        }
     }
 
     public void fireAll() {

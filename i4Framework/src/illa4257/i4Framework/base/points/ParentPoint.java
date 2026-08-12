@@ -5,43 +5,51 @@ import illa4257.i4Framework.base.components.Container;
 import illa4257.i4Framework.base.events.EventListener;
 import illa4257.i4Framework.base.events.components.ChangeParentEvent;
 import illa4257.i4Framework.base.events.components.RecalculateEvent;
-import illa4257.i4Framework.base.math.Orientation;
+import illa4257.i4Framework.base.styling.Orientation;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ParentPoint extends Point {
+    private final Object locker = new Object();
     private final AtomicReference<Component> component;
     private final AtomicReference<Orientation> orientation;
 
     private final EventListener<RecalculateEvent> recalc = ignored -> reset();
-    private final EventListener<ChangeParentEvent> listener = event -> {
-        if (event.oldValue != null)
-            event.oldValue.removeEventListener(recalc);
-        reset();
-        if (event.newValue != null)
-            event.newValue.addEventListener(RecalculateEvent.class, recalc);
-    };
+    private final EventListener<ChangeParentEvent> listener;
 
     public ParentPoint(final Component component, final Orientation orientation) {
         this.component = new AtomicReference<>(component);
         this.orientation = new AtomicReference<>(orientation);
+        listener = event -> {
+            synchronized (locker) {
+                if (event.oldValue != null)
+                    event.oldValue.removeEventListener(recalc);
+                if (!isConstructed())
+                    return;
+                if (event.newValue != null)
+                    event.newValue.addEventListener(RecalculateEvent.class, recalc);
+            }
+            reset();
+        };
     }
 
     public void setComponent(final Component newValue) {
-        final Component old = component.getAndSet(newValue);
-        if (old == newValue)
-            return;
-        if (isConstructed()) {
-            newValue.addEventListener(ChangeParentEvent.class, listener);
-            final Container p = newValue.getParent();
-            if (p != null)
-                p.addEventListener(RecalculateEvent.class, recalc);
-        }
-        if (old != null) {
-            final Container p = old.getParent();
-            if (p != null)
-                p.removeEventListener(recalc);
-            old.removeEventListener(listener);
+        synchronized (locker) {
+            final Component old = component.getAndSet(newValue);
+            if (old == newValue)
+                return;
+            if (isConstructed()) {
+                newValue.addEventListener(ChangeParentEvent.class, listener);
+                final Container p = newValue.getParent();
+                if (p != null)
+                    p.addEventListener(RecalculateEvent.class, recalc);
+            }
+            if (old != null) {
+                final Container p = old.getParent();
+                if (p != null)
+                    p.removeEventListener(recalc);
+                old.removeEventListener(listener);
+            }
         }
         reset();
     }
@@ -64,24 +72,28 @@ public class ParentPoint extends Point {
 
     @Override
     public void onConstruct() {
-        final Component c = component.get();
-        if (c != null) {
-            c.addEventListener(ChangeParentEvent.class, listener);
-            final Container p = c.getParent();
-            if (p != null)
-                p.addEventListener(RecalculateEvent.class, recalc);
+        synchronized (locker) {
+            final Component c = component.get();
+            if (c != null) {
+                c.addEventListener(ChangeParentEvent.class, listener);
+                final Container p = c.getParent();
+                if (p != null)
+                    p.addEventListener(RecalculateEvent.class, recalc);
+            }
         }
         super.onConstruct();
     }
 
     @Override
     public void onDestruct() {
-        final Component c = component.get();
-        if (c != null) {
-            c.removeEventListener(listener);
-            final Container p = c.getParent();
-            if (p != null)
-                p.removeEventListener(recalc);
+        synchronized (locker) {
+            final Component c = component.get();
+            if (c != null) {
+                c.removeEventListener(listener);
+                final Container p = c.getParent();
+                if (p != null)
+                    p.removeEventListener(recalc);
+            }
         }
         super.onDestruct();
     }

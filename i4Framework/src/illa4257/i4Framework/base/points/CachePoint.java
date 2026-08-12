@@ -16,10 +16,10 @@ public class CachePoint extends ACachePoint {
             if (old == newValue)
                 return;
             if (old != null)
-                old.unsubscribe(this::reset);
+                old.unsubscribe(reset);
             point = newValue;
             if (isConstructed() && newValue != null)
-                newValue.subscribe(this::reset);
+                newValue.subscribe(reset);
         }
     }
 
@@ -34,7 +34,7 @@ public class CachePoint extends ACachePoint {
         synchronized (locker) {
             final Point p = point;
             if (p != null)
-                p.subscribe(this::reset);
+                p.subscribe(reset);
         }
         super.onConstruct();
     }
@@ -44,7 +44,7 @@ public class CachePoint extends ACachePoint {
         synchronized (locker) {
             final Point p = point;
             if (p != null)
-                p.unsubscribe(this::reset);
+                p.unsubscribe(reset);
         }
         super.onDestruct();
     }

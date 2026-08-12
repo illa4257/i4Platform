@@ -22,10 +22,10 @@ public class NumberPointAdd extends Point {
             if (old == newValue)
                 return;
             if (old != null)
-                old.unsubscribe(this::reset);
+                old.unsubscribe(reset);
             point = newValue;
             if (isConstructed() && newValue != null)
-                newValue.subscribe(this::reset);
+                newValue.subscribe(reset);
         }
         reset();
     }
@@ -47,7 +47,7 @@ public class NumberPointAdd extends Point {
         synchronized (number) {
             final Point p = point;
             if (p != null)
-                p.subscribe(this::reset);
+                p.subscribe(reset);
         }
         super.onConstruct();
     }
@@ -57,7 +57,7 @@ public class NumberPointAdd extends Point {
         synchronized (number) {
             final Point p = point;
             if (p != null)
-                p.unsubscribe(this::reset);
+                p.unsubscribe(reset);
         }
         super.onDestruct();
     }
