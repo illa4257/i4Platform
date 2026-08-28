@@ -22,7 +22,7 @@ public abstract class NetServer {
 
     private static final AtomicInteger roundRobin = new AtomicInteger();
 
-    public abstract Task getHandler();
+    public abstract Task getHandler(final SelectableChannel channel);
 
     public void accept(final SelectableChannel channel) {
         while (true) {
@@ -83,7 +83,7 @@ public abstract class NetServer {
 
         public NetServerWorker() throws IOException {
             this.selector = Selector.open();
-            setName("NetServer Worker ");
+            setName("NetServer Worker");
             setPriority(Thread.MAX_PRIORITY);
             start();
         }
@@ -115,9 +115,9 @@ public abstract class NetServer {
                         }
                     selector.selectedKeys().clear();
                     SelectableChannel sch;
-                    //noinspection resource
                     while ((sch = channels.poll()) != null) {
-                        final Task t = getHandler();
+                        final Task t = getHandler(sch);
+                        sch.configureBlocking(false);
                         t.setBase(this, sch.register(selector, SelectionKey.OP_READ, t));
                     }
                 }
