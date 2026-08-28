@@ -440,7 +440,6 @@ public class WebAcceptTask extends WebTask implements WebProtocol {
                     final WSTask t = new WSTask();
                     final WSHandler h = handler.websocket(t);
                     if (h == null) {
-                        transport.interestOps(SelectionKey.OP_WRITE);
                         final ByteBuffer buf = worker.land.bl1();
                         status(buf, 404);
                         noContent(buf);
@@ -455,6 +454,7 @@ public class WebAcceptTask extends WebTask implements WebProtocol {
                         } else
                             break;
                     }
+                    transport.interestOps(SelectionKey.OP_READ);
                     t.r = r;
                     t.n = n;
                     t.handler = h;
