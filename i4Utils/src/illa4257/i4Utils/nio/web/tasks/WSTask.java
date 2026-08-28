@@ -3,15 +3,16 @@ package illa4257.i4Utils.nio.web.tasks;
 import illa4257.i4Utils.io.IOs;
 import illa4257.i4Utils.nio.net.tasks.BuffLand;
 import illa4257.i4Utils.nio.net.tasks.QTask;
-import illa4257.i4Utils.nio.net.tasks.Task;
 import illa4257.i4Utils.nio.web.WSHandler;
 import illa4257.i4Utils.nio.web.WSProtocol;
+import illa4257.i4Utils.nio.web.WebServer;
 
 import java.io.IOException;
 import java.nio.*;
 import java.nio.channels.SelectionKey;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class WSTask extends WebTask implements WSProtocol {
@@ -25,6 +26,7 @@ public class WSTask extends WebTask implements WSProtocol {
 
     public WSHandler handler = null;
 
+    private final AtomicBoolean closed = new AtomicBoolean(false);
     private final byte[] maskRead = new byte[4];
     private int state = 0, b0;
     private boolean finalRead, maskingRead, monitorBuffer;
@@ -114,6 +116,71 @@ public class WSTask extends WebTask implements WSProtocol {
     }
 
     @Override
+    public void close() throws IOException {
+        close(1000);
+    }
+
+    @Override
+    public void close(final int code) throws IOException {
+        if (closed.getAndSet(true))
+            return;
+        final ByteBuffer hb = worker.land.bl0();
+        writeType(hb, true, 0x01);
+        writeLength(hb, masking, 2);
+        if (masking) {
+            final byte[] mask = WSTask.mask.get();
+            RND.nextBytes(mask);
+            hb.put(mask);
+            hb.put((byte) ((code >>> 8) ^ mask[0]));
+            hb.put((byte) (code ^ mask[1]));
+        } else {
+            hb.put((byte) (code >>> 8));
+            hb.put((byte) code);
+        }
+        hb.flip();
+
+        lock.lock();
+        try {
+            write(hb, true);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void close(final int code, final ByteBuffer reason, final boolean recycle) throws IOException {
+        if (closed.getAndSet(true))
+            return;
+        final ByteBuffer hb = worker.land.bl0();
+        writeType(hb, true, 0x01);
+        writeLength(hb, masking, reason.remaining() + 2);
+        if (masking) {
+            final byte[] mask = WSTask.mask.get();
+            RND.nextBytes(mask);
+            hb.put(mask);
+            hb.put((byte) ((code >>> 8) ^ mask[0]));
+            hb.put((byte) (code ^ mask[1]));
+            final int e = reason.position() + reason.remaining();
+            for (int i = reason.position(), k = 2; i < e; i++, k++)
+                reason.put(i, (byte) (reason.get(i) ^ mask[k & 3]));
+        } else {
+            hb.put((byte) (code >>> 8));
+            hb.put((byte) code);
+        }
+        hb.flip();
+
+        lock.lock();
+        try {
+            write(hb, true);
+            write(reason, recycle);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private int t = 0;
+
+    @Override
     public void tick() throws Exception {
         ByteBuffer b = buffer != null ? buffer : worker.bl1;
         final int l = transport.read(b);
@@ -145,6 +212,10 @@ public class WSTask extends WebTask implements WSProtocol {
                             state = 1;
                             i0 = 7;
                             break;
+                        case 8: // Close
+                            state = 1;
+                            i0 = 8;
+                            break;
                         case 9: // Ping
                             state = 1;
                             i0 = 6;
@@ -165,11 +236,11 @@ public class WSTask extends WebTask implements WSProtocol {
                             }
                             state = 1;
                             i0 = 5;
+                            i1 = 0;
                             continue;
                         default:
                             throw new RuntimeException("Not supported packet code: " + s + " | " + finalRead);
                     }
-                    //break;
                 }
                 case 1: {
                     if (!b.hasRemaining()) {
@@ -184,8 +255,10 @@ public class WSTask extends WebTask implements WSProtocol {
                         if (maskingRead) {
                             state = 4;
                             b0 = 0;
-                        } else
+                        } else {
                             state = i0;
+                            i0 = i1;
+                        }
                         continue;
                     }
                     state = s == 126 ? 2 : 3;
@@ -208,8 +281,10 @@ public class WSTask extends WebTask implements WSProtocol {
                     if (maskingRead) {
                         state = 4;
                         b0 = 0;
-                    } else
+                    } else {
                         state = i0;
+                        i0 = i1;
+                    }
                     break;
                 case 3:
                     while (b0 < 8) {
@@ -226,8 +301,10 @@ public class WSTask extends WebTask implements WSProtocol {
                     if (maskingRead) {
                         state = 4;
                         b0 = 0;
-                    } else
+                    } else {
                         state = i0;
+                        i0 = i1;
+                    }
                     break;
                 case 4: // READ MASK
                     while (b0 < 4) {
@@ -238,6 +315,7 @@ public class WSTask extends WebTask implements WSProtocol {
                         maskRead[b0++] = b.get();
                     }
                     state = i0;
+                    i0 = i1;
                     b0 = 0;
                     break;
                 case 5: // SKIP
@@ -253,7 +331,7 @@ public class WSTask extends WebTask implements WSProtocol {
                         }
                         b.position(b.position() + (int) l0);
                     }
-                    state = 0;
+                    state = i0;
                     break;
                 case 6: // COPY REPLY
                     final boolean masking = this.masking;
@@ -400,6 +478,39 @@ public class WSTask extends WebTask implements WSProtocol {
                     }
                     b.compact();
                     return;
+                case 8:
+                    if (closed.get()) {
+                        state = 9;
+                        break;
+                    }
+                    if (l0 < 2) {
+                        WebServer.L.d("Closed without a code and any reason");
+                        state = 9;
+                        transport.interestOps(SelectionKey.OP_WRITE);
+                        close();
+                        return;
+                    }
+                    if (b.limit() - b.position() < 2)
+                        return;
+                    if (maskingRead) {
+                        final long limit = b.position() + 2;
+                        for (int i = b.position(); i < limit; i++) {
+                            b.put(i, (byte) (b.get(i) ^ maskRead[b0++]));
+                            if (b0 == 4)
+                                b0 = 0;
+                        }
+                    }
+                    final int code = IOs.readBEShortI(b);
+                    WebServer.L.d("Received close with a code " + code);
+                    close(1000);
+                    l0 -= 2;
+                    i0 = 9;
+                    state = 5;
+                    break;
+                case 9:
+                    b.clear();
+                    transport.close();
+                    return;
             }
     }
 
@@ -436,7 +547,9 @@ public class WSTask extends WebTask implements WSProtocol {
 
     @Override
     public void skipRest() {
-        if (state == 7)
+        if (state == 7) {
+            i0 = 0;
             state = 5;
+        }
     }
 }
