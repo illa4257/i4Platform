@@ -1,5 +1,5 @@
-#ifndef CONFIG_FILENAME
-#error "Undefined CONFIG_FILENAME"
+#ifndef COMMAND
+#error "Undefined COMMAND"
 #endif
 
 #ifndef ARGS
@@ -12,44 +12,12 @@
 #include <filesystem>
 #include <windows.h>
 
-std::string trim(const std::string& str) {
-    size_t len = str.length(), start = 0, end = len;
-    char ch;
-    for (; start < len; start++) {
-        ch = str[start];
-        if (ch != ' ' && ch != '\t')
-            break;
-    }
-    for (end--; end >= start; end--) {
-        ch = str[end];
-        if (ch != ' ' && ch != '\t')
-            break;
-    }
+static std::string trim(const std::string& str) {
+    const size_t start = str.find_first_not_of(" \t");
+    if (start == std::string::npos)
+        return "";
+    const size_t end = str.find_last_not_of(" \t");
     return str.substr(start, end - start + 1);
-}
-
-size_t find(char* str, const char* chars) {
-    size_t l = std::strlen(str);
-    char ch;
-    for (size_t i = 0; i < l; i++) {
-        ch = str[i];
-        for (const char* sch = chars; *sch != '\0'; sch++)
-            if (ch == *sch)
-                return i;
-    }
-    return std::string::npos;
-}
-
-size_t find(std::string& str, const char* chars) {
-    size_t l = str.length();
-    char ch;
-    for (size_t i = 0; i < l; i++) {
-        ch = str.at(i);
-        for (const char* sch = chars; *sch != '\0'; sch++)
-            if (ch == *sch)
-                return i;
-    }
-    return std::string::npos;
 }
 
 int main(int argc, char* argv[]) {
@@ -57,28 +25,41 @@ int main(int argc, char* argv[]) {
     ZeroMemory(&pi, sizeof(pi));
 
     {
-        std::ifstream configFile(std::filesystem::path(argv[0]).parent_path() / (CONFIG_FILENAME + std::string(".ini")));
+        char buffer[MAX_PATH];
+        GetModuleFileNameA(nullptr, buffer, MAX_PATH);
+        std::filesystem::path exe(buffer);
+#ifdef CONFIG_FILENAME
+        std::filesystem::path p = exe.parent_path() / (std::string(CONFIG_FILENAME) + ".ini");
+#else
+        std::filesystem::path p = exe.parent_path() / (exe.stem().string() + ".ini");
+#endif
 
-        std::string command = "java", startArgs = "";
+        std::cout << p << "\r\n";
+
+        std::ifstream configFile(p);
+
+        std::string command = COMMAND, startArgs = "", afterStartArgs = "";
 
         if (configFile.is_open()) {
-            size_t pos;
-            std::string line, key;
+            std::string line;
             while (std::getline(configFile, line)) {
+                line = trim(line);
                 if (line.empty() || line.front() == '#' || line.front() == ';')
                     continue;
-                pos = find(line, "=:");
+                const size_t pos = line.find_first_of("=:");
                 if (pos == std::string::npos || pos == 0)
                     continue;
-                key = trim(line.substr(0, pos));
-                if (key == "command") {
-                    line = trim(line.substr(pos + 1));
-                    if (!line.empty())
-                        command = line;
-                } else if (key == "java_start_args") {
-                    line = trim(line.substr(pos + 1));
-                    startArgs = line.empty() ? "" : ' ' + line;
-                }
+                const std::string
+                        key = trim(line.substr(0, pos)),
+                        val = trim(line.substr(pos + 1));
+                if (val.empty())
+                    continue;
+                if (key == "command")
+                    command = val;
+                else if (key == "start_args")
+                    startArgs = ' ' + val;
+                else if (key == "after_start_args")
+                    startArgs = ' ' + val;
             }
 
             configFile.close();
@@ -87,25 +68,33 @@ int main(int argc, char* argv[]) {
         std::string programArgs;
         for (int i = 1; i < argc; i++) {
             programArgs += ' ';
-            if (find(argv[i], " \t\r\n\"") != std::string::npos) {
+            if (const std::string_view arg = argv[i]; arg.find_first_of(" \t\r\n\"") != std::string::npos) {
                 programArgs += '"';
-                for (char* ch = argv[i]; *ch != '\0'; ch++)
-                    if (*ch == '"')
+                for (const char ch : arg)
+                    if (ch == '"')
                         programArgs += "\\\"";
                     else
                         programArgs += ch;
                 programArgs += '"';
             } else
-                programArgs += argv[i];
+                programArgs += arg;
         }
 
         STARTUPINFO si;
         ZeroMemory(&si, sizeof(si));
         si.cb = sizeof(si);
 
-        if (!CreateProcess(NULL, (LPSTR) (command + startArgs + (ARGS[0] != '\0' ? ' ' + std::string(ARGS) : "") + programArgs).c_str(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+        command += startArgs;
+        if constexpr (ARGS[0] != '\0') {
+            command += ' ';
+            command += ARGS;
+        }
+        command += afterStartArgs;
+        command += programArgs;
+        if (!CreateProcess(nullptr, command.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
             const DWORD err = GetLastError();
-            MessageBox(NULL, ("Failed to create a process (" + std::to_string(err) + std::string(").")).c_str(), "Error", MB_OK | MB_ICONERROR);
+            const std::string msg = "Failed to create a process (" + std::to_string(err) + ").";
+            MessageBox(nullptr, msg.c_str(), "Error", MB_OK | MB_ICONERROR);
             std::cerr << "Failed to create a process (" << err << ")." << std::endl;
             return 1;
         }
