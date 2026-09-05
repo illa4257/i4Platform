@@ -872,6 +872,7 @@ public class Component extends Destructor {
 
     public void paint(final Context context) {
         final PropIter ss = getPI();
+        context.setPI(ss);
         final float
                 w = width.calcFloat(), h = height.calcFloat(),
                 brwtl, brwtr, brwbr, brwbl,
