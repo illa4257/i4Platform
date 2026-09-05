@@ -1,0 +1,6 @@
+<svg version="1.1"
+     width="16" height="16"
+     xmlns="http://www.w3.org/2000/svg" fill="transparent">
+    <rect x="4" y="7" width="8" height="8" stroke="var(--stroke-color)" stroke-width="var(--thickness)" />
+    <path d="M3,7 H2 L8,1 L14,7 Z" stroke="var(--stroke-color)" stroke-width="var(--thickness)" />
+</svg>
