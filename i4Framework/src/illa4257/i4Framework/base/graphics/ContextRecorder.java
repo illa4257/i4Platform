@@ -1,5 +1,6 @@
 package illa4257.i4Framework.base.graphics;
 
+import illa4257.i4Framework.base.styling.PropIter;
 import illa4257.i4Utils.math.Vector2;
 
 import java.util.ArrayList;
@@ -17,6 +18,16 @@ public class ContextRecorder implements Context, Sprite {
     public void applyTo(final Context context) {
         for (final Consumer<Context> action : actions)
             action.accept(context);
+    }
+
+    @Override
+    public PropIter getPI() {
+        throw new RuntimeException("Unsupported action.");
+    }
+
+    @Override
+    public void setPI(final PropIter pi) {
+        throw new RuntimeException("Unsupported action.");
     }
 
     @Override
@@ -44,6 +55,11 @@ public class ContextRecorder implements Context, Sprite {
     @Override
     public void transform(final Object transform) {
         actions.add(c -> c.transform(((Holder) transform).obj.get()));
+    }
+
+    @Override
+    public Context sub(float x, float y, float w, float h) {
+        throw new RuntimeException("Not implemented");
     }
 
     @Override
@@ -166,5 +182,10 @@ public class ContextRecorder implements Context, Sprite {
     @Override
     public void drawSprite(final Sprite sprite, final float x, final float y, final float width, final float height) {
         actions.add(c -> c.drawSprite(sprite, x, y, width, height));
+    }
+
+    @Override
+    public void with(final Consumer<Context> runnable) {
+        actions.add(c -> c.with(runnable));
     }
 }

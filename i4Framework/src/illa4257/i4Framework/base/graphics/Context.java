@@ -1,11 +1,16 @@
 package illa4257.i4Framework.base.graphics;
 
+import illa4257.i4Framework.base.styling.PropIter;
 import illa4257.i4Framework.base.utils.Geom;
 import illa4257.i4Utils.math.Vector2;
 
 import java.io.InputStream;
+import java.util.function.Consumer;
 
 public interface Context {
+    PropIter getPI();
+    void setPI(final PropIter pi);
+
     Object cloneTransform();
     void setTransform(final Object transform);
     void transform(final Object transform);
@@ -16,7 +21,13 @@ public interface Context {
     default void setFont(final Object font) {}
 
     @SuppressWarnings("unused")
-    default Context sub(final float x, final float y, final float w, final float h) { return this; }
+    Context sub(final float x, final float y, final float w, final float h);
+
+    default Context apply(final Context config) {
+        setPI(config.getPI());
+        return this;
+    }
+
     default void dispose() {}
 
     float charWidth(final char ch);
@@ -72,10 +83,8 @@ public interface Context {
     default void drawSprite(final Sprite sprite, final float x, final float y) {
         if (sprite instanceof ContextRecorder) {
             final ContextRecorder img = (ContextRecorder) sprite;
-            final Object t = cloneTransform();
-            translate(x, y);
-            img.applyTo(this);
-            setTransform(t);
+            final Context target = sub(x, y, img.getWidth(), img.getHeight());
+            img.applyTo(target);
             return;
         }
         throw new RuntimeException(sprite.getClass().getName() + " is not supported");
@@ -84,13 +93,15 @@ public interface Context {
     default void drawSprite(final Sprite sprite, final float x, final float y, final float width, final float height) {
         if (sprite instanceof ContextRecorder) {
             final ContextRecorder img = (ContextRecorder) sprite;
-            final Object t = cloneTransform();
-            translate(x, y);
-            scale(width / img.getWidth(), height / img.getHeight());
-            img.applyTo(this);
-            setTransform(t);
+            final Context target = sub(x, y, width, height);
+            target.scale(width / img.getWidth(), height / img.getHeight());
+            img.applyTo(target);
             return;
         }
         throw new RuntimeException(sprite.getClass().getName() + " is not supported");
+    }
+
+    default void with(final Consumer<Context> runnable) {
+        runnable.accept(this);
     }
 }
