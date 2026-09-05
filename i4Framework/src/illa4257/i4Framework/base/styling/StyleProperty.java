@@ -10,14 +10,19 @@ import java.util.Objects;
 import java.util.Stack;
 import java.util.function.Predicate;
 
-import static illa4257.i4Framework.base.Framework.L;
 
 public class StyleProperty {
     public final String name;
-    public final List<List<List<Object>>> objs = new ArrayList<>();
+    public final List<List<List<Object>>> objs;
 
     public StyleProperty(final String name) {
         this.name = Objects.requireNonNull(name).toLowerCase();
+        objs = new ArrayList<>();
+    }
+
+    public StyleProperty(final String name, final List<List<List<Object>>> values) {
+        this.name = name;
+        this.objs = values;
     }
 
     public static final int
@@ -471,7 +476,7 @@ public class StyleProperty {
             try {
                 return Color.parse((String) o);
             } catch (final IllegalArgumentException ex) {
-                L.w(ex);
+                //L.w(ex);
             }
         return defValue;
     }
