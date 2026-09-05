@@ -1,3 +1,4 @@
+#include <vector>
 #ifndef COMMAND
 #error "Undefined COMMAND"
 #endif
@@ -59,7 +60,7 @@ int main(int argc, char* argv[]) {
                 else if (key == "start_args")
                     startArgs = ' ' + val;
                 else if (key == "after_start_args")
-                    startArgs = ' ' + val;
+                    afterStartArgs = ' ' + val;
             }
 
             configFile.close();
@@ -91,7 +92,10 @@ int main(int argc, char* argv[]) {
         }
         command += afterStartArgs;
         command += programArgs;
-        if (!CreateProcess(nullptr, command.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
+
+        std::vector cmdBuffer(command.begin(), command.end());
+        cmdBuffer.push_back('\0');
+        if (!CreateProcess(nullptr, cmdBuffer.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
             const DWORD err = GetLastError();
             const std::string msg = "Failed to create a process (" + std::to_string(err) + ").";
             MessageBox(nullptr, msg.c_str(), "Error", MB_OK | MB_ICONERROR);
