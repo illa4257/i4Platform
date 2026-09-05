@@ -12,10 +12,7 @@ import illa4257.i4Framework.base.utils.Cache;
 import illa4257.i4Utils.MiniUtil;
 
 import java.lang.ref.SoftReference;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -30,7 +27,11 @@ public class PropIter implements Iterable<Object>, Iterator<Object> {
 
     public List<Object> values = Collections.emptyList();
     public final List<Object> filteredValues = new ArrayList<>();
+
+    private final Stack<String> propStack = new Stack<>();
+    private final Stack<Iterator<Object>> iterStack = new Stack<>();
     private Iterator<Object> iter = null;
+
     private int layer = 0, set = 0, index = 0;
     private Object next = null;
 
@@ -54,6 +55,8 @@ public class PropIter implements Iterable<Object>, Iterator<Object> {
         layer = -1;
         set = 0;
         index = 0;
+        propStack.clear();
+        iterStack.clear();
         iter = null;
         values = Collections.emptyList();
         filteredValues.clear();
@@ -66,6 +69,8 @@ public class PropIter implements Iterable<Object>, Iterator<Object> {
         layer = -1;
         set = 0;
         index = 0;
+        propStack.clear();
+        iterStack.clear();
         iter = null;
         values = Collections.emptyList();
         filteredValues.clear();
@@ -110,6 +115,8 @@ public class PropIter implements Iterable<Object>, Iterator<Object> {
         layer++;
         set = 0;
         index = 0;
+        propStack.clear();
+        iterStack.clear();
         iter = null;
         values = Collections.emptyList();
         filteredValues.clear();
@@ -128,6 +135,10 @@ public class PropIter implements Iterable<Object>, Iterator<Object> {
         if (r.size() <= set)
             return this;
         values = r.get(set++);
+        propStack.clear();
+        iterStack.clear();
+        if (property.name != null)
+            propStack.push(property.name.toLowerCase());
         iter = values.iterator();
         filteredValues.clear();
         index = 0;
@@ -138,11 +149,44 @@ public class PropIter implements Iterable<Object>, Iterator<Object> {
     public boolean hasNext() {
         if (values.isEmpty())
             return false;
-        if (iter != null) {
-            if (next != null)
-                return true;
+        if (next != null)
+            return true;
+        while (iter != null) {
             while (iter.hasNext()) {
                 final Object o = iter.next();
+                if (o instanceof StyleCall && "var".equals(((StyleCall) o).name)) {
+                    List<List<List<Object>>> l = ((StyleCall) o).objs;
+                    if (l.isEmpty())
+                        continue;
+                    List<List<Object>> l2 = l.get(0);
+                    if (l2.isEmpty())
+                        continue;
+                    List<Object> l3 = l2.get(0);
+                    if (l3.isEmpty())
+                        continue;
+                    final Object n = l3.get(0);
+                    if (!(n instanceof String))
+                        continue;
+                    final StyleProperty p = lookupPropertyS.apply((String) n);
+                    if (p == null)
+                        continue;
+                    l = p.objs;
+                    if (l.isEmpty())
+                        continue;
+                    l2 = l.get(0);
+                    if (l2.isEmpty())
+                        continue;
+                    l3 = l2.get(0);
+                    if (l3.isEmpty())
+                        continue;
+                    final String name = p.name.toLowerCase();
+                    if (propStack.contains(name))
+                        continue;
+                    propStack.push(name);
+                    iterStack.push(iter);
+                    iter = l3.iterator();
+                    continue;
+                }
                 if (filter.test(o)) {
                     index++;
                     filteredValues.add(o);
@@ -150,7 +194,12 @@ public class PropIter implements Iterable<Object>, Iterator<Object> {
                     return true;
                 }
             }
-            iter = null;
+            if (iterStack.isEmpty())
+                iter = null;
+            else {
+                propStack.pop();
+                iter = iterStack.pop();
+            }
         }
         return index < filteredValues.size();
     }
@@ -158,21 +207,59 @@ public class PropIter implements Iterable<Object>, Iterator<Object> {
     public Object next(final Supplier<?> s) {
         if (values.isEmpty())
             return s != null ? s.get() : null;
-        if (iter != null) {
-            if (next != null) {
-                final Object r = next;
-                next = null;
-                return r;
-            }
+        if (next != null) {
+            final Object r = next;
+            next = null;
+            return r;
+        }
+        while (iter != null) {
             while (iter.hasNext()) {
                 final Object o = iter.next();
+                if (o instanceof StyleCall && "var".equals(((StyleCall) o).name)) {
+                    List<List<List<Object>>> l = ((StyleCall) o).objs;
+                    if (l.isEmpty())
+                        continue;
+                    List<List<Object>> l2 = l.get(0);
+                    if (l2.isEmpty())
+                        continue;
+                    List<Object> l3 = l2.get(0);
+                    if (l3.isEmpty())
+                        continue;
+                    final Object n = l3.get(0);
+                    if (!(n instanceof String))
+                        continue;
+                    final StyleProperty p = lookupPropertyS.apply((String) n);
+                    if (p == null)
+                        continue;
+                    l = p.objs;
+                    if (l.isEmpty())
+                        continue;
+                    l2 = l.get(0);
+                    if (l2.isEmpty())
+                        continue;
+                    l3 = l2.get(0);
+                    if (l3.isEmpty())
+                        continue;
+                    final String name = p.name.toLowerCase();
+                    if (propStack.contains(name))
+                        continue;
+                    propStack.push(name);
+                    iterStack.push(iter);
+                    iter = l3.iterator();
+                    continue;
+                }
                 if (filter.test(o)) {
                     index++;
                     filteredValues.add(o);
                     return o;
                 }
             }
-            iter = null;
+            if (iterStack.isEmpty())
+                iter = null;
+            else {
+                propStack.pop();
+                iter = iterStack.pop();
+            }
         }
         if (filteredValues.isEmpty())
             return s != null ? s.get() : null;
@@ -203,8 +290,7 @@ public class PropIter implements Iterable<Object>, Iterator<Object> {
         return StyleProperty.toPaint(next(), defValue);
     }
 
-    public Point point(final Point parent, final Point defValue) {
-        final Object o = next();
+    public Point point(final Object o, final Point parent, final Point defValue) {
         if (o instanceof Point)
             return (Point) o;
         if (o instanceof Float)
@@ -237,16 +323,20 @@ public class PropIter implements Iterable<Object>, Iterator<Object> {
         return defValue;
     }
 
+    public Point point(final Point parent, final Point defValue) {
+        return point(next, parent, defValue);
+    }
+
     public Point point(final Orientation orientation, final Point defValue) {
         final Container c = component != null ? component.getParent() : null;
         return point(
+                next(),
                 orientation != null && c != null ? orientation == Orientation.HORIZONTAL ? c.width : c.height : null,
                 defValue
         );
     }
 
-    public float f(final Point parent, final float defValue) {
-        final Object o = next();
+    public float f(final Object o, final Point parent, final float defValue) {
         if (o instanceof Point)
             return ((Point) o).calcFloat();
         if (o instanceof Float)
@@ -277,9 +367,49 @@ public class PropIter implements Iterable<Object>, Iterator<Object> {
         return defValue;
     }
 
+    public float f(final Object o, final float parent, final float defValue) {
+        if (o instanceof Point)
+            return ((Point) o).calcFloat();
+        if (o instanceof Float)
+            return (float) o;
+        if (o instanceof String) {
+            final String s = (String) o;
+            if (s.endsWith("deg"))
+                return Float.parseFloat(s.substring(0, s.length() - 3));
+            if (s.endsWith("%")) {
+                final float v = Float.parseFloat(s.substring(0, s.length() - 1));
+                return v * parent;
+            }
+            if (s.endsWith("px"))
+                return Float.parseFloat(s.substring(0, s.length() - 2));
+            if (s.endsWith("dp"))
+                if (component != null)
+                    return Float.parseFloat(s.substring(0, s.length() - 2)) * component.dp.calcFloat();
+                else
+                    return Float.parseFloat(s.substring(0, s.length() - 2));
+            if (s.endsWith("sp"))
+                if (component != null)
+                    return Float.parseFloat(s.substring(0, s.length() - 2)) * component.sp.calcFloat();
+                else
+                    return Float.parseFloat(s.substring(0, s.length() - 2));
+            return Float.parseFloat(s);
+        } else if (o != null)
+            L.w("Unknown number type", o.getClass());
+        return defValue;
+    }
+
+    public float f(final Point parent, final float defValue) {
+        return f(next(), parent, defValue);
+    }
+
+    public float f(final float parent, final float defValue) {
+        return f(next(), parent, defValue);
+    }
+
     public float f(final Orientation orientation, final float defValue) {
         final Container c = component != null ? component.getParent() : null;
         return f(
+                next(),
                 orientation != null && c != null ? orientation == Orientation.HORIZONTAL ? c.width : c.height : null,
                 defValue
         );
@@ -350,8 +480,7 @@ public class PropIter implements Iterable<Object>, Iterator<Object> {
         return sprite(next(), defValue);
     }
 
-    public <T extends Enum<T>> T e(final Class<T> enumClass, final T defValue) {
-        final Object o = next();
+    public <T extends Enum<T>> T e(final Object o, final Class<T> enumClass, final T defValue) {
         if (enumClass.isInstance(o))
             return enumClass.cast(o);
         if (o instanceof String)
@@ -361,5 +490,9 @@ public class PropIter implements Iterable<Object>, Iterator<Object> {
                 return defValue;
             }
         return defValue;
+    }
+
+    public <T extends Enum<T>> T e(final Class<T> enumClass, final T defValue) {
+        return e(next(), enumClass, defValue);
     }
 }
