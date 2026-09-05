@@ -4,6 +4,7 @@ import illa4257.i4Framework.base.graphics.*;
 import illa4257.i4Framework.base.graphics.Color;
 import illa4257.i4Framework.base.graphics.Image;
 import illa4257.i4Framework.base.graphics.Paint;
+import illa4257.i4Framework.base.styling.PropIter;
 import illa4257.i4Framework.base.utils.Cache;
 import illa4257.i4Framework.desktop.DesktopFramework;
 import illa4257.i4Utils.logger.i4Logger;
@@ -21,9 +22,21 @@ public class AWTContext implements Context {
     public final Graphics2D graphics;
     public final Shape clip;
 
+    public PropIter pi;
+
     public AWTContext(final Graphics2D g) {
         graphics = g;
         clip = g.getClip();
+    }
+
+    @Override
+    public PropIter getPI() {
+        return pi;
+    }
+
+    @Override
+    public void setPI(final PropIter pi) {
+        this.pi = pi;
     }
 
     @Override
@@ -53,6 +66,12 @@ public class AWTContext implements Context {
     @Override
     public void setFont(Object font) {
         graphics.setFont((Font) font);
+    }
+
+    @Override
+    public Context sub(float x, float y, float w, float h) {
+        final Graphics2D g = (Graphics2D) graphics.create(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+        return new AWTContext(g).apply(this);
     }
 
     @Override
