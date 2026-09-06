@@ -1,9 +1,12 @@
 package illa4257.i4Framework.android;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.drawable.ColorDrawable;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.LinearLayout;
 import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Container;
@@ -12,13 +15,17 @@ import illa4257.i4Framework.base.events.components.AddComponentEvent;
 import illa4257.i4Framework.base.events.components.FocusEvent;
 import illa4257.i4Framework.base.events.components.RecalculateEvent;
 import illa4257.i4Framework.base.events.components.RepaintEvent;
-import illa4257.i4Framework.base.math.Orientation;
-import illa4257.i4Framework.base.styling.StyleSetting;
+import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.graphics.Paint;
+import illa4257.i4Framework.base.styling.PropIter;
+import illa4257.i4Framework.base.styling.StyleProperty;
+import illa4257.i4Utils.annotations.NotNull;
 
 public class AndroidView extends ViewGroup {
     public final Component component;
+    public Activity activity;
 
-    private boolean isNotRoot;
+    private final boolean isNotRoot;
 
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private final EventListener<?>[] listeners;
@@ -64,8 +71,19 @@ public class AndroidView extends ViewGroup {
                             requestFocus();
                     }),
             };
-        } else
-            listeners = new EventListener[0];
+        } else {
+            listeners = new EventListener[]{
+                    component.addEventListener(RepaintEvent.class, e -> invalidate())
+            };
+            component.subscribe(Component.backgroundColorProperties, p -> {
+                final PropIter pi = component.getPI();
+                pi.select(p, StyleProperty.paintFilter).nextLayer().nextSet();
+                final Paint bg = pi.paint(Color.TRANSPARENT);
+                final Window w = getAndroidWindow();
+                if (w != null)
+                    w.setBackgroundDrawable(new ColorDrawable((bg instanceof Color ? (Color) bg : Color.TRANSPARENT).toARGB()));
+            });
+        }
 
         if (component instanceof Container) {
             component.addDirectEventListener(AddComponentEvent.class, e -> addView(new AndroidView(e.child, context, true)));
@@ -74,7 +92,14 @@ public class AndroidView extends ViewGroup {
         }
     }
 
-    public void updateLS(final StyleSetting ignored) {
+    public Window getAndroidWindow() {
+        final Activity a = activity;
+        if (a != null)
+            return a.getWindow();
+        return null;
+    }
+
+    public void updateLS(final StyleProperty ignored) {
         layout(component.renderStartX.calcInt(), component.renderStartY.calcInt(), component.renderEndX.calcInt(), component.renderEndY.calcInt());
     }
 
@@ -90,10 +115,10 @@ public class AndroidView extends ViewGroup {
     }
 
     @Override
-    protected void onDraw(final Canvas canvas) {
+    protected void onDraw(@NotNull final Canvas canvas) {
         super.onDraw(canvas);
         context.canvas = canvas;
-        context.paint.setTextSize(19f * component.dp.calcFloat() * getResources().getConfiguration().fontScale);
+        context.paint.setTextSize(12f * component.dp.calcFloat() * getResources().getConfiguration().fontScale);
         component.paint(context);
     }
 }
