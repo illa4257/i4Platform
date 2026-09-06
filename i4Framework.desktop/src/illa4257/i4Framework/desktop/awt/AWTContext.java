@@ -13,8 +13,10 @@ import illa4257.i4Framework.base.graphics.Context;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import java.io.InputStream;
+import java.util.Stack;
 
 public class AWTContext implements Context {
     public static final i4Logger L = new i4Logger("AWT");
@@ -30,13 +32,59 @@ public class AWTContext implements Context {
     }
 
     @Override
-    public PropIter getPI() {
+    public PropIter getPropIter() {
         return pi;
     }
 
     @Override
-    public void setPI(final PropIter pi) {
+    public void setPropIter(final PropIter pi) {
         this.pi = pi;
+    }
+
+    private class State {
+        private final AffineTransform transform;
+        private final Shape clip;
+
+        public State() {
+            this.transform = graphics.getTransform();
+            this.clip = graphics.getClip();
+        }
+
+        public void apply() {
+            setTransform(transform);
+            setClip(clip);
+        }
+    }
+
+    private final Stack<State> states = new Stack<>();
+
+    @Override
+    public int getSaveCount() {
+        return states.size() + 1;
+    }
+
+    @Override
+    public int save() {
+        states.push(new State());
+        return states.size();
+    }
+
+    @Override
+    public void restore() {
+        states.pop().apply();
+    }
+
+    @Override
+    public void restoreToCount(final int count) {
+        if (count < 1)
+            throw new RuntimeException("Count is lower than 1");
+        if (count > states.size() + 1)
+            throw new RuntimeException("Count is higher than the save count");
+        if (count == states.size() + 1)
+            return;
+        while (states.size() > count)
+            states.pop();
+        states.pop().apply();
     }
 
     @Override
@@ -69,12 +117,6 @@ public class AWTContext implements Context {
     }
 
     @Override
-    public Context sub(float x, float y, float w, float h) {
-        final Graphics2D g = (Graphics2D) graphics.create(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
-        return new AWTContext(g).apply(this);
-    }
-
-    @Override
     public void blur(boolean blur) {
         graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, blur ? RenderingHints.VALUE_INTERPOLATION_BILINEAR :
                 RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
@@ -100,8 +142,16 @@ public class AWTContext implements Context {
         return DesktopFramework.rectToV2(graphics.getFontMetrics().getStringBounds(string, 0, string.length, graphics));
     }
 
+    private Paint paint = null;
+
+    @Override
+    public Paint getPaint() {
+        return paint;
+    }
+
     @Override
     public void setPaint(final Paint paint) {
+        this.paint = paint;
         if (paint instanceof Color)
             graphics.setPaint(((Color) paint).toAwtColor());
         else {
@@ -130,7 +180,9 @@ public class AWTContext implements Context {
             final AWTPath p = new AWTPath();
             ((PathRecorder) shape).applyTo(p);
             return p.path;
-        } else
+        } else if (shape == null)
+            return null;
+        else
             i4Logger.INSTANCE.e("Unknown shape class:", shape.getClass());
         return null;
     }
@@ -165,6 +217,16 @@ public class AWTContext implements Context {
                 bottomRightArcWidth, bottomRightArcHeight,
                 bottomLeftArcWidth, bottomLeftArcHeight
         );
+    }
+
+    @Override
+    public Object newRect(final float x, final float y, final float w, final float h) {
+        return new Rectangle2D.Float(x, y, w, h);
+    }
+
+    @Override
+    public void clipRect(final float x, final float y, final float w, final float h) {
+        graphics.clipRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
     }
 
     @Override
