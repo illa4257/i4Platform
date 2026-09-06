@@ -1,6 +1,7 @@
 package illa4257.i4Utils.lists;
 
 import illa4257.i4Utils.SyncVar;
+import illa4257.i4Utils.annotations.NotNull;
 
 import java.lang.reflect.Array;
 import java.util.AbstractList;
@@ -25,12 +26,13 @@ public class FastList<E> extends AbstractList<E> {
 
     public State<E> getState() { return s.get(); }
     public void setState(final State<E> newState) { synchronized (writeLocker) { s.set(newState == null ? new EmptyState<>(s.get().type) : newState); } }
+
     public void optimize() { synchronized (writeLocker) { s.set(s.get().optimize()); } }
 
     @Override public boolean isEmpty() { return s.get().isEmpty(); }
     @Override public int size() { return s.get().size(); }
     @Override public E get(final int index) { return s.get().get(index); }
-    @Override public Iterator<E> iterator() { return s.get().iterator(); }
+    @Override public @NotNull Iterator<E> iterator() { return s.get().iterator(); }
 
     @Override public void add(final int index, final E element) { synchronized (writeLocker) { s.set(new AddState<>(s.get(), index, element)); } }
 
@@ -49,7 +51,7 @@ public class FastList<E> extends AbstractList<E> {
         }
     }
 
-    @Override public E[] toArray() { return s.get().toArray(); }
+    @Override @NotNull public E[] toArray() { return s.get().toArray(); }
 
     public static class State<E> implements Iterable<E> {
         final Class<E> type;
@@ -61,7 +63,7 @@ public class FastList<E> extends AbstractList<E> {
         public E get(final int index) { throw new IndexOutOfBoundsException("Index: " + index + ", Size: 0"); }
 
         @Override
-        public Iterator<E> iterator() {
+        public @NotNull Iterator<E> iterator() {
             return new Iterator<E>() {
                 @Override public boolean hasNext() { return false; }
                 @Override public E next() { throw new NoSuchElementException(); }
@@ -107,7 +109,7 @@ public class FastList<E> extends AbstractList<E> {
         }
 
         @Override
-        public Iterator<E> iterator() {
+        public @NotNull Iterator<E> iterator() {
             return new Iterator<E>() {
                 private int i = 0;
 
@@ -152,7 +154,7 @@ public class FastList<E> extends AbstractList<E> {
         }
 
         @Override
-        public Iterator<E> iterator() {
+        public @NotNull Iterator<E> iterator() {
             return new Iterator<E>() {
                 private int i = 0;
 
@@ -197,7 +199,7 @@ public class FastList<E> extends AbstractList<E> {
         }
 
         @Override
-        public Iterator<E> iterator() {
+        public @NotNull Iterator<E> iterator() {
             return new Iterator<E>() {
                 private int i = 0;
 
