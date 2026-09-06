@@ -4,6 +4,7 @@ import android.graphics.*;
 import android.graphics.Paint;
 import illa4257.i4Framework.base.graphics.*;
 import illa4257.i4Framework.base.graphics.Color;
+import illa4257.i4Framework.base.styling.PropIter;
 import illa4257.i4Utils.math.Vector2;
 
 import static illa4257.i4Framework.android.AndroidFramework.L;
@@ -12,21 +13,54 @@ public class AndroidGContext implements Context {
     private final Matrix matrix = new Matrix();
     public final Paint paint = new Paint();
     public Canvas canvas;
+    public PropIter propIter;
 
     public AndroidGContext() {}
 
     public static Path getPath(final Object path) {
-        Path p;
         if (path instanceof AndroidPath)
-            p = ((AndroidPath) path).path;
+            return ((AndroidPath) path).path;
         else if (path instanceof Path)
-            p = (Path) path;
-        else
-            p = null;
-        return p;
+            return (Path) path;
+        else if (path instanceof PathRecorder) {
+            final AndroidPath p = new AndroidPath();
+            ((PathRecorder) path).applyTo(p);
+            return p.path;
+        }
+        return null;
     }
 
     private final char[] buff = new char[1];
+
+    @Override
+    public PropIter getPropIter() {
+        return propIter;
+    }
+
+    @Override
+    public void setPropIter(final PropIter propIter) {
+        this.propIter = propIter;
+    }
+
+    @Override
+    public int getSaveCount() {
+        return canvas.getSaveCount();
+    }
+
+    @Override
+    public int save() {
+        return canvas.save();
+    }
+
+    @Override
+    public void restore() {
+        canvas.restore();
+    }
+
+    @Override
+    public void restoreToCount(final int count) {
+        canvas.restoreToCount(count);
+    }
 
     @Override
     public Object cloneTransform() {
@@ -65,8 +99,16 @@ public class AndroidGContext implements Context {
         return new Vector2(bounds.width(), bounds.height() + paint.getFontMetrics().descent);
     }
 
+    private illa4257.i4Framework.base.graphics.Paint curPaint = null;
+
+    @Override
+    public illa4257.i4Framework.base.graphics.Paint getPaint() {
+        return curPaint;
+    }
+
     @Override
     public void setPaint(final illa4257.i4Framework.base.graphics.Paint paint) {
+        this.curPaint = paint;
         if (paint instanceof Color)
             this.paint.setColor(((Color) paint).toARGB());
         else {
@@ -79,7 +121,10 @@ public class AndroidGContext implements Context {
 
     @Override
     public void setClip(final Object path) {
-        canvas.clipPath(getPath(path));
+        final Path p = getPath(path);
+        if (p == null)
+            return;
+        canvas.clipPath(p);
     }
 
     @Override
@@ -129,19 +174,25 @@ public class AndroidGContext implements Context {
                 },
                 Path.Direction.CW
         );
-        return null;
+        return p;
     }
 
     @Override
     public void draw(final Object path) {
+        final Path p = getPath(path);
+        if (p == null)
+            return;
         paint.setStyle(Paint.Style.STROKE);
-        canvas.drawPath(getPath(path), paint);
+        canvas.drawPath(p, paint);
         paint.setStyle(Paint.Style.FILL);
     }
 
     @Override
     public void fill(final Object path) {
-        canvas.drawPath(getPath(path), paint);
+        final Path p = getPath(path);
+        if (p == null)
+            return;
+        canvas.drawPath(p, paint);
     }
 
     @Override
