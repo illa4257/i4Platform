@@ -25,11 +25,8 @@ public abstract class SVGParser {
 
     private final StringBuilder text = new StringBuilder();
 
-    public final Object rootTransform;
-
     public SVGParser(final Context context) {
         this.context = context;
-        rootTransform = context.cloneTransform();
     }
 
     protected abstract boolean hasNextChar() throws IOException;
@@ -42,7 +39,6 @@ public abstract class SVGParser {
         public String stroke, fill;
         public Paint cFill, cStroke;
         public String d;
-        public Object transform;
 
         public Layer(final String node) {
             this.node = node;
@@ -157,7 +153,7 @@ public abstract class SVGParser {
 
     private void finishNode() {
         final Layer l = layer;
-        l.transform = context.cloneTransform();
+        context.save();
         switch (node.toLowerCase()) {
             case "svg":
                 if (context instanceof ContextRecorder) {
@@ -172,7 +168,7 @@ public abstract class SVGParser {
                     break;
                 context.with(c -> {
                     c.translate(l.fx, l.fy);
-                    final PropIter pi = c.getPI();
+                    final PropIter pi = c.getPropIter();
                     if (pi == null) {
                         if (should(l.cStroke)) {
                             c.setPaint(l.cStroke);
@@ -194,9 +190,9 @@ public abstract class SVGParser {
                     if (should(stroke)) {
                         c.setPaint(stroke);
                         if (should(l.strokeWidth))
-                            pi.select(StyleProperty.parse("stroke-width", l.strokeWidth), StyleProperty.paintFilter);
+                            pi.select(StyleProperty.parse("stroke-width", l.strokeWidth), StyleProperty.pxFilter);
                         else
-                            pi.select(strokeWidth, StyleProperty.paintFilter);
+                            pi.select(strokeWidth, StyleProperty.pxFilter);
                         pi.nextLayer().nextSet();
                         c.setStrokeWidth(pi.f(1, 1));
                         c.drawRect(0, 0, l.fWidth, l.fHeight);
@@ -342,7 +338,7 @@ public abstract class SVGParser {
                     break;
                 context.with(c -> {
                     c.translate(l.fx, l.fy);
-                    final PropIter pi = c.getPI();
+                    final PropIter pi = c.getPropIter();
                     if (pi == null) {
                         if (should(l.cStroke)) {
                             c.setPaint(l.cStroke);
@@ -364,9 +360,9 @@ public abstract class SVGParser {
                     if (should(stroke)) {
                         c.setPaint(stroke);
                         if (should(l.strokeWidth))
-                            pi.select(StyleProperty.parse("stroke-width", l.strokeWidth), StyleProperty.paintFilter);
+                            pi.select(StyleProperty.parse("stroke-width", l.strokeWidth), StyleProperty.pxFilter);
                         else
-                            pi.select(strokeWidth, StyleProperty.paintFilter);
+                            pi.select(strokeWidth, StyleProperty.pxFilter);
                         pi.nextLayer().nextSet();
                         c.setStrokeWidth(pi.f(1, 1));
                         c.draw(p);
@@ -395,7 +391,7 @@ public abstract class SVGParser {
             throw new IOException("No more layers");
         if (!layer.node.equalsIgnoreCase(node))
             throw new IOException("Wrong layer " + layer.node + ", " + node);
-        context.setTransform(layer.transform);
+        context.restore();
         if (layers.isEmpty()) {
             layer = null;
             return;
@@ -565,7 +561,6 @@ public abstract class SVGParser {
             super(context);
             this.reader = reader;
             parse();
-            context.setTransform(rootTransform);
         }
 
         @Override
