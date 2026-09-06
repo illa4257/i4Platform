@@ -1,29 +1,33 @@
 package illa4257.i4Utils.lists;
 
-import java.util.ArrayList;
+import illa4257.i4Utils.annotations.Export;
+
 import java.util.Arrays;
 
+@Export
 public class IntSet {
     public static final int[] DEFAULT_SET = new int[0];
     private int[] set;
     private int size;
 
+    @Export
     public IntSet(final int capacity) {
         this.set = new int[capacity];
         this.size = 0;
     }
 
+    @Export
     public IntSet() {
         this.set = DEFAULT_SET;
         this.size = 0;
-
-        new ArrayList<>();
     }
 
+    @Export
     public int size() {
         return size;
     }
 
+    @Export
     public boolean add(final int n) {
         int index = Arrays.binarySearch(set, 0, size, n);
         if (index >= 0)
@@ -41,10 +45,12 @@ public class IntSet {
         return true;
     }
 
+    @Export
     public boolean contains(final int n) {
         return Arrays.binarySearch(set, 0, size, n) >= 0;
     }
 
+    @Export
     public boolean remove(final int n) {
         int index = Arrays.binarySearch(set, 0, size, n);
         if (index < 0)
@@ -53,6 +59,7 @@ public class IntSet {
         return true;
     }
 
+    @Export
     public void clear() {
         size = 0;
     }
