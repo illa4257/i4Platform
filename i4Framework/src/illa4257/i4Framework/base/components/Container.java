@@ -215,11 +215,13 @@ public class Container extends Component implements Iterable<Component> {
 
     public final void paintComponents(final Context ctx) {
         for (final Component component : components) {
-            final Context c = ctx.sub(component.renderStartX.calcFloat(), component.renderStartY.calcFloat(),
-                    component.renderWidth.calcFloat(), component.renderHeight.calcFloat());
-            component.paint(c);
+            final int c = ctx.save();
+            ctx.translate(component.renderStartX.calcFloat(), component.renderStartY.calcFloat());
+            ctx.clipRect(0, 0, component.renderWidth.calcFloat(), component.renderHeight.calcFloat());
+            component.paint(ctx);
             if (component instanceof Container)
-                ((Container) component).paintComponents(c);
+                ((Container) component).paintComponents(ctx);
+            ctx.restoreToCount(c);
         }
     }
 
