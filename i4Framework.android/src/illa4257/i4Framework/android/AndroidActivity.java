@@ -9,6 +9,9 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import illa4257.i4Framework.base.styling.BaseTheme;
 import illa4257.i4Utils.SyncVar;
+import illa4257.i4Utils.annotations.NotNull;
+
+import java.util.Objects;
 
 public class AndroidActivity extends Activity {
     public final SyncVar<AndroidWindow> frameworkWindow = new SyncVar<>();
@@ -16,19 +19,19 @@ public class AndroidActivity extends Activity {
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getActionBar().hide();
+        Objects.requireNonNull(getActionBar()).hide();
         AndroidFramework.pass(this);
     }
 
     @Override
-    public void onConfigurationChanged(final Configuration newConfig) {
+    public void onConfigurationChanged(@NotNull final Configuration newConfig) {
         final AndroidWindow w = frameworkWindow.get();
         if (w != null) {
             w.densityMultiplier.set(newConfig.densityDpi / 160.0f * AndroidFramework.SCALE_FACTOR);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                 w.framework.onSystemThemeChange(
                         newConfig.isNightModeActive() ? "dark" : "light",
-                        newConfig.isNightModeActive() ? BaseTheme.LIGHT : BaseTheme.DARK
+                        newConfig.isNightModeActive() ? BaseTheme.DARK : BaseTheme.LIGHT
                 );
         }
         super.onConfigurationChanged(newConfig);
@@ -47,7 +50,7 @@ public class AndroidActivity extends Activity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NotNull String[] permissions, @NotNull int[] grantResults) {
         final AndroidWindow w = frameworkWindow.get();
         if (w != null)
             w.onRequestPermissionsResult(requestCode, grantResults);
