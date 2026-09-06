@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import static illa4257.i4Framework.android.AndroidFramework.KEY_MAP;
+import static illa4257.i4Framework.android.AndroidFramework.L;
 
 public class AndroidWindow implements FrameworkWindow {
     public final AndroidFramework framework;
@@ -77,13 +78,18 @@ public class AndroidWindow implements FrameworkWindow {
         final Activity a = activity.get();
         if (a == null)
             return;
-        final View d = a.getWindow().getDecorView();
+        final android.view.Window w = a.getWindow();
+        final View d = w.getDecorView();
         d.post(() -> {
             isDark = baseTheme == BaseTheme.DARK;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                final WindowInsetsController controller = a.getWindow().getInsetsController();
+                final WindowInsetsController controller = w.getInsetsController();
                 if (controller != null) {
                     controller.setSystemBarsAppearance(
+                            isDark ? 0 : WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
+                            WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+                    );
+                    /*controller.setSystemBarsAppearance(
                             isDark ? 0 : WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS |
                                     WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS |
                                     WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
@@ -91,11 +97,11 @@ public class AndroidWindow implements FrameworkWindow {
                             WindowInsetsController.APPEARANCE_LIGHT_CAPTION_BARS |
                                     WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS |
                                     WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                    );
+                    );*/
                 }
             } else {
                 //noinspection deprecation
-                a.getWindow().getDecorView().setSystemUiVisibility(
+                w.getDecorView().setSystemUiVisibility(
                         isDark ? 0 : View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                 );
             }
@@ -133,6 +139,7 @@ public class AndroidWindow implements FrameworkWindow {
                         densityMultiplier.set(a.getResources().getDisplayMetrics().density * AndroidFramework.SCALE_FACTOR);
                         framework.invokeLater(() -> {
                             activity.set(a);
+                            root.activity = a;
                             a.setContentView(root);
                             window.setSize(root.getWidth(), root.getHeight());
                             window.dp.set(densityMultiplier);
@@ -214,7 +221,7 @@ public class AndroidWindow implements FrameworkWindow {
                             c.fire(new TouchUpEvent(c, gx, gy, pos[0], pos[1], true, e.getPointerId(i)));
                             break;
                         default:
-                            System.out.println("Unknown action: " + e.getAction());
+                            L.w("Unknown action: " + e.getAction());
                             break;
                     }
                     break;
@@ -230,12 +237,12 @@ public class AndroidWindow implements FrameworkWindow {
                             c.fire(new MouseUpEvent(c, gx, gy, pos[0], pos[1], true, e.getPointerId(i), getMouseButton(e.getButtonState())));
                             break;
                         default:
-                            System.out.println("Unknown action: " + e.getAction());
+                            L.w("Unknown action: " + e.getAction());
                             break;
                     }
                     break;
                 default:
-                    System.out.println("Unknown tool type " + e.getToolType(i));
+                    L.w("Unknown tool type " + e.getToolType(i));
                     break;
             }
         }
@@ -251,7 +258,7 @@ public class AndroidWindow implements FrameworkWindow {
             case MotionEvent.BUTTON_TERTIARY:
                 return MouseButton.BUTTON2;
             default:
-                System.out.println("Unknown button: " + btn);
+                L.w("Unknown button: " + btn);
                 return MouseButton.UNKNOWN_BUTTON;
         }
     }
