@@ -30,6 +30,7 @@ import illa4257.i4Framework.base.points.numbers.NumberPointMultiplier;
 import illa4257.i4Framework.base.points.*;
 import illa4257.i4Utils.Destructor;
 import illa4257.i4Utils.SyncVar;
+import illa4257.i4Utils.annotations.Export;
 import illa4257.i4Utils.lists.IntSet;
 import illa4257.i4Utils.lists.SwappableTmpQueue;
 import illa4257.i4Utils.logger.i4Logger;
@@ -180,6 +181,7 @@ public class Component extends Destructor {
                                 l.accept(p);
                         }
             }
+            repaint();
         });
         addEventListener(HoverEvent.class, e -> {
             if (e.component == this)
@@ -205,12 +207,13 @@ public class Component extends Destructor {
         });
     }
 
-    public boolean isVisible() { return visible; }
-    public boolean isEnabled() { return pseudoClasses.contains("enabled"); }
-    public boolean isFocusable() { return isFocusable; }
-    public boolean isFocused() { return pseudoClasses.contains("focus"); }
-    public boolean isFocusedWithin() { return pseudoClasses.contains("focus-within"); }
-    public boolean isRepeated() { return isRepeated.get(); }
+    @Export public boolean isVisible() { return visible; }
+    @Export public boolean isEnabled() { return pseudoClasses.contains("enabled"); }
+    @Export public boolean isFocusable() { return isFocusable; }
+    @Export public boolean isFocused() { return pseudoClasses.contains("focus"); }
+    @Export public boolean isFocusedWithin() { return pseudoClasses.contains("focus-within"); }
+    @Export public boolean isRepeated() { return isRepeated.get(); }
+
     public Component find(final float x, final float y, final float[] localPos) {
         if (startX.calcFloat() < x && endX.calcFloat() > x &&
                 startY.calcFloat() < y && endY.calcFloat() > y) {
@@ -271,6 +274,7 @@ public class Component extends Destructor {
         return selector1.tag.get() == null || selector2.tag.get() != null;
     }
 
+    @Export
     public void setPseudoClass(final String pseudoClass, final boolean en) {
         if (pseudoClass == null || pseudoClass.isEmpty() || pseudoClasses.contains(pseudoClass) == en)
             return;
@@ -543,6 +547,7 @@ public class Component extends Destructor {
             }
     }
 
+    @Export
     public void invoke(final IEvent event) {
         final Class<? extends IEvent> c = event.getClass();
         for (final Map.Entry<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> e : eventListeners.entrySet())
@@ -565,8 +570,10 @@ public class Component extends Destructor {
         }
     }
 
+    @Export
     public void invokeLater(final Runnable runnable) { invoke.add(runnable); updated(); }
 
+    @Export
     public void invokeAndWait(final Runnable runnable) throws InterruptedException {
         if (Framework.isThread(this)) {
             runnable.run();
@@ -596,6 +603,7 @@ public class Component extends Destructor {
         c.repeated(v);
     }
 
+    @Export
     public void onTick(final Runnable runnable) {
         if (repeatedInvoke.add(runnable)) {
             isRepeated.set(true);
@@ -603,6 +611,8 @@ public class Component extends Destructor {
             updated();
         }
     }
+
+    @Export
     public void offTick(final Runnable runnable) {
         if (repeatedInvoke.remove(runnable) && repeatedInvoke.isEmpty()) {
             isRepeated.set(false);
@@ -616,22 +626,27 @@ public class Component extends Destructor {
         return null;
     }
 
+    @Export
     public <T extends IEvent> EventListener<T> addEventListener(final Class<T> eventType, final EventListener<T> listener) {
         return addEventListenerInternal(eventType, listener, eventListeners);
     }
 
+    @Export
     public <T extends IEvent> EventListener<T> addDirectEventListener(final Class<T> eventType, final EventListener<T> listener) {
         return addEventListenerInternal(eventType, listener, directEventListeners);
     }
 
+    @Export
     public <T extends IEvent> void removeEventListener(final EventListener<T> listener) {
         eventListeners.forEach((k, v) -> v.remove(listener));
     }
 
+    @Export
     public void removeEventListeners(final Collection<EventListener<? extends IEvent>> listeners) {
         eventListeners.forEach((k, v) -> v.removeAll(listeners));
     }
 
+    @Export
     public <T extends IEvent> boolean removeDirectEventListener(final EventListener<T> listener) {
         for (final Map.Entry<Class<? extends IEvent>, ConcurrentLinkedQueue<EventListener<?>>> e : directEventListeners.entrySet())
             if (e.getValue().remove(listener))
@@ -647,6 +662,7 @@ public class Component extends Destructor {
         return p != null ? p.getRedirectFocus() : null;
     }
 
+    @Export
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void fire(final IEvent event) {
         if (event == null)
@@ -684,10 +700,13 @@ public class Component extends Destructor {
         updated();
     }
 
+    @Export
     public void fireLater(final IEvent event) { invokeLater(() -> fire(event)); }
 
+    @Export
     public void repaint() { fire(new RepaintEvent(this)); }
 
+    @Export
     public void setVisible(final boolean visible) {
         synchronized (locker) {
             if (this.visible == visible)
@@ -697,6 +716,7 @@ public class Component extends Destructor {
         fire(new VisibleEvent(this, visible));
     }
 
+    @Export
     public void setEnabled(final boolean enabled) {
         setPseudoClass("enabled", enabled);
         setPseudoClass("disabled", !enabled);
@@ -821,6 +841,7 @@ public class Component extends Destructor {
         fire(new ChangePointEvent(this));
     }
 
+    @Export
     public void toFront() {
         final Container c = getParent();
         if (c == null)
@@ -857,7 +878,7 @@ public class Component extends Destructor {
             fire(new ChangePointEvent(this, isSystem));
     }
 
-    private static final List<String>
+    public static final List<String>
             outlineColorProperties = Arrays.asList("outline-color", "outline"),
             outlineWidthProperties = Arrays.asList("outline-width", "outline"),
             backgroundColorProperties = Arrays.asList("background-color", "background"),
@@ -867,12 +888,16 @@ public class Component extends Destructor {
             propIter = PropIter.INSTANCE,
             propIter2 = PropIter.INSTANCE2;
 
+    @Export
     public PropIter getPI() { return propIter.get().setComponent(this); }
+
+    @Export
     public PropIter getPI2() { return propIter2.get().setComponent(this); }
 
+    @Export
     public void paint(final Context context) {
         final PropIter ss = getPI();
-        context.setPI(ss);
+        context.setPropIter(ss);
         final float
                 w = width.calcFloat(), h = height.calcFloat(),
                 brwtl, brwtr, brwbr, brwbl,
