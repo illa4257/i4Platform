@@ -8,8 +8,13 @@ import java.io.InputStream;
 import java.util.function.Consumer;
 
 public interface Context {
-    PropIter getPI();
-    void setPI(final PropIter pi);
+    PropIter getPropIter();
+    void setPropIter(final PropIter pi);
+
+    int getSaveCount();
+    int save();
+    void restore();
+    void restoreToCount(final int count);
 
     Object cloneTransform();
     void setTransform(final Object transform);
@@ -20,11 +25,8 @@ public interface Context {
     default void antialiasing(final boolean antialiasing) {}
     default void setFont(final Object font) {}
 
-    @SuppressWarnings("unused")
-    Context sub(final float x, final float y, final float w, final float h);
-
     default Context apply(final Context config) {
-        setPI(config.getPI());
+        setPropIter(config.getPropIter());
         return this;
     }
 
@@ -34,6 +36,7 @@ public interface Context {
     Vector2 bounds(final String string);
     Vector2 bounds(final char[] string);
 
+    Paint getPaint();
     void setPaint(final Paint paint);
     float getStrokeWidth();
     void setStrokeWidth(final float newWidth);
@@ -45,6 +48,16 @@ public interface Context {
 
 
     IPath newPath();
+
+    default Object newRect(final float x, final float y, final float w, final float h) {
+        final IPath p = newPath();
+        p.moveTo(x, y);
+        p.lineTo(x + w, y);
+        p.lineTo(x + w, y + h);
+        p.lineTo(x, y + h);
+        p.close();
+        return p;
+    }
 
     default Object newRoundShape(final float x, final float y, final float w, final float h, final float borderRadius) {
         final IPath p = newPath();
@@ -70,6 +83,10 @@ public interface Context {
                          final float bottomRightArcWidth, final float bottomRightArcHeight,
                          final float bottomLeftArcWidth, final float bottomLeftArcHeight);
 
+    default void clipRect(final float x, final float y, final float w, final float h) {
+        setClip(newRect(x, y, w, h));
+    }
+
     void draw(final Object path);
     void fill(final Object path);
 
@@ -83,8 +100,14 @@ public interface Context {
     default void drawSprite(final Sprite sprite, final float x, final float y) {
         if (sprite instanceof ContextRecorder) {
             final ContextRecorder img = (ContextRecorder) sprite;
-            final Context target = sub(x, y, img.getWidth(), img.getHeight());
-            img.applyTo(target);
+            final Paint p = getPaint();
+            final float t = getStrokeWidth();
+            final int root = save();
+            translate(x, y);
+            img.applyTo(this);
+            restoreToCount(root);
+            setPaint(p);
+            setStrokeWidth(t);
             return;
         }
         throw new RuntimeException(sprite.getClass().getName() + " is not supported");
@@ -93,9 +116,15 @@ public interface Context {
     default void drawSprite(final Sprite sprite, final float x, final float y, final float width, final float height) {
         if (sprite instanceof ContextRecorder) {
             final ContextRecorder img = (ContextRecorder) sprite;
-            final Context target = sub(x, y, width, height);
-            target.scale(width / img.getWidth(), height / img.getHeight());
-            img.applyTo(target);
+            final Paint p = getPaint();
+            final float t = getStrokeWidth();
+            final int root = save();
+            translate(x, y);
+            scale(width / img.getWidth(), height / img.getHeight());
+            img.applyTo(this);
+            restoreToCount(root);
+            setPaint(p);
+            setStrokeWidth(t);
             return;
         }
         throw new RuntimeException(sprite.getClass().getName() + " is not supported");
