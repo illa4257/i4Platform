@@ -29,11 +29,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 
 public class AndroidFramework extends Framework {
     public static final i4Logger L = new i4Logger("Android").registerHandler(i4Logger.INSTANCE);
-    public static final float SCALE_FACTOR = 1.5f;
+    public static final float SCALE_FACTOR = 160f / 96f;
 
     static final ConcurrentLinkedQueue<Activity> activities = new ConcurrentLinkedQueue<>();
     private static int processing = 0;
@@ -227,11 +228,11 @@ public class AndroidFramework extends Framework {
                 new Thread(() -> {
                     try {
                         while (true) {
-                            Thread.sleep(1000);
+                            LockSupport.parkNanos(1_000_000_000);
                             System.out.println(aw.root.getWidth() + " x " + aw.root.getHeight() + " / " + w.width.calcInt() + " x " + w.height.calcInt() + " / " + c.width.calcInt() + " x " + c.height.calcInt());
                         }
                     } catch (final Exception e) {
-                        e.printStackTrace();
+                        L.e(e);
                     }
                 }).start();
                 builder.setView(aw.root);
