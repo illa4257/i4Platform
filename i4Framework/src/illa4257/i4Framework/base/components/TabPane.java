@@ -47,7 +47,7 @@ public class TabPane extends Container {
             final Context ctx = lastContext;
 
             final PropIter ss = getPI();
-            ss.select("--tab-heighht", StyleProperty.pxFilter).nextLayer().nextSet();
+            ss.select("--tab-height", StyleProperty.pxFilter).nextLayer().nextSet();
             if (e.component != this || e.y > ss.f(Orientation.VERTICAL, 0) || e.x < 8 || ctx == null)
                 return;
             final float xw = ctx.bounds("x").x + 16;
@@ -72,25 +72,32 @@ public class TabPane extends Container {
         repaint();
     }
 
+    private void selectTab0(final Tab tab) {
+        tab.component.classes.add("tab-element");
+        tab.component.setX(0);
+
+        final PropIter ss = getPI();
+        ss.select("--tab-height", StyleProperty.pxFilter).nextLayer().nextSet();
+        tab.component.setStartY(ss.point(Orientation.VERTICAL, NumberPointConstant.ZERO));
+        tab.component.setEndX(width);
+        tab.component.setEndY(height);
+        add(tab.component);
+        repaint();
+    }
+
     public void selectTab(final Tab tab) {
         if (tab == null)
             return;
         final Tab old;
         if ((old = current.getAndSet(tab)) != tab) {
-            tab.component.classes.add("tab-element");
-            tab.component.setX(0);
-
-            final PropIter ss = getPI();
-            ss.select("--tab-heighht", StyleProperty.pxFilter).nextLayer().nextSet();
-            tab.component.setStartY(new NumberPointConstant(ss.f(Orientation.VERTICAL, 0)));
-            tab.component.setEndX(width);
-            tab.component.setEndY(height);
             if (old != null) {
                 old.component.classes.remove("tab-element");
                 remove(old.component);
             }
-            add(tab.component);
-            repaint();
+            if (getFramework() == null)
+                invokeLater(() -> selectTab0(tab));
+            else
+                selectTab0(tab);
         }
     }
 
@@ -127,7 +134,7 @@ public class TabPane extends Container {
         float th;
         final Paint tabsBG, tabBG, tabSelectedBG, color;
 
-        ss.select("--tab-heighht", StyleProperty.pxFilter).nextLayer().nextSet();
+        ss.select("--tab-height", StyleProperty.pxFilter).nextLayer().nextSet();
         th = ss.f(Orientation.VERTICAL, 0);
 
         ss.select("--tabs-background-color", StyleProperty.paintFilter).nextLayer().nextSet();

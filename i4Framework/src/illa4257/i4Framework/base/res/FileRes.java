@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class FileRes implements Res {
     public final File file;
@@ -40,5 +41,15 @@ public class FileRes implements Res {
     @Override
     public boolean delete() {
         return file.delete();
+    }
+
+    @Override
+    public String getName() {
+        return file.getName();
+    }
+
+    @Override
+    public Path toPath() {
+        return file.toPath();
     }
 }

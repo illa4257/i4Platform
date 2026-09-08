@@ -11,6 +11,9 @@ public class PPointAdd extends Point {
         this.point2 = point2;
     }
 
+    public Point getPoint1() { return point1; }
+    public Point getPoint2() { return point2; }
+
     public void setPoint1(final Point newValue) {
         if (point1 == newValue)
             return;

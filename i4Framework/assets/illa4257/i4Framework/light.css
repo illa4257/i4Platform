@@ -69,7 +69,7 @@ ComboBox:focus {
 }
 
 TabPane {
-    --tab-heighht: 32dp;
+    --tab-height: 32dp;
     --tabs-background-color: #C8C8C8;
     --tab-background-color: #DCDCDC;
     --tab-selected-background-color: #F0F0F0;
