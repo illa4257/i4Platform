@@ -25,6 +25,7 @@ public class AWTContext implements Context {
     public final Shape clip;
 
     public PropIter pi;
+    public boolean strokeWidthScaled = true;
 
     public AWTContext(final Graphics2D g) {
         graphics = g;
@@ -171,6 +172,16 @@ public class AWTContext implements Context {
         graphics.setStroke(new BasicStroke(newWidth));
     }
 
+    @Override
+    public boolean isStrokeWidthScaled() {
+        return strokeWidthScaled;
+    }
+
+    @Override
+    public void setStrokeWidthScaled(final boolean enabled) {
+        strokeWidthScaled = enabled;
+    }
+
     private static Shape unify(final Object shape) {
         if (shape instanceof AWTPath)
             return ((AWTPath) shape).path;
@@ -231,7 +242,14 @@ public class AWTContext implements Context {
 
     @Override
     public void draw(final Object path) {
-        graphics.draw(unify(path));
+        if (strokeWidthScaled) {
+            graphics.draw(unify(path));
+            return;
+        }
+        final AffineTransform t1 = graphics.getTransform();
+        graphics.setTransform(new AffineTransform());
+        graphics.draw(t1.createTransformedShape(unify(path)));
+        graphics.setTransform(t1);
     }
 
     @Override
@@ -246,12 +264,32 @@ public class AWTContext implements Context {
 
     @Override
     public void drawLine(float x1, float y1, float x2, float y2) {
-        graphics.drawLine(Math.round(x1), Math.round(y1), Math.round(x2), Math.round(y2));
+        if (strokeWidthScaled) {
+            graphics.drawLine(Math.round(x1), Math.round(y1), Math.round(x2), Math.round(y2));
+            return;
+        }
+        final AffineTransform t1 = graphics.getTransform();
+        final AffineTransform t2 = new AffineTransform(t1);
+        t2.scale(1 / t1.getScaleX(), 1 / t1.getScaleY());
+        graphics.setTransform(t2);
+        graphics.drawLine((int) Math.round(x1 * t1.getScaleX()), (int) Math.round(y1 * t1.getScaleY()),
+                (int) Math.round(x2 * t1.getScaleX()), (int) Math.round(y2 * t1.getScaleY()));
+        graphics.setTransform(t1);
     }
 
     @Override
     public void drawRect(final float x, final float y, final float w, final float h) {
-        graphics.drawRect((int) x, (int) y, (int) w, (int) h);
+        if (strokeWidthScaled) {
+            graphics.drawRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+            return;
+        }
+        final AffineTransform t1 = graphics.getTransform();
+        final AffineTransform t2 = new AffineTransform(t1);
+        t2.scale(1 / t1.getScaleX(), 1 / t1.getScaleY());
+        graphics.setTransform(t2);
+        graphics.drawRect((int) Math.round(x * t1.getScaleX()), (int) Math.round(y * t1.getScaleY()),
+                (int) Math.round(w * t1.getScaleX()), (int) Math.round(h * t1.getScaleY()));
+        graphics.setTransform(t1);
     }
 
     @Override
