@@ -1,7 +1,7 @@
 * {
     --stroke-color: #212121;
     color: var(--stroke-color);
-    --thickness: 1dp;
+    --thickness: 2dp;
     --scrollbar-width: 16dp;
 }
 

@@ -40,6 +40,8 @@ public interface Context {
     void setPaint(final Paint paint);
     float getStrokeWidth();
     void setStrokeWidth(final float newWidth);
+    boolean isStrokeWidthScaled();
+    void setStrokeWidthScaled(final boolean enabled);
     void setClip(final Object path);
     void translate(final float x, final float y);
     void scale(final float x, final float y);
@@ -102,12 +104,14 @@ public interface Context {
             final ContextRecorder img = (ContextRecorder) sprite;
             final Paint p = getPaint();
             final float t = getStrokeWidth();
+            final boolean strokeWidthScaled = isStrokeWidthScaled();
             final int root = save();
             translate(x, y);
             img.applyTo(this);
             restoreToCount(root);
             setPaint(p);
             setStrokeWidth(t);
+            setStrokeWidthScaled(strokeWidthScaled);
             return;
         }
         throw new RuntimeException(sprite.getClass().getName() + " is not supported");
@@ -118,6 +122,7 @@ public interface Context {
             final ContextRecorder img = (ContextRecorder) sprite;
             final Paint p = getPaint();
             final float t = getStrokeWidth();
+            final boolean strokeWidthScaled = isStrokeWidthScaled();
             final int root = save();
             translate(x, y);
             scale(width / img.getWidth(), height / img.getHeight());
@@ -125,6 +130,7 @@ public interface Context {
             restoreToCount(root);
             setPaint(p);
             setStrokeWidth(t);
+            setStrokeWidthScaled(strokeWidthScaled);
             return;
         }
         throw new RuntimeException(sprite.getClass().getName() + " is not supported");

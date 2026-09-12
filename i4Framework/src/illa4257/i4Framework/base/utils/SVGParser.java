@@ -17,7 +17,7 @@ import java.util.Stack;
 
 public abstract class SVGParser {
     public static final i4Logger L = new i4Logger("SVGParser").registerHandler(i4Logger.INSTANCE);
-    private static final List<String> strokeColor = Arrays.asList("stroke-color", "stroke"),
+    private static final List<String>
             strokeWidth = Arrays.asList("stroke-width", "stroke");
 
     public final Context context;
@@ -36,7 +36,7 @@ public abstract class SVGParser {
         public final String node;
         public String x, y, width, height, strokeWidth;
         public float fx, fy, fWidth, fHeight, fStrokeWidth;
-        public String stroke, fill;
+        public String strokeColor, fill, vectorEffect;
         public Paint cFill, cStroke;
         public String d;
 
@@ -54,7 +54,7 @@ public abstract class SVGParser {
             fHeight = layer.fHeight;
             strokeWidth = layer.strokeWidth;
             fStrokeWidth = layer.fStrokeWidth;
-            stroke = layer.stroke;
+            strokeColor = layer.strokeColor;
             cStroke = layer.cStroke;
             fill = layer.fill;
             cFill = layer.cFill;
@@ -83,16 +83,6 @@ public abstract class SVGParser {
         }
     }
 
-    private float calc(final String value, final float parent) throws IOException {
-        if (value.endsWith("%")) {
-            final Layer p = layers.peek();
-            if (p == null)
-                throw new IOException("Invalid root value " + value);
-            return Float.parseFloat(value.substring(0, value.length() - 1)) / 100 * parent;
-        }
-        return Float.parseFloat(value);
-    }
-
     private float noCalc(final String value) {
         try {
             return Float.parseFloat(value);
@@ -101,7 +91,7 @@ public abstract class SVGParser {
         }
     }
 
-    private void attrNode(final String attr, final String value) throws IOException {
+    private void attrNode(final String attr, final String value) {
         switch (attr.toLowerCase()) {
             case "version":
             case "xmlns":
@@ -131,11 +121,14 @@ public abstract class SVGParser {
                 layer.cFill = StyleProperty.toPaint(value, null);
                 break;
             case "stroke":
-                layer.stroke = value;
+                layer.strokeColor = value;
                 layer.cStroke = StyleProperty.toPaint(value, null);
                 break;
             case "d":
                 layer.d = value;
+                break;
+            case "vector-effect":
+                layer.vectorEffect = value.trim();
                 break;
             default:
                 L.d("Unknown attr", attr, "=", value);
@@ -164,8 +157,9 @@ public abstract class SVGParser {
                     context.scale(1f / Float.parseFloat(l.width), 1f / Float.parseFloat(l.height));
                 break;
             case "rect":
-                if (!should(l.stroke) && !should(l.fill))
+                if (!should(l.strokeColor) && !should(l.fill))
                     break;
+                context.setStrokeWidthScaled(!"non-scaling-stroke".equals(l.vectorEffect));
                 context.with(c -> {
                     c.translate(l.fx, l.fy);
                     final PropIter pi = c.getPropIter();
@@ -181,36 +175,34 @@ public abstract class SVGParser {
                         }
                         return;
                     }
-                    if (should(l.stroke))
-                        pi.select(StyleProperty.parse("stroke-color", l.stroke), StyleProperty.paintFilter);
-                    else
-                        pi.select(strokeColor, StyleProperty.paintFilter);
-                    pi.nextLayer().nextSet();
-                    final Paint stroke = pi.paint(null);
-                    if (should(stroke)) {
-                        c.setPaint(stroke);
-                        if (should(l.strokeWidth))
-                            pi.select(StyleProperty.parse("stroke-width", l.strokeWidth), StyleProperty.pxFilter);
-                        else
-                            pi.select(strokeWidth, StyleProperty.pxFilter);
+                    if (should(l.strokeColor)) {
+                        pi.select(StyleProperty.parse("stroke-color", l.strokeColor), StyleProperty.paintFilter);
                         pi.nextLayer().nextSet();
-                        c.setStrokeWidth(pi.f(1, 1));
-                        c.drawRect(0, 0, l.fWidth, l.fHeight);
+                        final Paint stroke = pi.paint(null);
+                        if (should(stroke)) {
+                            c.setPaint(stroke);
+                            if (should(l.strokeWidth))
+                                pi.select(StyleProperty.parse("stroke-width", l.strokeWidth), StyleProperty.pxFilter);
+                            else
+                                pi.select(strokeWidth, StyleProperty.pxFilter);
+                            pi.nextLayer().nextSet();
+                            c.setStrokeWidth(pi.f(1, 1));
+                            c.drawRect(0, 0, l.fWidth, l.fHeight);
+                        }
                     }
-                    if (should(l.fill))
+                    if (should(l.fill)) {
                         pi.select(StyleProperty.parse("fill", l.fill), StyleProperty.paintFilter);
-                    else
-                        pi.select("fill", StyleProperty.paintFilter);
-                    pi.nextLayer().nextSet();
-                    final Paint fill = pi.paint(null);
-                    if (should(fill)) {
-                        c.setPaint(fill);
-                        c.fillRect(0, 0, l.fWidth, l.fHeight);
+                        pi.nextLayer().nextSet();
+                        final Paint fill = pi.paint(null);
+                        if (should(fill)) {
+                            c.setPaint(fill);
+                            c.fillRect(0, 0, l.fWidth, l.fHeight);
+                        }
                     }
                 });
                 break;
             case "path":
-                final boolean s = should(l.stroke), f = should(l.fill);
+                final boolean s = should(l.strokeColor), f = should(l.fill);
                 if (l.d == null || (!s && !f))
                     break;
                 text.setLength(0);
@@ -334,8 +326,9 @@ public abstract class SVGParser {
                             throw new RuntimeException("Unknown char " + ch);
                     }
                 }
-                if (!should(l.stroke) && !should(l.fill))
+                if (!should(l.strokeColor) && !should(l.fill))
                     break;
+                context.setStrokeWidthScaled(!"non-scaling-stroke".equals(l.vectorEffect));
                 context.with(c -> {
                     c.translate(l.fx, l.fy);
                     final PropIter pi = c.getPropIter();
@@ -351,31 +344,29 @@ public abstract class SVGParser {
                         }
                         return;
                     }
-                    if (should(l.stroke))
-                        pi.select(StyleProperty.parse("stroke-color", l.stroke), StyleProperty.paintFilter);
-                    else
-                        pi.select(strokeColor, StyleProperty.paintFilter);
-                    pi.nextLayer().nextSet();
-                    final Paint stroke = pi.paint(null);
-                    if (should(stroke)) {
-                        c.setPaint(stroke);
-                        if (should(l.strokeWidth))
-                            pi.select(StyleProperty.parse("stroke-width", l.strokeWidth), StyleProperty.pxFilter);
-                        else
-                            pi.select(strokeWidth, StyleProperty.pxFilter);
+                    if (should(l.strokeColor)) {
+                        pi.select(StyleProperty.parse("stroke-color", l.strokeColor), StyleProperty.paintFilter);
                         pi.nextLayer().nextSet();
-                        c.setStrokeWidth(pi.f(1, 1));
-                        c.draw(p);
+                        final Paint stroke = pi.paint(null);
+                        if (should(stroke)) {
+                            c.setPaint(stroke);
+                            if (should(l.strokeWidth))
+                                pi.select(StyleProperty.parse("stroke-width", l.strokeWidth), StyleProperty.pxFilter);
+                            else
+                                pi.select(strokeWidth, StyleProperty.pxFilter);
+                            pi.nextLayer().nextSet();
+                            c.setStrokeWidth(pi.f(1, 1));
+                            c.draw(p);
+                        }
                     }
-                    if (should(l.fill))
+                    if (should(l.fill)) {
                         pi.select(StyleProperty.parse("fill", l.fill), StyleProperty.paintFilter);
-                    else
-                        pi.select("fill", StyleProperty.paintFilter);
-                    pi.nextLayer().nextSet();
-                    final Paint fill = pi.paint(null);
-                    if (should(fill)) {
-                        c.setPaint(fill);
-                        c.fill(p);
+                        pi.nextLayer().nextSet();
+                        final Paint fill = pi.paint(null);
+                        if (should(fill)) {
+                            c.setPaint(fill);
+                            c.fill(p);
+                        }
                     }
                 });
                 break;

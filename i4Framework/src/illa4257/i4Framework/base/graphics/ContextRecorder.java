@@ -138,6 +138,18 @@ public class ContextRecorder implements Context, Sprite {
         strokeWidth = newWidth;
     }
 
+    private boolean strokeWidthScaled = true;
+    @Override
+    public boolean isStrokeWidthScaled() {
+        return strokeWidthScaled;
+    }
+
+    @Override
+    public void setStrokeWidthScaled(final boolean enabled) {
+        strokeWidthScaled = enabled;
+        actions.add(s -> s.context.setStrokeWidthScaled(enabled));
+    }
+
     @Override
     public void setClip(final Object path) {
         actions.add(c -> c.context.setClip(path));

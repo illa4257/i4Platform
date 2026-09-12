@@ -1,7 +1,7 @@
 * {
     --stroke-color: #f0f0f0;
     color: var(--stroke-color);
-    --thickness: 1dp;
+    --thickness: 2dp;
     --scrollbar-width: 16dp;
     --hint-color: #aaa;
 }
