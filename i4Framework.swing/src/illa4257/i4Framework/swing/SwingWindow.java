@@ -29,7 +29,6 @@ public class SwingWindow extends JFrame implements ISwingComponent, FrameworkWin
     public EventListener[] l;
     private volatile boolean center = false;
 
-    public SwingWindow(final SwingFramework framework) { this(framework, null); }
     public SwingWindow(final SwingFramework framework, final Window window) {
         if (framework == null)
             throw new IllegalArgumentException("Framework is null");

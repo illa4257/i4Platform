@@ -14,6 +14,7 @@ import illa4257.i4Framework.base.events.mouse.*;
 import illa4257.i4Framework.base.styling.PropIter;
 import illa4257.i4Framework.base.styling.StyleProperty;
 import illa4257.i4Framework.desktop.awt.AWTContext;
+import illa4257.i4Framework.desktop.awt.AWTUtils;
 import illa4257.i4Utils.logger.i4Logger;
 
 import javax.swing.*;
@@ -21,8 +22,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-
-import static java.awt.Cursor.*;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class SwingComponent extends JComponent implements ISwingComponent {
@@ -194,25 +193,8 @@ public class SwingComponent extends JComponent implements ISwingComponent {
         final PropIter ss = component.getPI();
 
         ss.select(property, Cursor.class).nextLayer().nextSet();
-        final Cursor c = ss.e(Cursor.class, Cursor.DEFAULT);
-        final int cursor =
-                c == Cursor.TEXT ? TEXT_CURSOR :
-                c == Cursor.POINTER ? HAND_CURSOR :
-                c == Cursor.GRAB ? MOVE_CURSOR : // not supported
-                c == Cursor.GRABBING ? MOVE_CURSOR : // not supported
-                c == Cursor.N_RESIZE ? N_RESIZE_CURSOR :
-                c == Cursor.SE_RESIZE ? SE_RESIZE_CURSOR :
-                c == Cursor.E_RESIZE ? E_RESIZE_CURSOR :
-                c == Cursor.EW_RESIZE ? E_RESIZE_CURSOR : // Not defined
-                c == Cursor.NE_RESIZE ? NE_RESIZE_CURSOR :
-                c == Cursor.NS_RESIZE ? N_RESIZE_CURSOR : // Not defined
-                c == Cursor.NW_RESIZE ? NW_RESIZE_CURSOR :
-                c == Cursor.NWSE_RESIZE ? MOVE_CURSOR :
-                c == Cursor.S_RESIZE ? S_RESIZE_CURSOR :
-                c == Cursor.SW_RESIZE ? SW_RESIZE_CURSOR :
-                c == Cursor.W_RESIZE ? W_RESIZE_CURSOR :
-                DEFAULT_CURSOR;
-        SwingUtilities.invokeLater(() -> setCursor(getPredefinedCursor(cursor)));
+        final java.awt.Cursor c = AWTUtils.getCursor(ss.e(Cursor.class, Cursor.DEFAULT));
+        SwingUtilities.invokeLater(() -> setCursor(c));
     }
 
     @Override
