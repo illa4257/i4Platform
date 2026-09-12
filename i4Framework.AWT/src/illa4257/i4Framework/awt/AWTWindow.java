@@ -2,16 +2,17 @@ package illa4257.i4Framework.awt;
 
 import illa4257.i4Framework.base.Framework;
 import illa4257.i4Framework.base.FrameworkWindow;
+import illa4257.i4Framework.base.components.Component;
 import illa4257.i4Framework.base.components.Window;
 import illa4257.i4Framework.base.events.components.*;
 import illa4257.i4Framework.base.points.numbers.NumberPoint;
+import illa4257.i4Framework.base.styling.Cursor;
 import illa4257.i4Framework.desktop.awt.AWTContext;
+import illa4257.i4Framework.desktop.awt.AWTUtils;
 
+import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 
 public class AWTWindow extends Frame implements FrameworkWindow {
     protected volatile boolean repaint = false;
@@ -46,6 +47,24 @@ public class AWTWindow extends Frame implements FrameworkWindow {
             }
         });
 
+        addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                super.mouseDragged(e);
+            }
+
+            @Override
+            public void mouseMoved(final MouseEvent e) {
+                super.mouseMoved(e);
+                final Insets insets = getInsets();
+                final Component component = AWTWindow.this.window.find(getGlobalX(e), getGlobalY(e), new float[] { e.getX() - insets.left, e.getY() - insets.top });
+                if (component == null)
+                    return;
+                setCursor(AWTUtils.getCursor(component.getPI().select("cursor", Cursor.class).nextLayer().nextSet()
+                        .e(Cursor.class, Cursor.DEFAULT)));
+            }
+        });
+
         w.addEventListener(RepaintEvent.class, e -> repaint = true);
         w.addDirectEventListener(VisibleEvent.class, e -> setVisible(e.value));
         w.addEventListener(ChangeTextEvent.class, e -> setTitle(w.getTitle()));
@@ -60,7 +79,7 @@ public class AWTWindow extends Frame implements FrameworkWindow {
 
     @Override
     public void paint(final Graphics g) {
-        Image buffer = framework.buffer;
+        /*Image buffer = framework.buffer;
         if (buffer == null)
             framework.buffer = buffer = getGraphicsConfiguration().createCompatibleImage(getWidth(), getHeight());
         else if (buffer.getWidth(null) < getWidth() || buffer.getHeight(null) < getHeight()) {
@@ -70,13 +89,15 @@ public class AWTWindow extends Frame implements FrameworkWindow {
             System.gc();
         }
         final Insets insets = getInsets();
-        final AWTContext ctx = new AWTContext((Graphics2D) buffer.getGraphics());
+        final AWTContext ctx = new AWTContext((Graphics2D) buffer.getGraphics());*/
+        final Insets insets = getInsets();
+        final AWTContext ctx = new AWTContext((Graphics2D) g);
         ctx.translate(insets.left, insets.top);
         ctx.graphics.setRenderingHints(AWTFramework.BEST);
         ctx.graphics.setFont(font);
         window.paint(ctx);
         window.paintComponents(ctx);
-        g.drawImage(buffer, 0, 0, null);
+        //g.drawImage(buffer, 0, 0, null);
     }
 
     @Override
@@ -118,4 +139,12 @@ public class AWTWindow extends Frame implements FrameworkWindow {
 
     @Override public Framework getFramework() { return framework; }
     @Override public Window getWindow() { return window; }
+
+    private int getGlobalX(final MouseEvent event) {
+        return event.getXOnScreen() - getX() - getInsets().left;
+    }
+
+    private int getGlobalY(final MouseEvent event) {
+        return event.getYOnScreen() - getY() - getInsets().top;
+    }
 }
