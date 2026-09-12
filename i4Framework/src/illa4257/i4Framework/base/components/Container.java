@@ -6,11 +6,11 @@ import illa4257.i4Utils.MiniUtil;
 
 import java.util.Iterator;
 import java.util.Spliterator;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Consumer;
 
 public class Container extends Component implements Iterable<Component> {
-    final ConcurrentLinkedQueue<Component> components = new ConcurrentLinkedQueue<>();
+    final ConcurrentLinkedDeque<Component> components = new ConcurrentLinkedDeque<>();
     protected Component focused = null;
 
     public Container() {
@@ -27,9 +27,12 @@ public class Container extends Component implements Iterable<Component> {
             x -= r.startX.calcFloat();
             y -= r.startY.calcFloat();
             Component r2;
-            for (final Component c : components)
+            final Iterator<Component> iter = components.descendingIterator();
+            while (iter.hasNext()) {
+                final Component c = iter.next();
                 if ((r2 = c.find(x, y, localPos)) != null)
                     return r2;
+            }
             localPos[0] = x;
             localPos[1] = y;
         }
