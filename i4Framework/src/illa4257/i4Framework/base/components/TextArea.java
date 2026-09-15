@@ -254,7 +254,7 @@ public class TextArea extends Container {
                 x = gutterPaddingX;
                 final MutableCharArray line = lines.get(lineIndex);
                 if (lineIndex == lineY) {
-                    ss.select("color", StyleProperty.paintFilter).nextLayer().nextSet();
+                    ss.select("--current-line-background-color", StyleProperty.paintFilter).nextLayer().nextSet();
                     final Paint curLineCol = ss.paint(Color.TRANSPARENT);
                     if (curLineCol != null && (!(curLineCol instanceof Color) || ((Color) curLineCol).alpha > 0)) {
                         context.setPaint(curLineCol);
