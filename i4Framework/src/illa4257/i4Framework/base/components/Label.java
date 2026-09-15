@@ -37,7 +37,7 @@ public class Label extends Component {
             return;
         final PropIter ss = getPI();
 
-        ss.select("color", StyleProperty.paintFilter);
+        ss.select("color", StyleProperty.paintFilter).nextLayer().nextSet();
         Paint tc = ss.paint(Color.TRANSPARENT);
         if (tc == null || (tc instanceof Color && ((Color) tc).alpha <= 0))
             return;
